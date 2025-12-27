@@ -1,0 +1,177 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block content %}
+<style>
+  /* Custom styles for the responsive cart table */
+  @media (max-width: 767px) { /* Tailwind's 'md' breakpoint */
+    .responsive-cart thead {
+      display: none;
+    }
+    .responsive-cart tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .responsive-cart td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0.25rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .responsive-cart td:last-child {
+      border-bottom: none;
+    }
+    /* Add labels before the data */
+    .responsive-cart td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: #374151; /* gray-700 */
+      margin-right: 1rem;
+    }
+    /* Style the first cell (product name) as a header */
+    .responsive-cart tr td:first-child {
+      font-size: 1.125rem; /* text-lg */
+      font-weight: 700;
+      justify-content: flex-start;
+      padding-top: 0;
+      padding-bottom: 0.75rem;
+    }
+    .responsive-cart tr td:first-child::before {
+      display: none; /* Don't show a label for the product name */
+    }
+  }
+</style>
+
+<div class="min-h-screen">
+  <div class="container mx-auto px-4 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
+      
+      <!-- Profile Section (Spans 2 columns on large screens) -->
+      <div class="lg:col-span-2">
+        <div class="bg-white shadow-2xl rounded-2xl p-8 transform hover:-translate-y-1 transition-transform duration-500">
+          <div class="flex items-center mb-8">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-5">
+              <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </div>
+            <h2 class="text-4xl font-extrabold text-gray-800">Your Profile</h2>
+          </div>
+
+          <div class="space-y-5 mb-10 text-gray-700">
+            <p class="flex items-center text-lg">
+              <span class="font-semibold text-gray-900 w-24">Username:</span>
+              <span class="ml-3">{{ user.username }}</span>
+            </p>
+            <p class="flex items-center text-lg">
+              <span class="font-semibold text-gray-900 w-24">Email:</span>
+              <span class="ml-3">{{ user.email }}</span>
+            </p>
+          </div>
+
+          <form method="post" class="space-y-6">
+            {% csrf_token %}
+            <div>
+              <label class="block font-semibold text-gray-800 mb-2">Address:</label>
+              <input type="text" name="address" value="{{ form.address.value|default:'' }}"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all duration-300"
+                placeholder="1234 address city with pincode,state, India" />
+            </div>
+            <div>
+              <label class="block font-semibold text-gray-800 mb-2">Mobile Number:</label>
+              <input type="tel" name="mobile" value="{{ form.mobile.value|default:'' }}"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all duration-300"
+                placeholder="" />
+            </div>
+            <button type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              Update Profile
+            </button>
+          </form>
+
+          <div class="flex justify-between mt-8">
+            <a href="{% url 'order_history' %}" class="text-blue-600 hover:underline font-semibold transition-colors duration-300">View Order History</a>
+            <a href="{% url 'cart' %}" class="text-green-600 hover:underline font-semibold transition-colors duration-300">View Cart</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart Section (Spans 3 columns on large screens) -->
+      <div class="lg:col-span-3">
+        <div class="bg-white shadow-2xl rounded-2xl p-4 sm:p-8 transform hover:-translate-y-1 transition-transform duration-500">
+          <div class="flex items-center mb-8">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mr-5">
+              <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+            <h2 class="text-4xl font-extrabold text-gray-800">Your Cart</h2>
+          </div>
+          
+          <form method="post" action="{% url 'cart' %}">
+            {% csrf_token %}
+            <table class="w-full responsive-cart">
+              <thead class="hidden md:table-header-group">
+                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                  <th class="py-3 px-6 rounded-l-lg">Product</th>
+                  <th class="py-3 px-6">Price</th>
+                  <th class="py-3 px-6 text-center">Quantity</th>
+                  <th class="py-3 px-6 rounded-r-lg">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="text-gray-700 text-md">
+                {% for item in cart_items %}
+                <tr class="border-b border-gray-200 md:hover:bg-gray-50">
+                  <td data-label="Product">{{ item.product.name }}</td>
+                  <td data-label="Price">₹{{ item.product.price|floatformat:2 }}</td>
+                  <td data-label="Quantity" class="text-center">
+                    <input type="number" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="1"
+                      class="w-20 border border-gray-300 rounded-md px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                  </td>
+                  <td data-label="Action" class="text-center">
+                    <a href="{% url 'remove_from_cart' item.id %}"
+                      class="text-red-500 hover:text-red-700 font-semibold transition-colors duration-300 transform hover:scale-110 inline-block px-2 py-1 rounded hover:bg-red-50">
+                      Remove
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="py-10 text-center text-gray-500 text-lg">
+                    Your cart is empty. Let's find something great!
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            
+            {% if cart_items %}
+            <div class="mt-8">
+              <div class="flex flex-col md:flex-row justify-between items-center gap-6 p-6 bg-gray-50 rounded-lg">
+                <div class="w-full md:w-auto flex flex-col md:flex-row gap-4">
+                  <button type="submit"
+                    class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
+                    Update Cart
+                  </button>
+                  <a href="{% url 'checkout' %}"
+                    class="w-full text-center bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 transition-all duration-300 transform hover:scale-105">
+                    Proceed to Checkout
+                  </a>
+                </div>
+                <div class="text-right w-full md:w-auto mt-4 md:mt-0">
+                  <p class="text-gray-600 text-md">Grand Total</p>
+                  <p class="text-4xl font-extrabold text-gray-900">
+                    ₹{{ cart_total|floatformat:2 }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

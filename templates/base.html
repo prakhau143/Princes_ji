@@ -1,0 +1,301 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Princess Jewelry Store{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Smooth transitions for a better user experience */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        /* Ensure the mobile menu has a high z-index */
+        #mobile-menu {
+            z-index: 40;
+        }
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 50%, #fce7f3 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="text-gray-900 min-h-screen flex flex-col">
+
+  <!-- =================================================================== -->
+  <!-- RESPONSIVE HEADER                                                 -->
+  <!-- =================================================================== -->
+ <header class="bg-white shadow-md sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-20">
+      
+      <!-- Logo -->
+      <div class="flex-shrink-0">
+        <a href="/" class="flex items-center space-x-3">
+          <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-12 w-auto rounded-full"/>
+          <span class="text-2xl font-bold text-gray-800">Princess</span>
+        </a>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex items-center space-x-8">
+        {% if user.is_authenticated %}
+          <!-- Products link is now only visible to authenticated users -->
+          <a href="{% url 'product_list' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Jewelry</a>
+          <a href="{% url 'profile' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Profile</a>
+          <a href="{% url 'order_history' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">My Orders</a>
+          <a href="{% url 'cart' %}" class="text-gray-600 hover:text-pink-600 relative">
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          </a>
+          <form action="{% url 'logout' %}" method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="bg-pink-500 text-white font-medium py-2 px-4 rounded-md hover:bg-pink-600 transition-all">Logout</button>
+          </form>
+        {% else %}
+          <!-- Links for logged-out users -->
+          <a href="{% url 'login' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Login</a>
+          <a href="{% url 'register' %}" class="bg-pink-500 text-white font-medium py-2 px-4 rounded-md hover:bg-pink-600 transition-all">Register</a>
+        {% endif %}
+      </nav>
+
+      <!-- Mobile Menu Button (Hamburger) -->
+      <div class="md:hidden">
+        <button id="mobile-menu-button" class="text-gray-600 hover:text-pink-600 focus:outline-none">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Menu (Hidden by default) -->
+  <div id="mobile-menu" class="hidden md:hidden absolute top-0 inset-x-0 p-2 transition transform origin-top-right">
+    <div class="rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 bg-white divide-y-2 divide-gray-50">
+      <div class="pt-5 pb-6 px-5">
+        <div class="flex items-center justify-between">
+          <a href="/" class="flex items-center space-x-3">
+            <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-10 w-auto rounded-full"/>
+            <a href="/" class="text-2xl font-bold text-gray-800">Princess</a>
+          </a>
+          <button id="mobile-menu-close" class="text-gray-500 hover:text-gray-800">
+            <svg class="h-7 w-7" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="mt-6">
+          <nav class="grid gap-y-8">
+            {% if user.is_authenticated %}
+              <!-- Products link is now visible in the mobile menu for logged-in users -->
+              <a href="{% url 'product_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Jewelry</a>
+              <a href="{% url 'profile' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Profile</a>
+              <a href="{% url 'order_history' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">My Orders</a>
+              <a href="{% url 'cart' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Cart</a>
+            {% endif %}
+          </nav>
+        </div>
+      </div>
+      <div class="py-6 px-5 space-y-6">
+        {% if user.is_authenticated %}
+          <form action="{% url 'logout' %}" method="post" class="w-full">
+            {% csrf_token %}
+            <button type="submit" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-red-600 hover:bg-red-700">Logout</button>
+          </form>
+        {% else %}
+          <a href="{% url 'register' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-pink-600 hover:bg-pink-700">Register</a>
+          <p class="mt-6 text-center text-base font-medium text-gray-500">
+            Existing customer? <a href="{% url 'login' %}" class="text-pink-600 hover:text-pink-500">Login</a>
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>
+
+  <!-- =================================================================== -->
+  <!-- ANNOUNCEMENT BAR (Admin Controlled)                                -->
+  <!-- =================================================================== -->
+  {% if announcements %}
+  <div class="bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 text-white overflow-hidden relative" style="height: 40px;">
+    <div id="announcement-container" class="flex items-center h-full">
+      <div id="announcement-track" class="flex items-center whitespace-nowrap animate-scroll">
+        {% for announcement in announcements %}
+          <div class="announcement-item inline-flex items-center px-8">
+            {% if announcement.title %}
+              <span class="font-bold mr-2">{{ announcement.title }}:</span>
+            {% endif %}
+            <span>{{ announcement.message }}</span>
+            <span class="mx-4 text-pink-200">✦</span>
+          </div>
+        {% endfor %}
+        <!-- Duplicate for seamless loop -->
+        {% for announcement in announcements %}
+          <div class="announcement-item inline-flex items-center px-8">
+            {% if announcement.title %}
+              <span class="font-bold mr-2">{{ announcement.title }}:</span>
+            {% endif %}
+            <span>{{ announcement.message }}</span>
+            <span class="mx-4 text-pink-200">✦</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    @keyframes scroll {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+    
+    #announcement-track {
+      animation: scroll 30s linear infinite;
+    }
+    
+    #announcement-track:hover {
+      animation-play-state: paused;
+    }
+  </style>
+  {% endif %}
+
+  <!-- =================================================================== -->
+  <!-- MAIN CONTENT BLOCK                                                -->
+  <!-- =================================================================== -->
+  <main class="flex-grow w-full">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- RESPONSIVE FOOTER                                                 -->
+  <!-- =================================================================== -->
+  <footer class="bg-gray-800 text-white w-full">
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+
+        <!-- Brand Section -->
+        <div class="col-span-2 md:col-span-1">
+          <div class="flex-shrink-0">
+            <a href="/" class="flex items-center space-x-3">
+              <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-12 w-auto rounded-full"/>
+              <span class="text-2xl font-bold text-gray-800">Princess</span>
+            </a>
+          </div>
+          <p class="text-gray-400 text-sm leading-relaxed mb-4">
+            Exquisite jewelry collection for the modern woman. Elegance and beauty crafted to perfection.
+          </p>
+
+          <!-- Contact Information -->
+          <div class="space-y-2">
+            <div class="flex items-center space-x-2 text-gray-300 text-sm">
+              <i class="fas fa-envelope text-pink-400"></i>
+              <span>princess.jewellery015@gmail.com</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collections Section -->
+        <div>
+          <h4 class="font-semibold text-lg mb-4 text-white">Collections</h4>
+          <ul class="space-y-2">
+            <li><a href="{% url 'product_list' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Rings</a></li>
+            <li><a href="{% url 'product_list' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Necklaces</a></li>
+            <li><a href="{% url 'product_list' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Earrings</a></li>
+            <li><a href="{% url 'product_list' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Bracelets</a></li>
+          </ul>
+        </div>
+
+        <!-- Support Section -->
+        <div>
+          <h4 class="font-semibold text-lg mb-4 text-white">Support</h4>
+          <ul class="space-y-2">
+            <li><a href="{% url 'contact' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Contact Us</a></li>
+            <li><a href="{% url 'size_guide' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Size Guide</a></li>
+            <li><a href="{% url 'care_instructions' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Care Instructions</a></li>
+            <li><a href="{% url 'shipping_returns' %}" class="text-gray-400 hover:text-pink-400 transition-colors">Shipping & Returns</a></li>
+          </ul>
+        </div>
+
+        <!-- Social Media Section -->
+        <div>
+          <h4 class="font-semibold text-lg mb-4 text-white">Follow Us</h4>
+          <div class="flex space-x-4">
+            <a href="https://www.instagram.com/princess_jewellery.in/"
+               class="text-gray-400 hover:text-pink-400 transition-colors transform hover:scale-110"
+               target="_blank" rel="noopener noreferrer">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61580532874288"
+               class="text-gray-400 hover:text-pink-400 transition-colors transform hover:scale-110"
+               target="_blank" rel="noopener noreferrer">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </a>
+            <a href="https://in.pinterest.com/princessjewellery015/"
+               class="text-gray-400 hover:text-pink-400 transition-colors transform hover:scale-110"
+               target="_blank" rel="noopener noreferrer">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.219-5.169 1.219-5.169s-.279-.558-.279-1.379c0-1.279.74-2.237 1.658-2.237.783 0 1.16.588 1.16 1.299 0 .787-.501 1.968-.759 3.063-.219.919.461 1.668 1.36 1.668 1.639 0 2.898-1.719 2.898-4.201 0-2.198-1.579-3.736-3.837-3.736-2.617 0-4.15 1.96-4.15 3.988 0 .787.301 1.631.679 2.088.078.099.099.179.079.279-.08.301-.24 1.04-.28 1.178-.04.179-.139.219-.321.139-1.199-.559-1.939-2.298-1.939-3.697 0-2.897 2.099-5.556 6.077-5.556 3.198 0 5.675 2.278 5.675 5.321 0 3.177-2.001 5.734-4.777 5.734-.939 0-1.818-.499-2.118-1.099 0 0-.479 1.838-.599 2.277-.219.859-.8 1.919-1.199 2.577C9.197 23.814 10.566 24.001 12.017 24.001c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Newsletter Signup -->
+      <div class="mt-8">
+          <div class="text-center lg:text-right">
+            <h4 class="text-lg font-semibold text-white mb-2">Stay Updated</h4>
+            <p class="text-gray-400 text-sm mb-4">Get exclusive offers and new collection updates</p>
+            <form method="post" action="{% url 'newsletter_subscribe' %}" class="flex max-w-sm mx-auto lg:mx-0">
+              {% csrf_token %}
+              <input type="email" name="email" required placeholder="Enter your email"
+                     class="flex-1 px-3 py-2 bg-white text-gray-900 rounded-l-md focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm">
+              <button type="submit"
+                      class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-r-md font-medium transition-colors text-sm">
+                Subscribe
+              </button>
+            </form>
+          </div>
+      </div>
+
+      <!-- Copyright -->
+      <div class="mt-8 pt-8 border-t border-gray-700 text-center">
+        <p class="text-sm text-gray-400">
+          &copy; {% now "Y" %} Princess Jewelry. All rights reserved. |
+          <span class="text-pink-400">Crafted with elegance for the modern woman</span>
+        </p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- JavaScript for Mobile Menu -->
+  <script>
+    const menuButton = document.getElementById('mobile-menu-button');
+    const closeButton = document.getElementById('mobile-menu-close');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    menuButton.addEventListener('click', () => {
+      mobileMenu.classList.remove('hidden');
+    });
+
+    closeButton.addEventListener('click', () => {
+      mobileMenu.classList.add('hidden');
+    });
+  </script>
+
+</body>
+</html>

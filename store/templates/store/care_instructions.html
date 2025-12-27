@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-heart text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Jewelry Care Instructions</h1>
+                <p class="text-gray-600">Keep your precious pieces looking beautiful for years to come</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- General Care -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">General Care Tips</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-check text-pink-400 mt-1"></i>
+                            <span class="text-gray-700">Remove jewelry before swimming, showering, or exercising</span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-check text-pink-400 mt-1"></i>
+                            <span class="text-gray-700">Store pieces separately to avoid scratching</span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-check text-pink-400 mt-1"></i>
+                            <span class="text-gray-700">Clean regularly with a soft, lint-free cloth</span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-check text-pink-400 mt-1"></i>
+                            <span class="text-gray-700">Avoid contact with perfumes, lotions, and chemicals</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Material-Specific Care -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Artificial / Fashion Jewellery</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <h4 class="font-semibold text-gray-800 mb-2">General Care</h4>
+                            <p class="text-gray-600 text-sm">Wipe pieces gently with a soft, dry cloth after every use to remove sweat, oils, and dust. Avoid soaking in water or using strong cleaning agents, as this can damage the plating and stones.</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <h4 class="font-semibold text-gray-800 mb-2">cleaning</h4>
+                            <p class="text-gray-600 text-sm">If needed, clean lightly with a damp cloth dipped in mild soapy water, then dry completely before storing. Do not scrub or immerse artificial jewellery, as adhesives may loosen.</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <h4 class="font-semibold text-gray-800 mb-2">storage</h4>
+                            <p class="text-gray-600 text-sm">Keep each piece separately in airtight pouches or boxes to prevent scratches and fading. Avoid contact with perfumes, sprays, and direct sunlight for longer-lasting shine.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 p-6 bg-pink-50 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-star text-pink-400 text-xl mt-1"></i>
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Pro Tip</h4>
+                        <p class="text-gray-700">
+                            For heirloom pieces or valuable jewelry, consider professional cleaning and inspection
+                            at least once a year to maintain their beauty and integrity.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

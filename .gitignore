@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.egg-info/
+
+# Django
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.mo
+*.db
+media/
+staticfiles/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+*.env
+.venv/  # Add this line to ignore the virtual environment folder
+
+# Migrations (optional, keep if you want to version them)
+# store/migrations/__pycache__/
+
+# Images/uploads (if not versioned)
+# store/static/
+# store/media/
+
+# Node/npm (if any)
+node_modules/
+
+# Others
+*.bak
+*.swp
+*.swo
+
+# Git
+.git/
+.github/ # Add this line to ignore the .github folder
+*.pyc
+*~
+pycache
+.DS_Store
+*.DS_Store
+*migrations/
+*.sqlite3
+debug-error.log
+nursing/settings/
+home/google/credentials.json
+*media/
+static/
+nohup.out
+.vscode/
+db.json
+credentials.json
+.venv

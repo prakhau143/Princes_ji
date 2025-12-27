@@ -1,0 +1,73 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] py-12">
+  <div
+    class="bg-white shadow-xl rounded-xl p-8 md:p-12 w-full max-w-lg border border-gray-200"
+  >
+    <h2 class="text-3xl font-extrabold text-gray-800 text-center mb-8">
+      Checkout
+    </h2>
+
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">
+      1. Shipping Details
+    </h3>
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="mb-4">
+        <label
+          for="{{ field.id_for_label }}"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          {{ field.label }}
+        </label>
+        {{ field }}
+        {% if field.errors %}
+        <div class="text-red-500 text-sm mt-1">
+          {{ field.errors|striptags }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <div class="border-t border-gray-200 pt-6">
+        <h3 class="text-xl font-semibold text-gray-700 mb-4">
+          2. Order Summary
+        </h3>
+        <ul class="space-y-3 text-gray-700 mb-6">
+          {% for item in items %}
+          <li class="flex justify-between items-center">
+            <span>
+              <span class="font-medium">{{ item.product.name }}</span> (x{{ item.quantity }})
+            </span>
+            <span class="font-semibold text-gray-800">
+              ₹{{ item.get_total|floatformat:2 }}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="mb-6 flex justify-between items-center font-bold text-lg">
+          <span class="text-gray-800">Total:</span>
+          <span class="text-green-600">₹{{ total|floatformat:2 }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row items-center gap-4">
+        <button
+          type="submit"
+          class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
+        >
+          Continue to Review
+        </button>
+        <a
+          href="{% url 'cart' %}"
+          class="w-full text-center text-pink-600 hover:text-pink-800 hover:underline font-semibold"
+        >
+          &larr; Back to Cart
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

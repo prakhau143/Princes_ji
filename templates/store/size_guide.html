@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Size Guide - Princess{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Jewelry Size Guide</h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Our jewelry collection features <span class="font-semibold text-pink-600">free-size designs</span> 
+                crafted to be comfortable and beautiful for all age groups - from young girls to elegant women.
+            </p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-6xl mx-auto">
+            <!-- Free Size Information -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <div class="flex items-center mb-6">
+                    <div class="bg-pink-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-heart text-pink-600 text-2xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-900">One Size Fits All</h2>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Why Free Size?</h3>
+                        <ul class="space-y-3 text-gray-600">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <span><strong>Universal Fit:</strong> Designed to be comfortable for all ages and sizes</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <span><strong>Adjustable Design:</strong> Many pieces feature adjustable elements</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <span><strong>Quality Materials:</strong> Flexible and durable materials that adapt</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <span><strong>Perfect Gifting:</strong> No need to worry about sizing when gifting</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-pink-50 to-purple-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Age Groups We Cater To</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <div class="bg-pink-200 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                                    <i class="fas fa-child text-pink-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Young Girls (8-15 years)</h4>
+                                    <p class="text-sm text-gray-600">Delicate and playful designs</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="bg-purple-200 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                                    <i class="fas fa-female text-purple-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Young Women (16-35 years)</h4>
+                                    <p class="text-sm text-gray-600">Trendy and fashionable pieces</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="bg-pink-300 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                                    <i class="fas fa-crown text-pink-700"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Mature Women (35+ years)</h4>
+                                    <p class="text-sm text-gray-600">Elegant and sophisticated styles</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Categories -->
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- Earrings -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="text-center mb-4">
+                        <div class="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-gem text-pink-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800">Earrings</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• Standard post size for pierced ears</li>
+                        <li>• Lightweight designs for comfort</li>
+                        <li>• Hypoallergenic materials</li>
+                        <li>• Suitable for sensitive ears</li>
+                    </ul>
+                </div>
+
+                <!-- Necklaces & Pendants -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="text-center mb-4">
+                        <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-circle-notch text-purple-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800">Necklaces</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• Adjustable chain lengths</li>
+                        <li>• Extension chains available</li>
+                        <li>• Comfortable for daily wear</li>
+                        <li>• Suitable for all neck sizes</li>
+                    </ul>
+                </div>
+
+                <!-- Rings & Bracelets -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="text-center mb-4">
+                        <div class="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-ring text-pink-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800">Rings & Bracelets</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• Adjustable ring bands</li>
+                        <li>• Flexible bracelet designs</li>
+                        <li>• Open-ended styles</li>
+                        <li>• Comfortable fit guaranteed</li>
+                    </ul>
+                </div>
+            </div>
+
+
+            <!-- Contact Support -->
+            <div class="text-center mt-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 inline-block">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Still Have Questions?</h3>
+                    <p class="text-gray-600 mb-4">Our customer support team is here to help you find the perfect fit!</p>
+                    <a href="{% url 'contact' %}" class="bg-pink-600 text-white px-6 py-3 rounded-lg hover:bg-pink-700 transition-colors font-medium">
+                        Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

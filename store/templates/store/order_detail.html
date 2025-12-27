@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load cart_extras %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh]">
+  <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-lg">
+    <h2 class="text-2xl font-bold mb-4 text-blue-700">Order #{{ order.id }}</h2>
+    <div class="mb-2 text-gray-700">
+      Placed: {{ order.order_date|date:'Y-m-d H:i' }}
+    </div>
+    <div class="mb-2 text-gray-700">
+      Shipping: {{ order.shipping_address }}, {{ order.shipping_city }}, {{
+      order.shipping_postal_code }}, {{ order.shipping_country }}
+    </div>
+    <div class="mb-4 font-bold">Total: ₹{{ order.total|floatformat:2 }}</div>
+    <h3 class="font-semibold mb-2">Items</h3>
+    <ul class="mb-4">
+      {% for item in order.items.all %}
+      <li>
+        {{ item.product.name }} (x{{ item.quantity }}) - ₹{{ item.price|floatformat:2 }}
+        <span class="ml-2 text-gray-500"
+          >Subtotal: ₹{{ item.price|multiply:item.quantity|floatformat:2 }}</span
+        >
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'order_history' %}" class="text-blue-600 hover:underline"
+      >Back to Order History</a
+    >
+  </div>
+</div>
+{% endblock %}

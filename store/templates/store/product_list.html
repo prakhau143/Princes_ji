@@ -1,0 +1,121 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="text-center mb-10">
+    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">
+      Explore Our Products
+    </h2>
+    <p class="text-lg text-gray-500">
+      Browse our extensive catalog and find your next favorite item.
+    </p>
+  </div>
+
+  <!-- Filters and Search Bar -->
+  <div class="mb-12 p-6 bg-white rounded-lg shadow-md">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Category Filters -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">
+          Filter by Category
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          <a
+            href="{% url 'product_list' %}"
+            class="px-4 py-2 rounded-full font-semibold transition-colors duration-300 {% if not selected_category %}bg-blue-600 text-white shadow-md{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}"
+          >
+            All
+          </a>
+          {% for cat in categories %}
+          <a
+            href="{% url 'category_products' cat.id %}"
+            class="px-4 py-2 rounded-full font-semibold transition-colors duration-300 {% if cat.id|stringformat:'s' == selected_category %}bg-blue-600 text-white shadow-md{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}"
+          >
+            {{ cat.name }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Search Form -->
+      <form method="get" class="flex flex-col sm:flex-row items-center gap-4">
+        <input
+          type="text"
+          name="q"
+          placeholder="Search products..."
+          value="{{ search_query }}"
+          class="border border-gray-300 rounded-full px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow duration-300"
+        />
+        <button
+          type="submit"
+          class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition-colors duration-300"
+        >
+          Search
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Product Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+    {% for product in products %}
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col group transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+      <a href="{% url 'product_detail' product.pk %}" class="block overflow-hidden">
+        {% if product.image %}
+        <img
+          src="{{ product.image.url }}"
+          alt="{{ product.name }}"
+          class="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+        />
+        {% else %}
+        <div class="h-48 flex items-center justify-center bg-gray-100 text-gray-500">
+          No Image Available
+        </div>
+        {% endif %}
+      </a>
+
+      <div class="p-4 flex flex-col flex-grow">
+        <h3 class="font-semibold text-lg text-gray-800 mb-1 truncate">
+          <a href="{% url 'product_detail' product.pk %}" class="hover:text-blue-600">{{ product.name }}</a>
+        </h3>
+        <p class="text-sm text-gray-500 mb-3">{{ product.category.name }}</p>
+
+        <p class="text-2xl text-gray-900 font-bold mb-4">
+          ₹{{ product.price|floatformat:2 }}
+        </p>
+
+        <p class="text-gray-600 text-sm mb-4 flex-grow line-clamp-2">
+          {{ product.description|truncatechars:80 }}
+        </p>
+
+        <div class="mt-auto space-y-2">
+          <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-full">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="w-full bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 text-gray-800 font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300"
+            >
+              Add to Cart
+            </button>
+          </form>
+          <form method="post" action="{% url 'add_to_cart' product.id %}?buynow=1" class="w-full">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="w-full bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 text-white font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300"
+            >
+              Buy Now
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p class="col-span-full text-center text-gray-500 text-xl py-12">
+      No products found matching your criteria. Try a different search!
+    </p>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

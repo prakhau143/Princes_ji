@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-ruler text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Size Guide</h1>
+                <p class="text-gray-600">Find your perfect fit with our comprehensive sizing guide</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Ring Sizes -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Ring Size Chart</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border border-gray-300 px-4 py-2 text-left">US Size</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Diameter (mm)</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Circumference (mm)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="border border-gray-300 px-4 py-2">5</td><td class="border border-gray-300 px-4 py-2">15.7</td><td class="border border-gray-300 px-4 py-2">49.3</td></tr>
+                                <tr class="bg-gray-50"><td class="border border-gray-300 px-4 py-2">6</td><td class="border border-gray-300 px-4 py-2">16.5</td><td class="border border-gray-300 px-4 py-2">51.9</td></tr>
+                                <tr><td class="border border-gray-300 px-4 py-2">7</td><td class="border border-gray-300 px-4 py-2">17.3</td><td class="border border-gray-300 px-4 py-2">54.4</td></tr>
+                                <tr class="bg-gray-50"><td class="border border-gray-300 px-4 py-2">8</td><td class="border border-gray-300 px-4 py-2">18.1</td><td class="border border-gray-300 px-4 py-2">57.0</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- How to Measure -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">How to Measure</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-pink-600 font-bold text-sm">1</span>
+                            </div>
+                            <p class="text-gray-700">Wrap a string or paper around the base of your finger</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-pink-600 font-bold text-sm">2</span>
+                            </div>
+                            <p class="text-gray-700">Mark where the string overlaps and measure the length</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-pink-600 font-bold text-sm">3</span>
+                            </div>
+                            <p class="text-gray-700">Compare measurement with our size chart above</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 p-6 bg-gray-50 rounded-lg">
+                <p class="text-gray-700 text-center">
+                    <strong>Need help finding your size?</strong><br>
+                    Visit our store for professional sizing assistance or contact us for personalized recommendations.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
