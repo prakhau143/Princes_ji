@@ -6,20 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jewelry Store Admin Dashboard - Princess</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --primary: #ec4899;
-            --primary-dark: #db2777;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --bg: #f1f5f9;
+            --primary: #ca6180;
+            --primary-dark: #b45471;
+            --primary-50: #fef1f5;
+            --primary-100: #fcb7c7;
+            --accent: #9ed3dc;
+            --accent-warm: #fefd99;
+            --success: #9ed3dc;
+            --warning: #fefd99;
+            --danger: #ca6180;
+            --bg: #fffafc;
             --surface: #ffffff;
-            --text: #1e293b;
-            --subtext: #64748b;
-            --border: #e2e8f0;
+            --text: #5f2c3f;
+            --subtext: #8f5e71;
+            --border: #f3d6df;
             --sidebar-width: 260px;
             --header-height: 70px;
         }
@@ -44,7 +49,7 @@
             top: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: var(--surface);
+            background: linear-gradient(180deg, #ffffff 0%, #fff6f8 100%);
             border-right: 1px solid var(--border);
             z-index: 1000;
             overflow-y: auto;
@@ -103,7 +108,7 @@
 
         /* Header */
         .header {
-            background: var(--surface);
+            background: rgba(255, 255, 255, 0.95);
             padding: 1rem 2rem;
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -163,7 +168,7 @@
             padding: 1.5rem;
             border-radius: 12px;
             border: 1px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(202, 97, 128, 0.08);
         }
 
         .stat-header {
@@ -195,8 +200,8 @@
             font-size: 1.25rem;
         }
 
-        .stat-icon.subscribers { background: #ddd6fe; color: #7c3aed; }
-        .stat-icon.messages { background: #fef3c7; color: #d97706; }
+        .stat-icon.subscribers { background: rgba(158, 211, 220, 0.25); color: #498595; }
+        .stat-icon.messages { background: rgba(254, 253, 153, 0.35); color: #927d16; }
 
         /* Tables */
         .table-container {
@@ -406,8 +411,32 @@
             <a href="#orders" class="nav-item" onclick="showSection('orders')">
                 <i class="fas fa-shopping-cart"></i> Orders
             </a>
+            <a href="#lifecycle" class="nav-item" onclick="showSection('lifecycle')">
+                <i class="fas fa-route"></i> Order Lifecycle
+            </a>
             <a href="#products" class="nav-item" onclick="showSection('products')">
                 <i class="fas fa-box"></i> Products
+            </a>
+            <a href="#advanced-products" class="nav-item" onclick="showSection('advanced-products')">
+                <i class="fas fa-layer-group"></i> Advanced Products
+            </a>
+            <a href="#homepage" class="nav-item" onclick="showSection('homepage')">
+                <i class="fas fa-home"></i> Homepage CMS
+            </a>
+            <a href="#categories" class="nav-item" onclick="showSection('categories')">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="#reels" class="nav-item" onclick="showSection('reels')">
+                <i class="fas fa-film"></i> Instagram Reels
+            </a>
+            <a href="#reviews" class="nav-item" onclick="showSection('reviews')">
+                <i class="fas fa-star"></i> Reviews
+            </a>
+            <a href="#trust" class="nav-item" onclick="showSection('trust')">
+                <i class="fas fa-shield-alt"></i> Trust Badges
+            </a>
+            <a href="#finance" class="nav-item" onclick="showSection('finance')">
+                <i class="fas fa-chart-line"></i> Marketing & Finance
             </a>
             <a href="#customers" class="nav-item" onclick="showSection('customers')">
                 <i class="fas fa-users"></i> Customers
@@ -421,6 +450,9 @@
     
             <a href="#analytics" class="nav-item" onclick="showSection('analytics')">
                 <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            <a href="#india-map" class="nav-item" onclick="showSection('india-map')">
+                <i class="fas fa-map-marked-alt"></i> India Order Map
             </a>
             {% comment %} <a href="#reports" class="nav-item" onclick="showSection('reports')">
                 <i class="fas fa-file-alt"></i> Reports
@@ -766,6 +798,456 @@
             </div>
         </div>
 
+        <!-- Advanced Products Section -->
+        <div id="advanced-products-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Low Stock Alerts</h3>
+                    <div class="filter-controls">
+                        <button class="btn btn-primary" onclick="loadLowStockProducts()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Stock</th>
+                            <th>Threshold</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lowStockTbody">
+                        <tr><td colspan="4" style="text-align:center; padding:1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Multiple Images + Variants Manager</h3>
+                </div>
+                <div style="padding:1rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+                    <input id="apProductId" class="filter-select" type="number" min="1" placeholder="Product ID">
+                    <input id="apImages" type="file" accept="image/*" multiple>
+                    <button class="btn btn-success" onclick="uploadProductImages()"><i class="fas fa-upload"></i> Upload Images</button>
+                    <button class="btn btn-primary" onclick="loadProductMediaData()"><i class="fas fa-eye"></i> Load Product Media</button>
+                </div>
+                <div style="padding:0 1rem 1rem; display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+                    <input id="bulkProductCsv" type="file" accept=".csv">
+                    <button class="btn btn-outline" onclick="bulkImportProducts()"><i class="fas fa-file-import"></i> Bulk Import CSV</button>
+                    <span style="color:var(--subtext); font-size:0.85rem;">CSV columns: name,description,price,cost_price,category,stock,is_active</span>
+                </div>
+                <div style="padding:0 1rem 1rem;">
+                    <h4 style="margin-bottom:0.5rem;">Existing Additional Images</h4>
+                    <div id="productImagesWrap" style="display:flex; gap:0.75rem; flex-wrap:wrap;"></div>
+                </div>
+                <div style="padding:0 1rem 1rem;">
+                    <h4 style="margin-bottom:0.5rem;">Add Variant</h4>
+                    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <input id="variantName" class="filter-select" type="text" placeholder="Variant name (e.g. Size M)">
+                        <input id="variantDelta" class="filter-select" type="number" step="0.01" placeholder="Price delta">
+                        <input id="variantStock" class="filter-select" type="number" min="0" placeholder="Stock">
+                        <input id="variantOrder" class="filter-select" type="number" min="0" value="0" placeholder="Sort">
+                        <button class="btn btn-success" onclick="addVariant()"><i class="fas fa-plus"></i> Add Variant</button>
+                    </div>
+                    <table style="margin-top:0.75rem;">
+                        <thead>
+                            <tr><th>Name</th><th>Price Delta</th><th>Stock</th><th>Status</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="variantTbody">
+                            <tr><td colspan="5" style="text-align:center; padding:1rem;">Load a product to manage variants</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Lifecycle Section -->
+        <div id="lifecycle-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Order Lifecycle Workflow</h3>
+                </div>
+                <div style="padding: 1rem; display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+                    <input id="lcOrderId" class="filter-select" type="number" min="1" placeholder="Order ID">
+                    <button class="btn btn-primary" onclick="loadLifecycle()"><i class="fas fa-search"></i> Load</button>
+                    <select id="lcStatus" class="filter-select">
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="rto">RTO</option>
+                        <option value="returned">Returned</option>
+                        <option value="refund_pending">Refund Pending</option>
+                        <option value="refund_completed">Refund Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <button class="btn btn-success" onclick="updateLifecycleStatus()"><i class="fas fa-random"></i> Update Status</button>
+                    <select id="lcAssignee" class="filter-select"></select>
+                    <button class="btn btn-outline" onclick="assignLifecycleOrder()"><i class="fas fa-user-check"></i> Assign</button>
+                </div>
+                <div style="padding:0 1rem 1rem;">
+                    <textarea id="lcNote" class="filter-select" placeholder="Internal note / RTO / refund note" style="width:100%; min-height:90px;"></textarea>
+                    <div style="margin-top:0.5rem;">
+                        <button class="btn btn-primary" onclick="addLifecycleNote()"><i class="fas fa-note-sticky"></i> Add Note</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Time</th><th>Event</th><th>Details</th><th>By</th></tr>
+                    </thead>
+                    <tbody id="lifecycleTbody">
+                        <tr><td colspan="4" style="text-align:center; padding:1.5rem;">Load an order to view timeline</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Homepage CMS Section -->
+        <div id="homepage-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Homepage Section Content</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form id="homepageContentForm" onsubmit="event.preventDefault(); saveHomepageContent();" enctype="multipart/form-data"
+                          style="display:grid; grid-template-columns: repeat(12, 1fr); gap: 0.75rem;">
+                        <select id="hpSectionKey" class="filter-select" style="grid-column: span 4;" onchange="prefillHomepageContent()">
+                            <option value="hero">Hero Section</option>
+                            <option value="launch_featured_media">New Launch + Featured Shared Media</option>
+                            <option value="exquisite_collection">Exquisite Collection</option>
+                            <option value="account_cards_media">Orders + Cart + Profile Shared Media</option>
+                            <option value="instagram_reels">Instagram Reels Slider</option>
+                        </select>
+                        <input id="hpTitle" class="filter-select" type="text" placeholder="Title" style="grid-column: span 4;">
+                        <input id="hpButtonText" class="filter-select" type="text" placeholder="Primary button text" style="grid-column: span 2;">
+                        <input id="hpButtonUrl" class="filter-select" type="text" placeholder="Primary button URL" style="grid-column: span 2;">
+                        <textarea id="hpSubtitle" class="filter-select" placeholder="Subtitle / description" style="grid-column: span 8; min-height: 110px;"></textarea>
+                        <input id="hpSecondaryButtonText" class="filter-select" type="text" placeholder="Secondary button text" style="grid-column: span 2;">
+                        <input id="hpSecondaryButtonUrl" class="filter-select" type="text" placeholder="Secondary button URL" style="grid-column: span 2;">
+                        <label class="filter-select" style="grid-column: span 6; display:flex; align-items:center; gap:0.75rem;">
+                            <input id="hpImage" type="file" accept="image/*">
+                            <span>Background image</span>
+                        </label>
+                        <label class="filter-select" style="grid-column: span 6; display:flex; align-items:center; gap:0.75rem;">
+                            <input id="hpVideo" type="file" accept="video/*">
+                            <span>Background video</span>
+                        </label>
+                        <label class="filter-select" style="grid-column: span 3; display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                            <input id="hpActive" type="checkbox" checked> Active
+                        </label>
+                        <div style="grid-column: span 9; display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button class="btn btn-success" type="submit"><i class="fas fa-save"></i> Save Section</button>
+                            <button class="btn btn-primary" type="button" onclick="loadHomepageContent()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                    </form>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Title</th>
+                            <th>Media</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="homepageContentTbody">
+                        <tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Homepage Product Section Manager</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form onsubmit="event.preventDefault(); addHomepageProduct();" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <select id="hppSectionType" class="filter-select">
+                            <option value="most_selling">Most Selling</option>
+                            <option value="trending">Trending</option>
+                            <option value="new_launch">New Launch</option>
+                            <option value="featured">Featured</option>
+                            <option value="exquisite">Exquisite Collection</option>
+                        </select>
+                        <select id="hppProductId" class="filter-select">
+                            <option value="">Select Product</option>
+                            {% for p in products %}
+                            <option value="{{ p.id }}">{{ p.name }} (#{{ p.id }})</option>
+                            {% endfor %}
+                        </select>
+                        <input id="hppPosition" class="filter-select" type="number" min="1" value="1" placeholder="Position">
+                        <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add Product</button>
+                        <button class="btn btn-primary" type="button" onclick="loadHomepageProducts()"><i class="fas fa-sync"></i> Refresh</button>
+                    </form>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Product</th>
+                            <th>Position</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="homepageProductsTbody">
+                        <tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div id="categories-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Category Management</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form onsubmit="event.preventDefault(); addCategory();" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <input id="newCategoryName" class="filter-select" type="text" placeholder="New category name" style="min-width: 220px;" />
+                        <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add</button>
+                        <button class="btn btn-primary" type="button" onclick="loadCategories()"><i class="fas fa-sync"></i> Refresh</button>
+                    </form>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th style="width:140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesTbody">
+                        <tr><td colspan="2" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Instagram Reels Section -->
+        <div id="reels-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Instagram Reels</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form id="reelForm" onsubmit="event.preventDefault(); createReel();" enctype="multipart/form-data"
+                          style="display:grid; grid-template-columns: repeat(12, 1fr); gap: 0.75rem;">
+                        <input id="reelTitle" class="filter-select" type="text" placeholder="Title (optional)" style="grid-column: span 4;" />
+                        <input id="reelVideoUrl" class="filter-select" type="url" placeholder="Video URL (optional if upload)" style="grid-column: span 5;" />
+                        <input id="reelSort" class="filter-select" type="number" placeholder="Order" value="0" style="grid-column: span 1;" />
+                        <label class="filter-select" style="grid-column: span 2; display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                            <input id="reelActive" type="checkbox" checked /> Active
+                        </label>
+                        <div style="grid-column: span 6;">
+                            <div style="font-size: 0.85rem; color: var(--subtext); margin-bottom: 0.25rem;">Upload video (optional)</div>
+                            <input id="reelVideo" type="file" accept="video/*" />
+                        </div>
+                        <div style="grid-column: span 6;">
+                            <div style="font-size: 0.85rem; color: var(--subtext); margin-bottom: 0.25rem;">Thumbnail (optional)</div>
+                            <input id="reelThumb" type="file" accept="image/*" />
+                        </div>
+                        <div style="grid-column: span 12; display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add Reel</button>
+                            <button class="btn btn-primary" type="button" onclick="loadReels()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                    </form>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Reel</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th style="width:200px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reelsTbody">
+                        <tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviews-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Customer Reviews</h3>
+                    <div class="filter-controls">
+                        <select id="reviewsFilter" class="filter-select" onchange="loadReviews()">
+                            <option value="pending" selected>Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="all">All</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadReviews()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>User</th>
+                            <th>Rating</th>
+                            <th>Review</th>
+                            <th style="width:180px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewsTbody">
+                        <tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Trust Badges Section -->
+        <div id="trust-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Trust Badges</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form onsubmit="event.preventDefault(); createTrustBadge();" enctype="multipart/form-data"
+                          style="display:grid; grid-template-columns: repeat(12, 1fr); gap: 0.75rem;">
+                        <input id="badgeTitle" class="filter-select" type="text" placeholder="Title" style="grid-column: span 4;" />
+                        <input id="badgeSubtitle" class="filter-select" type="text" placeholder="Subtitle (optional)" style="grid-column: span 5;" />
+                        <input id="badgeSort" class="filter-select" type="number" placeholder="Order" value="0" style="grid-column: span 1;" />
+                        <label class="filter-select" style="grid-column: span 2; display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                            <input id="badgeActive" type="checkbox" checked /> Active
+                        </label>
+                        <div style="grid-column: span 12;">
+                            <div style="font-size: 0.85rem; color: var(--subtext); margin-bottom: 0.25rem;">Icon image (optional)</div>
+                            <input id="badgeIcon" type="file" accept="image/*" />
+                        </div>
+                        <div style="grid-column: span 12; display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add Badge</button>
+                            <button class="btn btn-primary" type="button" onclick="loadTrustBadges()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                    </form>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Badge</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th style="width:180px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trustTbody">
+                        <tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Marketing & Finance Section -->
+        <div id="finance-section" class="dashboard-content" style="display: none;">
+            <h2 style="margin-top:0;">Marketing & Finance</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Revenue (Delivered)</div>
+                            <div class="stat-value" id="plRevenue">₹0</div>
+                        </div>
+                        <div class="stat-icon sales"><i class="fas fa-rupee-sign"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">COGS</div>
+                            <div class="stat-value" id="plCogs">₹0</div>
+                        </div>
+                        <div class="stat-icon products"><i class="fas fa-box"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Marketing</div>
+                            <div class="stat-value" id="plMarketing">₹0</div>
+                        </div>
+                        <div class="stat-icon subscribers"><i class="fas fa-bullhorn"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Expenses</div>
+                            <div class="stat-value" id="plExpenses">₹0</div>
+                        </div>
+                        <div class="stat-icon messages"><i class="fas fa-receipt"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Net Profit</div>
+                            <div class="stat-value" id="plNet">₹0</div>
+                        </div>
+                        <div class="stat-icon orders"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 1rem;">
+                <div class="table-header">
+                    <h3 class="table-title">Profit & Loss (Month)</h3>
+                    <div class="filter-controls">
+                        <input id="plMonth" type="month" class="filter-select" />
+                        <button class="btn btn-primary" onclick="loadProfitLoss()"><i class="fas fa-sync"></i> Load</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 1rem;">
+                <div class="table-header">
+                    <h3 class="table-title">Add Marketing Spend</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form onsubmit="event.preventDefault(); addMarketingSpend();" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <select id="msSource" class="filter-select">
+                            <option value="meta">Meta</option>
+                            <option value="google">Google</option>
+                            <option value="influencer">Influencer</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input id="msCampaign" class="filter-select" type="text" placeholder="Campaign (optional)" />
+                        <input id="msAmount" class="filter-select" type="number" step="0.01" placeholder="Amount" />
+                        <input id="msDate" class="filter-select" type="date" />
+                        <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add</button>
+                        <button class="btn btn-primary" type="button" onclick="loadProfitLoss()"><i class="fas fa-sync"></i> Refresh P&L</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 1rem;">
+                <div class="table-header">
+                    <h3 class="table-title">Add Expense Entry</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <form onsubmit="event.preventDefault(); addExpense();" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <select id="exCategory" class="filter-select">
+                            <option value="shipping">Shipping</option>
+                            <option value="packaging">Packaging</option>
+                            <option value="salary">Salary</option>
+                            <option value="rent">Rent</option>
+                            <option value="tools">Tools</option>
+                            <option value="other" selected>Other</option>
+                        </select>
+                        <input id="exTitle" class="filter-select" type="text" placeholder="Title" />
+                        <input id="exAmount" class="filter-select" type="number" step="0.01" placeholder="Amount" />
+                        <input id="exDate" class="filter-select" type="date" />
+                        <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add</button>
+                        <button class="btn btn-primary" type="button" onclick="loadProfitLoss()"><i class="fas fa-sync"></i> Refresh P&L</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Customers Section -->
         <div id="customers-section" class="dashboard-content" style="display: none;">
             <div class="table-container">
@@ -1001,6 +1483,52 @@
                     </div>
                 </div>
             </div>
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Wishlist vs Purchase (Last 30 Days)</h3>
+                    <div class="filter-controls">
+                        <button class="btn btn-primary" onclick="loadWishlistVsPurchase()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <div style="padding: 1rem;">
+                    <div id="wishlistPurchaseChart" style="width: 100%; min-height: 360px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- India Map Section -->
+        <div id="india-map-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">India Order Heatmap</h3>
+                    <div class="filter-controls">
+                        <button class="btn btn-primary" onclick="loadIndiaMap()"><i class="fas fa-sync"></i> Refresh Map</button>
+                    </div>
+                </div>
+                <div style="padding: 1rem;">
+                    <p style="color: var(--subtext); margin-bottom: 1rem;">
+                        Idea: jis state se zyada order aayenge, uska color aur strong hoga. Tooltip me state name + order count dikhega.
+                    </p>
+                    <div id="indiaMapChart" style="width: 100%; min-height: 520px;"></div>
+                </div>
+            </div>
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">State-wise Orders</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>State</th>
+                            <th>ISO Code</th>
+                            <th>Orders</th>
+                        </tr>
+                    </thead>
+                    <tbody id="indiaStateTbody">
+                        <tr><td colspan="3" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -1033,6 +1561,24 @@
             if (pageTitle) {
                 pageTitle.textContent = sectionName.charAt(0).toUpperCase() + sectionName.slice(1);
             }
+
+            // Lazy-load section data
+            if (sectionName === 'homepage') {
+                loadHomepageContent();
+                loadHomepageProducts();
+            }
+            if (sectionName === 'advanced-products') loadLowStockProducts();
+            if (sectionName === 'lifecycle') {
+                const tbody = document.getElementById('lifecycleTbody');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem;">Load an order to view timeline</td></tr>`;
+            }
+            if (sectionName === 'categories') loadCategories();
+            if (sectionName === 'reels') loadReels();
+            if (sectionName === 'reviews') loadReviews();
+            if (sectionName === 'trust') loadTrustBadges();
+            if (sectionName === 'finance') loadProfitLoss();
+            if (sectionName === 'india-map') loadIndiaMap();
+            if (sectionName === 'analytics') loadWishlistVsPurchase();
         }
 
         function updateOrderStatus(orderId, newStatus) {
@@ -2182,6 +2728,712 @@
             })
             .catch(error => {
                 console.error('Error marking notifications as read:', error);
+            });
+        }
+
+        async function apiFetchJson(url, options = {}) {
+            const headers = options.headers || {};
+            headers['X-CSRFToken'] = headers['X-CSRFToken'] || getCookie('csrftoken');
+            options.headers = headers;
+            const res = await fetch(url, options);
+            return await res.json();
+        }
+
+        let homepageContentCache = {};
+
+        async function loadHomepageContent() {
+            const tbody = document.getElementById('homepageContentTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/homepage-content/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            homepageContentCache = {};
+            data.items.forEach(item => homepageContentCache[item.section_key] = item);
+            const rows = data.items.map(item => `
+                <tr>
+                    <td>${item.section_label}</td>
+                    <td>${item.title || '-'}</td>
+                    <td>${item.background_video ? 'Video' : ''} ${item.background_image ? 'Image' : ''}</td>
+                    <td><span class="status-badge ${item.is_active ? 'status-delivered' : 'status-cancelled'}">${item.is_active ? 'Active' : 'Hidden'}</span></td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">No section content yet</td></tr>`;
+            prefillHomepageContent();
+        }
+
+        function prefillHomepageContent() {
+            const key = document.getElementById('hpSectionKey')?.value;
+            const item = homepageContentCache[key] || {};
+            document.getElementById('hpTitle').value = item.title || '';
+            document.getElementById('hpSubtitle').value = item.subtitle || '';
+            document.getElementById('hpButtonText').value = item.button_text || '';
+            document.getElementById('hpButtonUrl').value = item.button_url || '';
+            document.getElementById('hpSecondaryButtonText').value = item.secondary_button_text || '';
+            document.getElementById('hpSecondaryButtonUrl').value = item.secondary_button_url || '';
+            document.getElementById('hpActive').checked = Boolean(item.is_active ?? true);
+        }
+
+        async function saveHomepageContent() {
+            const fd = new FormData();
+            fd.append('section_key', document.getElementById('hpSectionKey').value);
+            fd.append('title', document.getElementById('hpTitle').value);
+            fd.append('subtitle', document.getElementById('hpSubtitle').value);
+            fd.append('button_text', document.getElementById('hpButtonText').value);
+            fd.append('button_url', document.getElementById('hpButtonUrl').value);
+            fd.append('secondary_button_text', document.getElementById('hpSecondaryButtonText').value);
+            fd.append('secondary_button_url', document.getElementById('hpSecondaryButtonUrl').value);
+            fd.append('is_active', document.getElementById('hpActive').checked ? '1' : '0');
+            const image = document.getElementById('hpImage').files?.[0];
+            const video = document.getElementById('hpVideo').files?.[0];
+            if (image) fd.append('background_image', image);
+            if (video) fd.append('background_video', video);
+            const data = await apiFetchJson('/admin-dashboard/api/homepage-content/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Homepage section saved', 'success');
+                loadHomepageContent();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function loadHomepageProducts() {
+            const tbody = document.getElementById('homepageProductsTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/homepage-products/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = data.items.map(item => `
+                <tr>
+                    <td>${item.section_label}</td>
+                    <td>${item.product_name} <span style="color:var(--subtext)">(#${item.product_id})</span></td>
+                    <td>
+                        <input type="number" min="1" value="${item.position}" class="filter-select" style="width:90px;"
+                               onchange="updateHomepageProduct(${item.id}, this.value, '${item.section_type}')">
+                    </td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="toggleHomepageProduct(${item.id})">
+                            <i class="fas ${item.is_active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i> ${item.is_active ? 'Active' : 'Inactive'}
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteHomepageProduct(${item.id})"><i class="fas fa-trash"></i> Remove</button>
+                    </td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">No homepage products</td></tr>`;
+        }
+
+        async function addHomepageProduct() {
+            const fd = new FormData();
+            fd.append('section_type', document.getElementById('hppSectionType').value);
+            fd.append('product_id', document.getElementById('hppProductId').value);
+            fd.append('position', document.getElementById('hppPosition').value);
+            const data = await apiFetchJson('/admin-dashboard/api/homepage-products/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Product added to homepage section', 'success');
+                document.getElementById('hppProductId').value = '';
+                loadHomepageProducts();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteHomepageProduct(itemId) {
+            if (!confirm('Remove this product from homepage section?')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/homepage-products/${itemId}/delete/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Removed', 'success');
+                loadHomepageProducts();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function toggleHomepageProduct(itemId) {
+            const data = await apiFetchJson(`/admin-dashboard/api/homepage-products/${itemId}/toggle/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Updated', 'success');
+                loadHomepageProducts();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function updateHomepageProduct(itemId, position, sectionType) {
+            const fd = new FormData();
+            fd.append('position', position);
+            fd.append('section_type', sectionType);
+            const data = await apiFetchJson(`/admin-dashboard/api/homepage-products/${itemId}/update/`, { method: 'POST', body: fd });
+            if (!data.success) showNotification(data.error || 'Failed', 'error');
+        }
+
+        async function loadLowStockProducts() {
+            const tbody = document.getElementById('lowStockTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/low-stock-products/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = data.items.map(i => `
+                <tr>
+                    <td>${i.name}</td>
+                    <td>${i.stock}</td>
+                    <td>${i.threshold}</td>
+                    <td><span class="status-badge ${i.is_active ? 'status-delivered' : 'status-cancelled'}">${i.is_active ? 'Active' : 'Inactive'}</span></td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="4" style="text-align:center; padding:1.5rem;">No low stock alerts</td></tr>`;
+        }
+
+        async function loadProductMediaData() {
+            const productId = document.getElementById('apProductId')?.value;
+            if (!productId) return showNotification('Enter Product ID', 'error');
+            const [imagesData, variantsData] = await Promise.all([
+                apiFetchJson(`/admin-dashboard/api/products/${productId}/images/`),
+                apiFetchJson(`/admin-dashboard/api/products/${productId}/variants/`),
+            ]);
+            const wrap = document.getElementById('productImagesWrap');
+            if (wrap) {
+                if (!imagesData.success) {
+                    wrap.innerHTML = `<div style="color:var(--danger)">Failed to load images</div>`;
+                } else {
+                    wrap.innerHTML = imagesData.items.map(i => `
+                        <div style="position:relative;">
+                            <img src="${i.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+                            <button class="btn btn-danger btn-sm" style="position:absolute;top:-10px;right:-10px;padding:0.25rem 0.4rem;" onclick="deleteProductImage(${i.id})">x</button>
+                        </div>
+                    `).join('') || '<div style="color:var(--subtext)">No additional images.</div>';
+                }
+            }
+            const vTbody = document.getElementById('variantTbody');
+            if (vTbody) {
+                if (!variantsData.success) {
+                    vTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1rem;">Failed to load variants</td></tr>`;
+                } else {
+                    vTbody.innerHTML = variantsData.items.map(v => `
+                        <tr>
+                            <td>${v.name}</td>
+                            <td>${v.price_delta}</td>
+                            <td>${v.stock}</td>
+                            <td>${v.is_active ? 'Active' : 'Inactive'}</td>
+                            <td><button class="btn btn-danger btn-sm" onclick="deleteVariant(${v.id})"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                    `).join('') || `<tr><td colspan="5" style="text-align:center; padding:1rem;">No variants</td></tr>`;
+                }
+            }
+        }
+
+        async function uploadProductImages() {
+            const productId = document.getElementById('apProductId')?.value;
+            const files = document.getElementById('apImages')?.files;
+            if (!productId || !files || !files.length) return showNotification('Product ID and images are required', 'error');
+            const fd = new FormData();
+            Array.from(files).forEach(f => fd.append('images', f));
+            const data = await apiFetchJson(`/admin-dashboard/api/products/${productId}/images/`, { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Images uploaded', 'success');
+                loadProductMediaData();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteProductImage(imageId) {
+            const data = await apiFetchJson(`/admin-dashboard/api/product-images/${imageId}/delete/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Image deleted', 'success');
+                loadProductMediaData();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function addVariant() {
+            const productId = document.getElementById('apProductId')?.value;
+            if (!productId) return showNotification('Enter Product ID', 'error');
+            const fd = new FormData();
+            fd.append('name', document.getElementById('variantName')?.value || '');
+            fd.append('price_delta', document.getElementById('variantDelta')?.value || '0');
+            fd.append('stock', document.getElementById('variantStock')?.value || '0');
+            fd.append('sort_order', document.getElementById('variantOrder')?.value || '0');
+            fd.append('is_active', '1');
+            const data = await apiFetchJson(`/admin-dashboard/api/products/${productId}/variants/`, { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Variant added', 'success');
+                document.getElementById('variantName').value = '';
+                document.getElementById('variantDelta').value = '';
+                document.getElementById('variantStock').value = '';
+                loadProductMediaData();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteVariant(variantId) {
+            const data = await apiFetchJson(`/admin-dashboard/api/variants/${variantId}/delete/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Variant deleted', 'success');
+                loadProductMediaData();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function bulkImportProducts() {
+            const file = document.getElementById('bulkProductCsv')?.files?.[0];
+            if (!file) return showNotification('Please choose a CSV file', 'error');
+            const fd = new FormData();
+            fd.append('file', file);
+            const data = await apiFetchJson('/admin-dashboard/api/products/bulk-import/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification(`Bulk import complete. Created ${data.created} products`, 'success');
+            } else {
+                showNotification(data.error || 'Bulk import failed', 'error');
+            }
+        }
+
+        async function loadLifecycle() {
+            const orderId = document.getElementById('lcOrderId')?.value;
+            if (!orderId) return showNotification('Enter Order ID', 'error');
+            const data = await apiFetchJson(`/admin-dashboard/api/orders/${orderId}/lifecycle/`);
+            const tbody = document.getElementById('lifecycleTbody');
+            const assignee = document.getElementById('lcAssignee');
+            if (!data.success) {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1rem;">Failed to load lifecycle</td></tr>`;
+                return;
+            }
+            if (assignee) {
+                assignee.innerHTML = `<option value="">Unassigned</option>` + data.staff.map(s => `<option value="${s.id}" ${String(data.assigned_to)===String(s.id)?'selected':''}>${s.name}</option>`).join('');
+            }
+            document.getElementById('lcStatus').value = data.order_status;
+            if (tbody) {
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td>${log.created_at}</td>
+                        <td>${log.event_type}</td>
+                        <td>${log.note || `${log.previous_status || ''} → ${log.new_status || ''}`}</td>
+                        <td>${log.created_by}</td>
+                    </tr>
+                `).join('') || `<tr><td colspan="4" style="text-align:center; padding:1rem;">No lifecycle logs yet</td></tr>`;
+            }
+        }
+
+        async function updateLifecycleStatus() {
+            const orderId = document.getElementById('lcOrderId')?.value;
+            if (!orderId) return showNotification('Enter Order ID', 'error');
+            const fd = new FormData();
+            fd.append('action', 'status');
+            fd.append('status', document.getElementById('lcStatus').value);
+            const data = await apiFetchJson(`/admin-dashboard/api/orders/${orderId}/lifecycle/update/`, { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Status updated', 'success');
+                loadLifecycle();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function assignLifecycleOrder() {
+            const orderId = document.getElementById('lcOrderId')?.value;
+            if (!orderId) return showNotification('Enter Order ID', 'error');
+            const fd = new FormData();
+            fd.append('action', 'assign');
+            fd.append('assignee_id', document.getElementById('lcAssignee').value);
+            const data = await apiFetchJson(`/admin-dashboard/api/orders/${orderId}/lifecycle/update/`, { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Assignment updated', 'success');
+                loadLifecycle();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function addLifecycleNote() {
+            const orderId = document.getElementById('lcOrderId')?.value;
+            const note = (document.getElementById('lcNote')?.value || '').trim();
+            if (!orderId || !note) return showNotification('Order ID and note required', 'error');
+            const fd = new FormData();
+            fd.append('action', 'note');
+            fd.append('note', note);
+            const data = await apiFetchJson(`/admin-dashboard/api/orders/${orderId}/lifecycle/update/`, { method: 'POST', body: fd });
+            if (data.success) {
+                document.getElementById('lcNote').value = '';
+                showNotification('Note added', 'success');
+                loadLifecycle();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function loadWishlistVsPurchase() {
+            const [w, p] = await Promise.all([
+                apiFetchJson('/admin-dashboard/api/wishlist-analytics/?days=30'),
+                apiFetchJson('/admin-dashboard/api/purchase-analytics/?days=30'),
+            ]);
+            const el = document.getElementById('wishlistPurchaseChart');
+            if (!el) return;
+            if (!w.success || !p.success) {
+                el.innerHTML = 'Failed to load chart data';
+                return;
+            }
+            const map = {};
+            w.daily.forEach(d => { map[d.day] = { day: d.day, wishlist: d.count, purchase: 0 }; });
+            p.daily.forEach(d => {
+                if (!map[d.day]) map[d.day] = { day: d.day, wishlist: 0, purchase: d.count };
+                else map[d.day].purchase = d.count;
+            });
+            const rows = Object.values(map).sort((a, b) => a.day.localeCompare(b.day));
+            google.charts.setOnLoadCallback(() => {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'Day');
+                data.addColumn('number', 'Wishlist');
+                data.addColumn('number', 'Delivered Purchases');
+                data.addRows(rows.map(r => [r.day, r.wishlist, r.purchase]));
+                const chart = new google.visualization.LineChart(el);
+                chart.draw(data, {
+                    colors: ['#CA6180', '#9ED3DC'],
+                    chartArea: { width: '82%', height: '70%' },
+                    backgroundColor: '#fffafc',
+                    hAxis: { textStyle: { color: '#8f5e71' } },
+                    vAxis: { minValue: 0, textStyle: { color: '#8f5e71' } },
+                    legend: { position: 'top' }
+                });
+            });
+        }
+
+        function setMoney(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = `₹${(Number(value) || 0).toFixed(2)}`;
+        }
+
+        async function loadCategories() {
+            const tbody = document.getElementById('categoriesTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/categories/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = data.categories.map(c => `
+                <tr>
+                    <td>${c.name}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="2" style="text-align:center; padding: 1.5rem;">No categories</td></tr>`;
+        }
+
+        async function addCategory() {
+            const input = document.getElementById('newCategoryName');
+            const name = (input?.value || '').trim();
+            if (!name) return showNotification('Category name required', 'error');
+            const fd = new FormData();
+            fd.append('name', name);
+            const data = await apiFetchJson('/admin-dashboard/api/categories/', { method: 'POST', body: fd });
+            if (data.success) {
+                input.value = '';
+                showNotification('Category saved', 'success');
+                loadCategories();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteCategory(categoryId) {
+            if (!confirm('Delete this category?')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/categories/${categoryId}/delete/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Category deleted', 'success');
+                loadCategories();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function loadReels() {
+            const tbody = document.getElementById('reelsTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/reels/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = data.reels.map(r => `
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            ${r.thumbnail ? `<img src="${r.thumbnail}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;" />` : ''}
+                            <div>
+                                <div style="font-weight:600;">${r.title || `Reel #${r.id}`}</div>
+                                <div style="font-size:0.75rem; color: var(--subtext); overflow:hidden; text-overflow:ellipsis; max-width: 520px;">
+                                    ${r.video || ''}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${r.sort_order}</td>
+                    <td><span class="status-badge ${r.is_active ? 'status-delivered' : 'status-cancelled'}">${r.is_active ? 'Active' : 'Hidden'}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="toggleReel(${r.id})">
+                            <i class="fas fa-toggle-on"></i> Toggle
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteReel(${r.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">No reels</td></tr>`;
+        }
+
+        async function createReel() {
+            const fd = new FormData();
+            fd.append('title', document.getElementById('reelTitle')?.value || '');
+            fd.append('video_url', document.getElementById('reelVideoUrl')?.value || '');
+            fd.append('sort_order', document.getElementById('reelSort')?.value || '0');
+            fd.append('is_active', document.getElementById('reelActive')?.checked ? '1' : '0');
+            const v = document.getElementById('reelVideo')?.files?.[0];
+            const t = document.getElementById('reelThumb')?.files?.[0];
+            if (v) fd.append('video', v);
+            if (t) fd.append('thumbnail', t);
+
+            const data = await apiFetchJson('/admin-dashboard/api/reels/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Reel added', 'success');
+                document.getElementById('reelForm')?.reset();
+                loadReels();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function toggleReel(reelId) {
+            const data = await apiFetchJson(`/admin-dashboard/api/reels/${reelId}/toggle/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Updated', 'success');
+                loadReels();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteReel(reelId) {
+            if (!confirm('Delete this reel?')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/reels/${reelId}/delete/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Reel deleted', 'success');
+                loadReels();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function loadTrustBadges() {
+            const tbody = document.getElementById('trustTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/trust-badges/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = data.badges.map(b => `
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            ${b.icon_image ? `<img src="${b.icon_image}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;" />` : ''}
+                            <div>
+                                <div style="font-weight:600;">${b.title}</div>
+                                <div style="font-size:0.75rem; color: var(--subtext);">${b.subtitle || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${b.sort_order}</td>
+                    <td><span class="status-badge ${b.is_active ? 'status-delivered' : 'status-cancelled'}">${b.is_active ? 'Active' : 'Hidden'}</span></td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteTrustBadge(${b.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;">No badges</td></tr>`;
+        }
+
+        async function createTrustBadge() {
+            const title = (document.getElementById('badgeTitle')?.value || '').trim();
+            if (!title) return showNotification('Title required', 'error');
+            const fd = new FormData();
+            fd.append('title', title);
+            fd.append('subtitle', document.getElementById('badgeSubtitle')?.value || '');
+            fd.append('sort_order', document.getElementById('badgeSort')?.value || '0');
+            fd.append('is_active', document.getElementById('badgeActive')?.checked ? '1' : '0');
+            const icon = document.getElementById('badgeIcon')?.files?.[0];
+            if (icon) fd.append('icon_image', icon);
+            const data = await apiFetchJson('/admin-dashboard/api/trust-badges/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Badge added', 'success');
+                loadTrustBadges();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteTrustBadge(badgeId) {
+            if (!confirm('Delete this badge?')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/trust-badges/${badgeId}/delete/`, { method: 'POST' });
+            if (data.success) {
+                showNotification('Deleted', 'success');
+                loadTrustBadges();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function loadProfitLoss() {
+            const month = document.getElementById('plMonth')?.value || '';
+            const q = month ? `?month=${encodeURIComponent(month)}` : '';
+            const data = await apiFetchJson(`/admin-dashboard/api/profit-loss/${q}`);
+            if (!data.success) return;
+            setMoney('plRevenue', data.revenue);
+            setMoney('plCogs', data.cogs);
+            setMoney('plMarketing', data.marketing);
+            setMoney('plExpenses', data.expenses);
+            setMoney('plNet', data.net_profit);
+        }
+
+        async function addMarketingSpend() {
+            const amount = document.getElementById('msAmount')?.value;
+            const spend_date = document.getElementById('msDate')?.value;
+            if (!amount || !spend_date) return showNotification('Amount and date required', 'error');
+            const fd = new FormData();
+            fd.append('source', document.getElementById('msSource')?.value || 'meta');
+            fd.append('campaign', document.getElementById('msCampaign')?.value || '');
+            fd.append('amount', amount);
+            fd.append('spend_date', spend_date);
+            const data = await apiFetchJson('/admin-dashboard/api/marketing-spend/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Saved', 'success');
+                document.getElementById('msAmount').value = '';
+                loadProfitLoss();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function addExpense() {
+            const title = (document.getElementById('exTitle')?.value || '').trim();
+            const amount = document.getElementById('exAmount')?.value;
+            const expense_date = document.getElementById('exDate')?.value;
+            if (!title || !amount || !expense_date) return showNotification('Title, amount and date required', 'error');
+            const fd = new FormData();
+            fd.append('category', document.getElementById('exCategory')?.value || 'other');
+            fd.append('title', title);
+            fd.append('amount', amount);
+            fd.append('expense_date', expense_date);
+            const data = await apiFetchJson('/admin-dashboard/api/expense-ledger/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Saved', 'success');
+                document.getElementById('exTitle').value = '';
+                document.getElementById('exAmount').value = '';
+                loadProfitLoss();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function loadReviews() {
+            const tbody = document.getElementById('reviewsTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const status = document.getElementById('reviewsFilter')?.value || 'pending';
+            const q = status === 'all' ? '' : `?status=${encodeURIComponent(status)}`;
+            const data = await apiFetchJson(`/admin-dashboard/api/reviews/${q}`);
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = data.reviews.map(r => `
+                <tr>
+                    <td>${r.product}</td>
+                    <td>${r.user}</td>
+                    <td>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+                    <td>
+                        <div style="font-weight:600;">${r.title || ''}</div>
+                        <div style="font-size:0.85rem; color: var(--subtext);">${r.body || ''}</div>
+                    </td>
+                    <td>
+                        ${r.is_approved ? '' : `<button class="btn btn-success btn-sm" onclick="reviewAction(${r.id}, 'approve')"><i class="fas fa-check"></i> Approve</button>`}
+                        <button class="btn btn-danger btn-sm" onclick="reviewAction(${r.id}, 'reject')"><i class="fas fa-times"></i> Delete</button>
+                    </td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">No reviews</td></tr>`;
+        }
+
+        async function reviewAction(reviewId, action) {
+            const fd = new FormData();
+            fd.append('review_id', reviewId);
+            fd.append('action', action);
+            const data = await apiFetchJson('/admin-dashboard/api/reviews/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Updated', 'success');
+                loadReviews();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        google.charts.load('current', { packages: ['geochart'] });
+
+        async function loadIndiaMap() {
+            const tbody = document.getElementById('indiaStateTbody');
+            const mapEl = document.getElementById('indiaMapChart');
+            if (!tbody || !mapEl) return;
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/india-state-orders/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+
+            const rows = data.items.map(item => `
+                <tr>
+                    <td>${item.state}</td>
+                    <td>${item.code || '-'}</td>
+                    <td>${item.total}</td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="3" style="text-align:center; padding: 1.5rem;">No state data yet</td></tr>`;
+
+            google.charts.setOnLoadCallback(() => {
+                const chartRows = [['Province', 'Orders']];
+                data.items.forEach(item => {
+                    if (item.code) chartRows.push([item.code, item.total]);
+                });
+                const chartData = google.visualization.arrayToDataTable(chartRows.length > 1 ? chartRows : [['Province', 'Orders'], ['IN-DL', 0]]);
+                const chart = new google.visualization.GeoChart(mapEl);
+                chart.draw(chartData, {
+                    region: 'IN',
+                    resolution: 'provinces',
+                    colorAxis: { colors: ['#FEFD99', '#FCB7C7', '#CA6180'] },
+                    backgroundColor: '#fffafc',
+                    datalessRegionColor: '#f7edf1',
+                    defaultColor: '#f7edf1',
+                    legend: { textStyle: { color: '#8f5e71' } }
+                });
             });
         }
 

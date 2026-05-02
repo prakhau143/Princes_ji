@@ -4,9 +4,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 from .models import (
 	UserProfile, Order, OrderItem, Product, Category, Cart, CartItem,
-	Announcement, HomepageSectionProduct
+	Announcement, HomepageSectionProduct, InstagramReel, TrustBadge, WishlistItem, ProductReview,
+	HomepageSectionContent, OrderLifecycleLog
 )
 from django import forms
 
@@ -30,6 +32,13 @@ class ShippingForm(forms.Form):
 		widget=forms.TextInput(attrs={
 			'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all',
 			'placeholder': 'New York'
+		})
+	)
+	state = forms.CharField(
+		max_length=100,
+		widget=forms.TextInput(attrs={
+			'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all',
+			'placeholder': 'Rajasthan'
 		})
 	)
 	postal_code = forms.CharField(
@@ -97,6 +106,7 @@ def checkout_review_view(request):
 			user=request.user,
 			shipping_address=shipping['address'],
 			shipping_city=shipping['city'],
+			shipping_state=shipping['state'],
 			shipping_postal_code=shipping['postal_code'],
 			shipping_country=shipping['country'],
 			mobile_number=shipping['mobile_number'],
@@ -197,7 +207,7 @@ def remove_from_cart_view(request, item_id):
 @login_required
 def category_products_view(request, category_id):
 	category = get_object_or_404(Category, pk=category_id)
-	products = Product.objects.filter(category=category)
+	products = Product.objects.filter(category=category).prefetch_related('additional_images')
 	categories = Category.objects.all()
 	return render(request, 'store/product_list.html', {
 		'products': products,
@@ -214,17 +224,74 @@ def product_detail_view(request, pk):
 		category=product.category,
 		stock__gt=0
 	).exclude(pk=pk)[:4]
+	in_wishlist = False
+	if request.user.is_authenticated:
+		in_wishlist = WishlistItem.objects.filter(user=request.user, product=product).exists()
 	
 	return render(request, 'store/product_detail.html', {
 		'product': product,
-		'related_products': related_products
+		'related_products': related_products,
+		'in_wishlist': in_wishlist,
 	})
+
+
+@login_required
+def toggle_wishlist_view(request, product_id):
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'Invalid request method'})
+	product = get_object_or_404(Product, pk=product_id)
+	obj = WishlistItem.objects.filter(user=request.user, product=product)
+	if obj.exists():
+		obj.delete()
+		return JsonResponse({'success': True, 'in_wishlist': False})
+	WishlistItem.objects.create(user=request.user, product=product)
+	return JsonResponse({'success': True, 'in_wishlist': True})
+
+
+@login_required
+def wishlist_view(request):
+	items = WishlistItem.objects.filter(user=request.user).select_related('product').order_by('-created_at')
+	return render(request, 'store/wishlist.html', {'items': items})
+
+
+@login_required
+def add_order_item_review_view(request, order_id, item_id):
+	if request.method != 'POST':
+		return redirect('order_detail', order_id=order_id)
+	order = get_object_or_404(Order, pk=order_id, user=request.user)
+	item = get_object_or_404(OrderItem, pk=item_id, order=order)
+	if order.status != 'delivered':
+		messages.error(request, 'Review is allowed only after delivery.')
+		return redirect('order_detail', order_id=order_id)
+	if hasattr(item, 'review'):
+		messages.error(request, 'You already reviewed this product for this order.')
+		return redirect('order_detail', order_id=order_id)
+	try:
+		rating = int(request.POST.get('rating') or 0)
+	except ValueError:
+		rating = 0
+	title = (request.POST.get('title') or '').strip()
+	body = (request.POST.get('body') or '').strip()
+	if rating < 1 or rating > 5:
+		messages.error(request, 'Please select a valid rating (1-5).')
+		return redirect('order_detail', order_id=order_id)
+	ProductReview.objects.create(
+		product=item.product,
+		user=request.user,
+		order_item=item,
+		rating=rating,
+		title=title,
+		body=body,
+		is_approved=False,
+	)
+	messages.success(request, 'Review submitted successfully.')
+	return redirect('order_detail', order_id=order_id)
 
 @login_required
 def product_list_view(request):
 	query = request.GET.get('q', '')
 	category_id = request.GET.get('category', '')
-	products = Product.objects.all().order_by('-id')
+	products = Product.objects.all().prefetch_related('additional_images').order_by('-id')
 	categories = Category.objects.all()
 	if query:
 		products = products.filter(Q(name__icontains=query) | Q(description__icontains=query))
@@ -244,38 +311,63 @@ from django.contrib import messages
 def home_view(request):
 		# Get active announcements
 		announcements = Announcement.objects.filter(is_active=True)
+		section_content = {
+			item.section_key: item
+			for item in HomepageSectionContent.objects.filter(is_active=True)
+		}
 		
 		# Get homepage section products
 		most_selling = Product.objects.filter(
 			homepage_sections__section_type='most_selling',
+			homepage_sections__is_active=True,
 			is_active=True
-		).distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
 		
 		trending_products = Product.objects.filter(
 			homepage_sections__section_type='trending',
+			homepage_sections__is_active=True,
 			is_active=True
-		).distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
 		
 		new_launch = Product.objects.filter(
 			homepage_sections__section_type='new_launch',
+			homepage_sections__is_active=True,
 			is_active=True
-		).distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
 		
 		featured_products = Product.objects.filter(
 			homepage_sections__section_type='featured',
+			homepage_sections__is_active=True,
 			is_active=True
-		).distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
+		exquisite_products = Product.objects.filter(
+			homepage_sections__section_type='exquisite',
+			homepage_sections__is_active=True,
+			is_active=True
+		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:12]
 		
 		# Fallback: If no products in sections, show recent active products
 		if not trending_products.exists():
 			trending_products = Product.objects.filter(stock__gt=0, is_active=True)[:4]
 		
+		top_picks = exquisite_products if exquisite_products.exists() else Product.objects.filter(stock__gt=0, is_active=True).prefetch_related('additional_images').order_by('-created_at')[:12]
+		active_reels = InstagramReel.objects.filter(is_active=True).order_by('sort_order', '-created_at')[:8]
+		trust_badges = TrustBadge.objects.filter(is_active=True).order_by('sort_order', 'id')[:8]
+
 		context = {
 			'announcements': announcements,
 			'most_selling': most_selling,
 			'trending_products': trending_products,
 			'new_launch': new_launch,
 			'featured_products': featured_products,
+			'top_picks': top_picks,
+			'active_reels': active_reels,
+			'trust_badges': trust_badges,
+			'hero_content': section_content.get('hero'),
+			'launch_featured_media': section_content.get('launch_featured_media'),
+			'exquisite_content': section_content.get('exquisite_collection'),
+			'account_cards_media': section_content.get('account_cards_media'),
+			'reels_content': section_content.get('instagram_reels'),
 		}
 		
 		if request.user.is_authenticated:
@@ -339,7 +431,16 @@ def order_history_view(request):
 @login_required
 def order_detail_view(request, order_id):
 	order = get_object_or_404(Order, pk=order_id, user=request.user)
-	return render(request, 'store/order_detail.html', {'order': order})
+	items = order.items.select_related('product').all()
+	reviewable_item_ids = set()
+	if order.status == 'delivered':
+		for item in items:
+			if not hasattr(item, 'review'):
+				reviewable_item_ids.add(item.id)
+	return render(request, 'store/order_detail.html', {
+		'order': order,
+		'reviewable_item_ids': reviewable_item_ids,
+	})
 
 @login_required
 def contact_view(request):

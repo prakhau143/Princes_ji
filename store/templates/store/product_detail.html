@@ -15,6 +15,7 @@
                 src="{{ product.image.url }}"
                 alt="{{ product.name }}"
                 class="w-full max-w-md h-80 sm:h-96 object-cover rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-105"
+                id="mainProductImage"
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
@@ -29,6 +30,22 @@
             </div>
             {% endif %}
           </div>
+          {% if product.additional_images.all %}
+          <div class="lg:col-span-2 -mt-4">
+            <div class="flex flex-wrap gap-3">
+              {% if product.image %}
+              <button type="button" onclick="swapMainImage('{{ product.image.url }}')" class="w-16 h-16 rounded-lg overflow-hidden border border-pink-200">
+                <img src="{{ product.image.url }}" class="w-full h-full object-cover" alt="{{ product.name }}">
+              </button>
+              {% endif %}
+              {% for extra in product.additional_images.all %}
+              <button type="button" onclick="swapMainImage('{{ extra.image.url }}')" class="w-16 h-16 rounded-lg overflow-hidden border border-pink-200">
+                <img src="{{ extra.image.url }}" class="w-full h-full object-cover" alt="{{ product.name }} alt image">
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
 
           <!-- Product Details -->
           <div class="flex flex-col justify-center space-y-6">
@@ -91,6 +108,19 @@
                     Buy Now
                   </button>
                 </form>
+
+                {% if user.is_authenticated %}
+                <button
+                  type="button"
+                  onclick="toggleWishlist({{ product.id }})"
+                  class="sm:w-16 w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                  title="Wishlist"
+                  id="wishlistBtn"
+                  data-in-wishlist="{% if in_wishlist %}1{% else %}0{% endif %}"
+                >
+                  <i class="fas fa-heart {% if in_wishlist %}text-pink-600{% else %}text-gray-500{% endif %}" id="wishlistIcon"></i>
+                </button>
+                {% endif %}
               </div>
               {% else %}
               <div class="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -113,6 +143,46 @@
     </div>
   </div>
 </div>
+
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  async function toggleWishlist(productId) {
+    const res = await fetch(`/store/wishlist/toggle/${productId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    const icon = document.getElementById('wishlistIcon');
+    if (!icon) return;
+    if (data.in_wishlist) {
+      icon.classList.add('text-pink-600');
+      icon.classList.remove('text-gray-500');
+    } else {
+      icon.classList.remove('text-pink-600');
+      icon.classList.add('text-gray-500');
+    }
+  }
+
+  function swapMainImage(url) {
+    const img = document.getElementById('mainProductImage');
+    if (img && url) img.src = url;
+  }
+</script>
   <!-- =================================================================== -->
   <!-- RELATED PRODUCTS SECTION                                           -->
   <!-- =================================================================== -->

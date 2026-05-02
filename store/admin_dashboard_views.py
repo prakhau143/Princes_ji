@@ -1,6 +1,6 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, get_object_or_404, redirect
-from store.models import Order, Product
+from store.models import Order, Product, OrderLifecycleLog
 from django.db.models import Sum
 from django.views.decorators.http import require_POST
 from django.urls import reverse
@@ -32,7 +32,17 @@ def admin_update_order_status(request, order_id):
             new_status = data.get('status')
             
             # Validate status
-            valid_statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+            valid_statuses = [
+                'pending',
+                'processing',
+                'shipped',
+                'delivered',
+                'rto',
+                'returned',
+                'refund_pending',
+                'refund_completed',
+                'cancelled',
+            ]
             if new_status not in valid_statuses:
                 return JsonResponse({'success': False, 'error': 'Invalid status'})
             
@@ -40,6 +50,14 @@ def admin_update_order_status(request, order_id):
             old_status = order.status
             order.status = new_status
             order.save()
+            OrderLifecycleLog.objects.create(
+                order=order,
+                event_type='status_change',
+                previous_status=old_status,
+                new_status=new_status,
+                note=f'Status changed from {old_status} to {new_status}',
+                created_by=request.user if request.user.is_authenticated else None,
+            )
             
             return JsonResponse({
                 'success': True, 

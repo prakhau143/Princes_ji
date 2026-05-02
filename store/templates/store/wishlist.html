@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 py-10">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">My Wishlist</h1>
+      <a href="{% url 'product_list' %}" class="text-pink-600 font-semibold hover:underline">Continue shopping →</a>
+    </div>
+
+    {% if items %}
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for item in items %}
+          <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <a href="{% url 'product_detail' item.product.pk %}">
+              {% if item.product.image %}
+                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-full h-44 sm:h-52 object-cover">
+              {% else %}
+                <div class="w-full h-44 sm:h-52 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                  <i class="fas fa-gem text-5xl text-pink-400"></i>
+                </div>
+              {% endif %}
+            </a>
+            <div class="p-4">
+              <div class="font-bold text-gray-900 truncate">{{ item.product.name }}</div>
+              <div class="text-pink-600 font-extrabold mt-1">₹{{ item.product.price|floatformat:2 }}</div>
+              <div class="mt-4 flex gap-2">
+                <a class="flex-1 bg-pink-600 hover:bg-pink-700 text-white text-center py-2 rounded-xl font-semibold"
+                   href="{% url 'product_detail' item.product.pk %}">
+                  View
+                </a>
+                <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-xl"
+                        onclick="toggleWishlist({{ item.product.pk }}, this)">
+                  <i class="fas fa-heart-broken"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-white rounded-2xl shadow-lg p-10 text-center">
+        <div class="text-6xl text-pink-400 mb-4"><i class="fas fa-heart"></i></div>
+        <p class="text-xl font-bold text-gray-900">Your wishlist is empty</p>
+        <p class="text-gray-600 mt-2">Tap the heart icon on any product to save it here.</p>
+        <a href="{% url 'product_list' %}" class="inline-block mt-6 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-semibold">
+          Browse products
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  async function toggleWishlist(productId, btn) {
+    const res = await fetch(`/store/wishlist/toggle/${productId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    });
+    const data = await res.json();
+    if (data.success) {
+      // remove card from DOM if removed
+      if (!data.in_wishlist) {
+        const card = btn.closest('.bg-white');
+        if (card) card.remove();
+      }
+    }
+  }
+</script>
+{% endblock %}
+

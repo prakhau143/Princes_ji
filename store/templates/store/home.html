@@ -2,6 +2,19 @@
 {% load static %}
 
 {% block content %}
+<style>
+  @keyframes reelsMarquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .reels-track {
+    animation: reelsMarquee 32s linear infinite;
+    width: max-content;
+  }
+  .reels-track:hover {
+    animation-play-state: paused;
+  }
+</style>
 <div>
 
   <!-- =================================================================== -->
@@ -10,36 +23,52 @@
   <div class="relative bg-gray-900 text-white overflow-hidden">
     <!-- Background Image with Overlay -->
     <div class="absolute inset-0">
+      {% if hero_content and hero_content.background_video %}
+      <video class="w-full h-full object-cover" autoplay muted loop playsinline>
+        <source src="{{ hero_content.background_video.url }}">
+      </video>
+      {% elif hero_content and hero_content.background_image %}
+      <img src="{{ hero_content.background_image.url }}" alt="Princess Jewelry" class="w-full h-full object-cover">
+      {% else %}
       <img src="{% static 'images/background.jpg' %}" 
            alt="Princess Jewelry" 
            class="w-full h-full object-cover">
+      {% endif %}
       <div class="absolute inset-0 bg-black opacity-50"></div>
     </div>
     
     <!-- Hero Content -->
     <div class="relative container mx-auto px-6 py-24 md:py-32 lg:py-40 text-center">
       <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-4">
-        Welcome to <span class="text-pink-400">Princess</span>
+        {% if hero_content and hero_content.title %}
+          {{ hero_content.title }}
+        {% else %}
+          Welcome to <span class="text-pink-400">Princess</span>
+        {% endif %}
       </h1>
       <p class="text-lg md:text-2xl text-gray-200 max-w-3xl mx-auto mb-10">
-        Discover exquisite jewelry collections that make every moment sparkle.
+        {% if hero_content and hero_content.subtitle %}
+          {{ hero_content.subtitle }}
+        {% else %}
+          Discover exquisite jewelry collections that make every moment sparkle.
+        {% endif %}
       </p>
       
       <!-- Conditional Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
         {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
-            Shop Jewelry
+          <a href="{% if hero_content and hero_content.button_url %}{{ hero_content.button_url }}{% else %}{% url 'product_list' %}{% endif %}" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
+            {% if hero_content and hero_content.button_text %}{{ hero_content.button_text }}{% else %}Shop Jewelry{% endif %}
           </a>
-          <a href="{% url 'profile' %}" class="px-8 py-3 bg-gray-700 text-white font-bold rounded-full shadow-lg hover:bg-gray-600 transition-all duration-300 text-lg transform hover:scale-105">
-            My Account
+          <a href="{% if hero_content and hero_content.secondary_button_url %}{{ hero_content.secondary_button_url }}{% else %}{% url 'profile' %}{% endif %}" class="px-8 py-3 bg-gray-700 text-white font-bold rounded-full shadow-lg hover:bg-gray-600 transition-all duration-300 text-lg transform hover:scale-105">
+            {% if hero_content and hero_content.secondary_button_text %}{{ hero_content.secondary_button_text }}{% else %}My Account{% endif %}
           </a>
         {% else %}
-          <a href="{% url 'login' %}" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
-            Login
+          <a href="{% if hero_content and hero_content.button_url %}{{ hero_content.button_url }}{% else %}{% url 'login' %}{% endif %}" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
+            {% if hero_content and hero_content.button_text %}{{ hero_content.button_text }}{% else %}Login{% endif %}
           </a>
-          <a href="{% url 'register' %}" class="px-8 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition-all duration-300 text-lg transform hover:scale-105">
-            Create Account
+          <a href="{% if hero_content and hero_content.secondary_button_url %}{{ hero_content.secondary_button_url }}{% else %}{% url 'register' %}{% endif %}" class="px-8 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition-all duration-300 text-lg transform hover:scale-105">
+            {% if hero_content and hero_content.secondary_button_text %}{{ hero_content.secondary_button_text }}{% else %}Create Account{% endif %}
           </a>
         {% endif %}
       </div>
@@ -63,13 +92,15 @@
           <a href="{% url 'product_list' %}" class="text-pink-600 font-semibold hover:underline">View All →</a>
           {% endif %}
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {% for product in most_selling %}
           <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group">
             <div class="relative overflow-hidden">
               {% if product.image %}
                 <img src="{{ product.image.url }}" alt="{{ product.name }}" 
-                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500">
+                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                     data-main-src="{{ product.image.url }}"
+                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
               {% else %}
                 <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
                   <i class="fas fa-gem text-6xl text-pink-400"></i>
@@ -113,22 +144,34 @@
 
       <!-- New Launch Products Section -->
       {% if new_launch %}
-      <div class="mb-16" data-aos="fade-up">
+      <div class="mb-16 relative overflow-hidden rounded-[2rem] p-6 md:p-8" data-aos="fade-up">
+        {% if launch_featured_media and launch_featured_media.background_video %}
+        <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+          <source src="{{ launch_featured_media.background_video.url }}">
+        </video>
+        <div class="absolute inset-0 bg-black/40"></div>
+        {% elif launch_featured_media and launch_featured_media.background_image %}
+        <img src="{{ launch_featured_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black/35"></div>
+        {% endif %}
+        <div class="relative">
         <div class="flex justify-between items-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-800">
-            <span class="text-purple-600">New Launch</span> Products
+          <h2 class="text-3xl md:text-4xl font-bold text-white">
+            <span class="text-pink-200">New Launch</span> Products
           </h2>
           {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="text-purple-600 font-semibold hover:underline">View All →</a>
+          <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
           {% endif %}
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {% for product in new_launch %}
           <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group">
             <div class="relative overflow-hidden">
               {% if product.image %}
                 <img src="{{ product.image.url }}" alt="{{ product.name }}" 
-                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500">
+                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                     data-main-src="{{ product.image.url }}"
+                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
               {% else %}
                 <div class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                   <i class="fas fa-gem text-6xl text-purple-400"></i>
@@ -167,27 +210,40 @@
           </div>
           {% endfor %}
         </div>
+        </div>
       </div>
       {% endif %}
 
       <!-- Featured Products Section -->
       {% if featured_products %}
-      <div class="mb-16" data-aos="fade-up">
+      <div class="mb-16 relative overflow-hidden rounded-[2rem] p-6 md:p-8" data-aos="fade-up">
+        {% if launch_featured_media and launch_featured_media.background_video %}
+        <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+          <source src="{{ launch_featured_media.background_video.url }}">
+        </video>
+        <div class="absolute inset-0 bg-black/45"></div>
+        {% elif launch_featured_media and launch_featured_media.background_image %}
+        <img src="{{ launch_featured_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black/40"></div>
+        {% endif %}
+        <div class="relative">
         <div class="flex justify-between items-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-800">
-            <span class="text-yellow-600">Featured</span> Products
+          <h2 class="text-3xl md:text-4xl font-bold text-white">
+            <span class="text-yellow-200">Featured</span> Products
           </h2>
           {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="text-yellow-600 font-semibold hover:underline">View All →</a>
+          <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
           {% endif %}
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {% for product in featured_products %}
           <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group">
             <div class="relative overflow-hidden">
               {% if product.image %}
                 <img src="{{ product.image.url }}" alt="{{ product.name }}" 
-                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500">
+                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                     data-main-src="{{ product.image.url }}"
+                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
               {% else %}
                 <div class="w-full h-64 bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
                   <i class="fas fa-gem text-6xl text-yellow-400"></i>
@@ -226,11 +282,131 @@
           </div>
           {% endfor %}
         </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Instagram Reels -->
+      {% if active_reels %}
+      <div class="mb-16 overflow-hidden" data-aos="fade-up">
+        <div class="flex justify-between items-center mb-8">
+          <h2 class="text-3xl md:text-4xl font-bold text-gray-800">
+            <span class="text-pink-600">Instagram</span> Reels
+          </h2>
+        </div>
+
+        <div class="relative">
+          <div class="reels-track flex gap-5 pr-5">
+            {% for cycle in '12' %}
+              {% for reel in active_reels %}
+              <div class="relative w-[220px] sm:w-[250px] lg:w-[280px] rounded-[2rem] overflow-hidden shadow-xl bg-white/70 backdrop-blur-md border border-white/50 flex-shrink-0 group transform transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]">
+                <button type="button" class="block w-full text-left" onclick="openReelModal('{{ reel.get_video_source }}')">
+                  <div class="relative h-[360px]">
+                    {% if reel.get_video_source %}
+                    <video class="reel-preview absolute inset-0 w-full h-full object-cover"
+                           muted loop playsinline preload="metadata"
+                           poster="{% if reel.thumbnail %}{{ reel.thumbnail.url }}{% endif %}">
+                      <source src="{{ reel.get_video_source }}">
+                    </video>
+                    {% elif reel.thumbnail %}
+                    <img src="{{ reel.thumbnail.url }}" alt="{{ reel.title }}" class="absolute inset-0 w-full h-full object-cover">
+                    {% else %}
+                    <div class="absolute inset-0 bg-gradient-to-br from-pink-200 via-violet-200 to-cyan-200"></div>
+                    {% endif %}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"></div>
+                    <div class="absolute left-5 right-5 bottom-5">
+                      <div class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-pink-600 mb-3">
+                        <i class="fas fa-play"></i> Reel
+                      </div>
+                      <div class="text-white text-xl font-bold leading-tight">{{ reel.title|default:"Princess Reel" }}</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Trust Badges -->
+      {% if trust_badges %}
+      <div class="mb-6" data-aos="fade-up">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {% for badge in trust_badges %}
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            {% if badge.icon_image %}
+              <img src="{{ badge.icon_image.url }}" alt="{{ badge.title }}" class="w-10 h-10 object-cover rounded-lg">
+            {% else %}
+              <div class="w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center">
+                <i class="fas fa-shield-alt text-pink-600"></i>
+              </div>
+            {% endif %}
+            <div class="min-w-0">
+              <div class="font-bold text-gray-800 truncate">{{ badge.title }}</div>
+              {% if badge.subtitle %}<div class="text-xs text-gray-500 truncate">{{ badge.subtitle }}</div>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
       </div>
       {% endif %}
 
     </div>
   </div>
+
+  <!-- Reel Modal -->
+  <div id="reelModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
+    <div class="relative w-full max-w-3xl">
+      <button type="button" class="absolute -top-10 right-0 text-white text-4xl leading-none" onclick="closeReelModal()">&times;</button>
+      <video id="reelVideo" class="w-full max-h-[80vh] bg-black rounded-xl" controls autoplay muted playsinline></video>
+    </div>
+  </div>
+
+  <script>
+    function openReelModal(url) {
+      const modal = document.getElementById('reelModal');
+      const video = document.getElementById('reelVideo');
+      if (!url) return;
+      video.src = url;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function closeReelModal() {
+      const modal = document.getElementById('reelModal');
+      const video = document.getElementById('reelVideo');
+      video.pause();
+      video.src = '';
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.reel-preview').forEach((video) => {
+        const card = video.closest('.group');
+        if (!card) return;
+        card.addEventListener('mouseenter', () => {
+          try { video.play(); } catch (e) {}
+        });
+        card.addEventListener('mouseleave', () => {
+          try {
+            video.pause();
+            video.currentTime = 0;
+          } catch (e) {}
+        });
+      });
+
+      document.querySelectorAll('.product-hover-image').forEach((img) => {
+        const main = img.dataset.mainSrc;
+        const hover = img.dataset.hoverSrc;
+        if (!hover) return;
+        const wrap = img.closest('.group') || img.parentElement;
+        wrap?.addEventListener('mouseenter', () => { img.src = hover; });
+        wrap?.addEventListener('mouseleave', () => { img.src = main; });
+      });
+    });
+  </script>
 
   <!-- =================================================================== -->
   <!-- FEATURED DEALS & CATEGORIES (Grid layout from Amazon)               -->
@@ -346,10 +522,21 @@
   <!-- =================================================================== -->
   <!-- HORIZONTAL SCROLLING PRODUCTS (Visible to All)                      -->
   <!-- =================================================================== -->
-  <div class="bg-white py-16">
-    <div class="container mx-auto">
+  <div class="bg-white py-16 relative overflow-hidden">
+    {% if exquisite_content and exquisite_content.background_video %}
+      <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+        <source src="{{ exquisite_content.background_video.url }}">
+      </video>
+      <div class="absolute inset-0 bg-white/70 backdrop-blur-[1px]"></div>
+    {% elif exquisite_content and exquisite_content.background_image %}
+      <img src="{{ exquisite_content.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+      <div class="absolute inset-0 bg-white/75"></div>
+    {% endif %}
+    <div class="container mx-auto relative">
       <div class="flex justify-between items-center mb-6 px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-gray-800"> Exquisite Jewelry Collection</h2>
+        <h2 class="text-3xl font-bold text-gray-800">
+          {% if exquisite_content and exquisite_content.title %}{{ exquisite_content.title }}{% else %}Exquisite Jewelry Collection{% endif %}
+        </h2>
         <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="text-pink-600 font-semibold hover:underline whitespace-nowrap">See all</a>
       </div>
       
@@ -360,7 +547,16 @@
           {% for product in top_picks %}
             <a href="{% url 'product_detail' pk=product.pk %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 block bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group">
               <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg group-hover:scale-110 transition-transform duration-300" src="{{ product.image.url }}" alt="{{ product.name }}">
+                {% if product.image %}
+                  <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg group-hover:scale-110 transition-transform duration-300 product-hover-image"
+                       src="{{ product.image.url }}" alt="{{ product.name }}"
+                       data-main-src="{{ product.image.url }}"
+                       data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
+                {% else %}
+                  <div class="w-full h-40 sm:h-44 md:h-48 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center rounded-lg">
+                    <i class="fas fa-gem text-4xl text-pink-400"></i>
+                  </div>
+                {% endif %}
                 <div class="mt-3">
                   <h3 class="text-sm font-semibold text-gray-800 truncate">{{ product.name }}</h3>
                   <p class="text-pink-600 font-bold mt-1">₹{{ product.price }}</p>
@@ -443,8 +639,17 @@
   <!-- LOGGED-IN USER DASHBOARD                                            -->
   <!-- =================================================================== -->
   {% if user.is_authenticated %}
-  <div class="bg-white py-16">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="bg-white py-16 relative overflow-hidden">
+    {% if account_cards_media and account_cards_media.background_video %}
+      <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+        <source src="{{ account_cards_media.background_video.url }}">
+      </video>
+      <div class="absolute inset-0 bg-white/75"></div>
+    {% elif account_cards_media and account_cards_media.background_image %}
+      <img src="{{ account_cards_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+      <div class="absolute inset-0 bg-white/80"></div>
+    {% endif %}
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mx-auto">
         <!-- Your Orders Card -->
         <a href="{% url 'order_history' %}" class="group block">
@@ -501,7 +706,9 @@
         <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
           <div class="relative group">
             {% if product.image %}
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 product-hover-image"
+                   data-main-src="{{ product.image.url }}"
+                   data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
             {% else %}
               <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
                 <i class="fas fa-gem text-6xl text-pink-400"></i>

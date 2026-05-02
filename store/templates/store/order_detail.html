@@ -6,21 +6,44 @@
   <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-4 text-blue-700">Order #{{ order.id }}</h2>
     <div class="mb-2 text-gray-700">
-      Placed: {{ order.order_date|date:'Y-m-d H:i' }}
+      Placed: {{ order.created_at|date:'Y-m-d H:i' }}
     </div>
     <div class="mb-2 text-gray-700">
       Shipping: {{ order.shipping_address }}, {{ order.shipping_city }}, {{
-      order.shipping_postal_code }}, {{ order.shipping_country }}
+      order.shipping_state }}, {{ order.shipping_postal_code }}, {{ order.shipping_country }}
     </div>
+    <div class="mb-2 text-gray-700">Status: <strong>{{ order.get_status_display }}</strong></div>
     <div class="mb-4 font-bold">Total: ₹{{ order.total|floatformat:2 }}</div>
     <h3 class="font-semibold mb-2">Items</h3>
     <ul class="mb-4">
       {% for item in order.items.all %}
-      <li>
-        {{ item.product.name }} (x{{ item.quantity }}) - ₹{{ item.price|floatformat:2 }}
-        <span class="ml-2 text-gray-500"
-          >Subtotal: ₹{{ item.price|multiply:item.quantity|floatformat:2 }}</span
-        >
+      <li class="mb-4 p-3 rounded border border-gray-100">
+        <div>
+          {{ item.product.name }} (x{{ item.quantity }}) - ₹{{ item.price|floatformat:2 }}
+          <span class="ml-2 text-gray-500"
+            >Subtotal: ₹{{ item.price|multiply:item.quantity|floatformat:2 }}</span
+          >
+        </div>
+        {% if item.id in reviewable_item_ids %}
+        <form method="post" action="{% url 'add_order_item_review' order.id item.id %}" class="mt-3 grid grid-cols-1 gap-2">
+          {% csrf_token %}
+          <div class="flex gap-2">
+            <select name="rating" class="border border-gray-300 rounded px-2 py-1 text-sm" required>
+              <option value="">Rating</option>
+              <option value="5">5 - Excellent</option>
+              <option value="4">4 - Good</option>
+              <option value="3">3 - Average</option>
+              <option value="2">2 - Poor</option>
+              <option value="1">1 - Bad</option>
+            </select>
+            <input name="title" type="text" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1" placeholder="Review title">
+          </div>
+          <textarea name="body" rows="2" class="border border-gray-300 rounded px-2 py-1 text-sm" placeholder="Share feedback"></textarea>
+          <button type="submit" class="w-fit bg-pink-600 text-white text-sm px-3 py-1 rounded hover:bg-pink-700">Submit Review</button>
+        </form>
+        {% elif item.review %}
+        <div class="mt-2 text-sm text-green-700">Review submitted for this item.</div>
+        {% endif %}
       </li>
       {% endfor %}
     </ul>

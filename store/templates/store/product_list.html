@@ -65,7 +65,9 @@
         <img
           src="{{ product.image.url }}"
           alt="{{ product.name }}"
-          class="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+          class="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110 product-hover-image"
+          data-main-src="{{ product.image.url }}"
+          data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
         />
         {% else %}
         <div class="h-48 flex items-center justify-center bg-gray-100 text-gray-500">
@@ -118,4 +120,15 @@
   </div>
 
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.product-hover-image').forEach((img) => {
+      const main = img.dataset.mainSrc;
+      const hover = img.dataset.hoverSrc;
+      if (!hover) return;
+      img.closest('.group')?.addEventListener('mouseenter', () => { img.src = hover; });
+      img.closest('.group')?.addEventListener('mouseleave', () => { img.src = main; });
+    });
+  });
+</script>
 {% endblock %}
