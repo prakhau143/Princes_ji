@@ -25,7 +25,7 @@
           >
         </div>
         {% if item.id in reviewable_item_ids %}
-        <form method="post" action="{% url 'add_order_item_review' order.id item.id %}" class="mt-3 grid grid-cols-1 gap-2">
+        <form method="post" enctype="multipart/form-data" action="{% url 'add_order_item_review' order.id item.id %}" class="mt-3 grid grid-cols-1 gap-2">
           {% csrf_token %}
           <div class="flex gap-2">
             <select name="rating" class="border border-gray-300 rounded px-2 py-1 text-sm" required>
@@ -38,7 +38,9 @@
             </select>
             <input name="title" type="text" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1" placeholder="Review title">
           </div>
+          <input name="reviewer_name" type="text" class="border border-gray-300 rounded px-2 py-1 text-sm" placeholder="Display name (optional)">
           <textarea name="body" rows="2" class="border border-gray-300 rounded px-2 py-1 text-sm" placeholder="Share feedback"></textarea>
+          <input name="reviewer_image" type="file" accept="image/*" class="text-sm">
           <button type="submit" class="w-fit bg-pink-600 text-white text-sm px-3 py-1 rounded hover:bg-pink-700">Submit Review</button>
         </form>
         {% elif item.review %}

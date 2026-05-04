@@ -29,7 +29,7 @@ def admin_dashboard(request):
     products = Product.objects.select_related('category').order_by('-created_at')
     
     # Categories for product form
-    categories = Category.objects.all()
+    categories = Category.objects.filter(is_active=True)
     
     # Customers with order stats
     customers = User.objects.filter(is_staff=False).annotate(

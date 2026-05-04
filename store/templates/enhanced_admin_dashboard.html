@@ -184,6 +184,18 @@
             font-weight: 500;
         }
 
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--subtext);
+            font-weight: 600;
+        }
+
+        .stat-meta {
+            margin-top: 0.4rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
@@ -417,11 +429,11 @@
             <a href="#products" class="nav-item" onclick="showSection('products')">
                 <i class="fas fa-box"></i> Products
             </a>
-            <a href="#advanced-products" class="nav-item" onclick="showSection('advanced-products')">
-                <i class="fas fa-layer-group"></i> Advanced Products
-            </a>
             <a href="#homepage" class="nav-item" onclick="showSection('homepage')">
                 <i class="fas fa-home"></i> Homepage CMS
+            </a>
+            <a href="#announcements" class="nav-item" onclick="showSection('announcements')">
+                <i class="fas fa-bullhorn"></i> Announcements
             </a>
             <a href="#categories" class="nav-item" onclick="showSection('categories')">
                 <i class="fas fa-tags"></i> Categories
@@ -453,6 +465,9 @@
             </a>
             <a href="#india-map" class="nav-item" onclick="showSection('india-map')">
                 <i class="fas fa-map-marked-alt"></i> India Order Map
+            </a>
+            <a href="#editorial" class="nav-item" onclick="showSection('editorial')">
+                <i class="fas fa-newspaper"></i> Editorial Gallery
             </a>
             {% comment %} <a href="#reports" class="nav-item" onclick="showSection('reports')">
                 <i class="fas fa-file-alt"></i> Reports
@@ -500,148 +515,139 @@
 
         <!-- Dashboard Section -->
         <div id="dashboard-section" class="dashboard-content">
-            <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Total Orders</div>
-                            <div class="stat-value">{{ total_orders|default:0 }}</div>
-                        </div>
-                        <div class="stat-icon orders">
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
+                        <span class="stat-label">Total Earnings</span>
+                        <select class="filter-select kpi-period" data-kpi-key="earnings">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
                     </div>
+                    <div class="stat-value" id="kpiEarnings">₹0.00</div>
+                    <div class="stat-meta" id="kpiEarningsGrowth">0.00%</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Total Sales</div>
-                            <div class="stat-value">₹{{ total_sales|default:0 }}</div>
-                        </div>
-                        <div class="stat-icon sales">
-                            <i class="fas fa-rupee-sign"></i>
-                        </div>
+                        <span class="stat-label">Total Orders</span>
+                        <select class="filter-select kpi-period" data-kpi-key="orders">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
                     </div>
+                    <div class="stat-value" id="kpiOrders">0</div>
+                    <div class="stat-meta" id="kpiOrdersGrowth">0.00%</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Products</div>
-                            <div class="stat-value">{{ total_products|default:0 }}</div>
-                        </div>
-                        <div class="stat-icon products">
-                            <i class="fas fa-box"></i>
-                        </div>
+                        <span class="stat-label">Customers</span>
+                        <select class="filter-select kpi-period" data-kpi-key="customers">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
                     </div>
+                    <div class="stat-value" id="kpiCustomers">0</div>
+                    <div class="stat-meta" id="kpiCustomersGrowth">0.00%</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Subscribers</div>
-                            <div class="stat-value">{{ total_subscribers|default:0 }}</div>
-                        </div>
-                        <div class="stat-icon subscribers">
-                            <i class="fas fa-users"></i>
-                        </div>
+                        <span class="stat-label">My Balance</span>
+                        <select class="filter-select kpi-period" data-kpi-key="balance">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                    <div class="stat-value" id="kpiBalance">₹0.00</div>
+                    <div class="stat-meta" id="kpiBalanceGrowth">0.00%</div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top:1rem; margin-bottom:1rem;">
+                <div class="table-header">
+                    <h3 class="table-title">Revenue Overview</h3>
+                    <div class="filter-controls">
+                        <select id="dashboardPeriod" class="filter-select">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                        <input id="dashboardStartDate" type="date" class="filter-select">
+                        <input id="dashboardEndDate" type="date" class="filter-select">
+                        <button class="btn btn-primary" onclick="loadDashboardGraphs()"><i class="fas fa-sync"></i> Refresh</button>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Messages</div>
-                            <div class="stat-value">{{ total_messages|default:0 }}</div>
-                        </div>
-                        <div class="stat-icon messages">
-                            <i class="fas fa-envelope"></i>
-                        </div>
+                <div style="padding:1rem;">
+                    <div id="salesTimeChart" style="width:100%; min-height:340px;"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 1rem;">
+                <div class="table-container" style="margin-bottom:0;">
+                    <div class="table-header">
+                        <h3 class="table-title">Wishlist vs Orders by Customer</h3>
+                    </div>
+                    <div style="padding:1rem;">
+                        <div id="wishlistOrdersCustomerChart" style="width:100%; min-height:300px;"></div>
+                    </div>
+                </div>
+                <div class="table-container" style="margin-bottom:0;">
+                    <div class="table-header">
+                        <h3 class="table-title">Top Sales Products (Top 30)</h3>
+                    </div>
+                    <div style="padding:1rem;">
+                        <div id="dashboardTopProductsList"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Orders -->
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Recent Orders</h3>
-                    <div class="filter-controls">
-                        <select class="filter-select">
-                            <option>All Status</option>
-                            <option>Pending</option>
-                            <option>Processing</option>
-                            <option>Shipped</option>
-                            <option>Delivered</option>
-                        </select>
-                        <button class="export-btn">
-                            <i class="fas fa-download"></i> Export
-                        </button>
+            <div class="stats-grid" style="grid-template-columns: 1.3fr 1fr; margin-top: 1rem;">
+                <div class="table-container" style="margin-bottom:0;">
+                    <div class="table-header">
+                        <h3 class="table-title">Recent Orders</h3>
+                        <div class="filter-controls">
+                            <select id="dashboardOrderStatus" class="filter-select">
+                                <option value="">All Status</option>
+                                {% for status_code, status_name in order_status_choices %}
+                                    <option value="{{ status_code }}">{{ status_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Mobile</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardRecentOrdersBody">
+                            <tr><td colspan="6" style="text-align:center; padding:1.5rem;">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                    <div id="dashboardRecentOrdersPagination" style="display:flex; gap:.5rem; justify-content:flex-end; padding: .75rem 1rem 1rem;"></div>
+                </div>
+
+                <div class="table-container" style="margin-bottom:0;">
+                    <div class="table-header">
+                        <h3 class="table-title">India Orders Map (State-wise)</h3>
+                    </div>
+                    <div style="padding:1rem;">
+                        <div id="dashboardIndiaMapChart" style="width:100%; min-height:420px;"></div>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Mobile</th>
-                            <th>Address</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in orders %}
-                        <tr data-order-id="{{ order.id }}">
-                            <td>#{{ order.id }}</td>
-                            <td>
-                                <div>
-                                    <div style="font-weight: 500;">
-                                        {% if order.user.first_name or order.user.last_name %}
-                                            {{ order.user.first_name }} {{ order.user.last_name }}
-                                        {% else %}
-                                            {{ order.user.username }}
-                                        {% endif %}
-                                    </div>
-                                    <div style="font-size: 0.75rem; color: var(--subtext);">{{ order.user.email }}</div>
-                                </div>
-                            </td>
-                            <td>
-                                {% if order.mobile_number %}
-                                    {{ order.mobile_number }}
-                                {% elif order.user.userprofile.mobile %}
-                                    {{ order.user.userprofile.mobile }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </td>
-                            <td>{{ order.shipping_address|truncatechars:30 }}</td>
-                            <td>₹{{ order.total }}</td>
-                            <td>
-                                <span class="status-badge status-{{ order.status }}">
-                                    {{ order.get_status_display }}
-                                </span>
-                            </td>
-                            <td>{{ order.created_at|date:"M d, Y" }}</td>
-                            <td>
-                                <select class="btn btn-primary" onchange="updateOrderStatus({{ order.id }}, this.value)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                    <option value="{{ order.status }}">{{ order.get_status_display }}</option>
-                                    {% for status_code, status_name in order_status_choices %}
-                                        {% if status_code != order.status %}
-                                            <option value="{{ status_code }}">{{ status_name }}</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--subtext);">
-                                No orders found
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
         </div>
 
@@ -780,10 +786,20 @@
                                 </span>
                             </td>
                             <td>
-                                <span class="status-badge status-delivered">Active</span>
+                                {% if product.is_active %}
+                                <span id="prod-status-{{ product.id }}" class="status-badge status-delivered">Active</span>
+                                {% else %}
+                                <span id="prod-status-{{ product.id }}" class="status-badge status-cancelled">Inactive</span>
+                                {% endif %}
                             </td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" onclick="deleteProduct({{ product.id }})">
+                            <td style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
+                                <button class="btn btn-primary btn-sm" type="button" onclick="editProduct({{ product.id }})" title="Edit">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn btn-outline btn-sm" type="button" data-product-toggle="{{ product.id }}" onclick="toggleProductActive({{ product.id }})" title="Toggle active">
+                                    <i class="fas fa-toggle-{{ product.is_active|yesno:'on,off' }}"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" type="button" onclick="deleteProduct({{ product.id }})" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -840,6 +856,9 @@
                 <div style="padding:0 1rem 1rem;">
                     <h4 style="margin-bottom:0.5rem;">Existing Additional Images</h4>
                     <div id="productImagesWrap" style="display:flex; gap:0.75rem; flex-wrap:wrap;"></div>
+                    <div style="margin-top:0.5rem;">
+                        <button class="btn btn-outline" onclick="saveImageOrder()"><i class="fas fa-arrows-alt"></i> Save Drag/Drop Order</button>
+                    </div>
                 </div>
                 <div style="padding:0 1rem 1rem;">
                     <h4 style="margin-bottom:0.5rem;">Add Variant</h4>
@@ -969,6 +988,7 @@
                             <option value="new_launch">New Launch</option>
                             <option value="featured">Featured</option>
                             <option value="exquisite">Exquisite Collection</option>
+                            <option value="owners_fav">Owner's Favourites</option>
                         </select>
                         <select id="hppProductId" class="filter-select">
                             <option value="">Select Product</option>
@@ -1019,6 +1039,42 @@
                     </thead>
                     <tbody id="categoriesTbody">
                         <tr><td colspan="2" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Announcements Section -->
+        <div id="announcements-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Announcement Bar Management</h3>
+                    <button class="btn btn-primary" onclick="loadAnnouncements()"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border);">
+                    <form id="announcementForm" onsubmit="event.preventDefault(); createAnnouncement();" style="display:grid; grid-template-columns: repeat(12, 1fr); gap: .75rem;">
+                        <input id="annTitle" class="filter-select" type="text" placeholder="Title (optional)" style="grid-column: span 4;" />
+                        <input id="annMessage" class="filter-select" type="text" placeholder="Announcement message" style="grid-column: span 6;" required />
+                        <label class="filter-select" style="grid-column: span 2; display:flex; align-items:center; justify-content:center; gap:.5rem;">
+                            <input id="annActive" type="checkbox" checked /> Active
+                        </label>
+                        <div style="grid-column: span 12; display:flex; justify-content:flex-end;">
+                            <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add Announcement</button>
+                        </div>
+                    </form>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th style="width:240px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="announcementsTbody">
+                        <tr><td colspan="5" style="text-align:center; padding:1.5rem;">Loading…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1083,6 +1139,34 @@
                         <button class="btn btn-primary" onclick="loadReviews()"><i class="fas fa-sync"></i> Refresh</button>
                     </div>
                 </div>
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border);">
+                    <form id="adminReviewForm" onsubmit="event.preventDefault(); createAdminReview();" style="display:grid; grid-template-columns: repeat(12, 1fr); gap: 0.75rem;">
+                        <select id="adminReviewProduct" class="filter-select" style="grid-column: span 4;" required>
+                            <option value="">Select product</option>
+                            {% for product in products %}
+                                <option value="{{ product.id }}">{{ product.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="adminReviewRating" class="filter-select" style="grid-column: span 2;">
+                            <option value="5">5 ★★★★★</option>
+                            <option value="4">4 ★★★★</option>
+                            <option value="3">3 ★★★</option>
+                            <option value="2">2 ★★</option>
+                            <option value="1">1 ★</option>
+                        </select>
+                        <input id="adminReviewTitle" class="filter-select" type="text" placeholder="Review title (optional)" style="grid-column: span 6;" />
+                        <input id="adminReviewerName" class="filter-select" type="text" placeholder="Reviewer display name (optional)" style="grid-column: span 6;" />
+                        <input id="adminReviewImage" type="file" accept="image/*" style="grid-column: span 6;" />
+                        <textarea id="adminReviewBody" class="filter-select" placeholder="Review content" style="grid-column: span 10; min-height: 42px;" required></textarea>
+                        <label class="filter-select" style="grid-column: span 2; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                            <input id="adminReviewVisible" type="checkbox" checked />
+                            Visible
+                        </label>
+                        <div style="grid-column: span 12; display:flex; justify-content:flex-end;">
+                            <button class="btn btn-success" type="submit"><i class="fas fa-plus"></i> Add Review</button>
+                        </div>
+                    </form>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -1090,11 +1174,12 @@
                             <th>User</th>
                             <th>Rating</th>
                             <th>Review</th>
+                            <th>Visibility</th>
                             <th style="width:180px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="reviewsTbody">
-                        <tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                        <tr><td colspan="6" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1530,6 +1615,40 @@
                 </table>
             </div>
         </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- Editorial Gallery Section                                       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div id="editorial-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Editorial Gallery</h3>
+                    <div class="filter-controls">
+                        <button class="btn btn-success" onclick="openEditorialAddModal()">
+                            <i class="fas fa-plus"></i> Add Media
+                        </button>
+                        <button class="btn btn-primary" onclick="loadEditorial()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:80px;">Preview</th>
+                            <th>Type</th>
+                            <th>Product</th>
+                            <th>Order</th>
+                            <th>Active</th>
+                            <th style="width:160px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="editorialTbody">
+                        <tr><td colspan="6" style="text-align:center;padding:1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1543,6 +1662,10 @@
             const targetSection = document.getElementById(sectionName + '-section');
             if (targetSection) {
                 targetSection.style.display = 'block';
+            }
+            if (sectionName === 'products') {
+                const advancedPanel = document.getElementById('advanced-products-section');
+                if (advancedPanel) advancedPanel.style.display = 'block';
             }
             
             // Update active nav item
@@ -1563,10 +1686,12 @@
             }
 
             // Lazy-load section data
+            if (sectionName === 'dashboard') loadDashboardGraphs();
             if (sectionName === 'homepage') {
                 loadHomepageContent();
                 loadHomepageProducts();
             }
+            if (sectionName === 'announcements') loadAnnouncements();
             if (sectionName === 'advanced-products') loadLowStockProducts();
             if (sectionName === 'lifecycle') {
                 const tbody = document.getElementById('lifecycleTbody');
@@ -1579,6 +1704,7 @@
             if (sectionName === 'finance') loadProfitLoss();
             if (sectionName === 'india-map') loadIndiaMap();
             if (sectionName === 'analytics') loadWishlistVsPurchase();
+            if (sectionName === 'editorial') loadEditorial();
         }
 
         function updateOrderStatus(orderId, newStatus) {
@@ -1964,6 +2090,10 @@
                                 <input type="number" name="price" step="0.01" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
                             <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cost Price</label>
+                                <input type="number" name="cost_price" step="0.01" value="0" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                            </div>
+                            <div style="margin-bottom: 1rem;">
                                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Category</label>
                                 <select name="category" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                                     <option value="">Select Category</option>
@@ -1976,9 +2106,21 @@
                                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Stock</label>
                                 <input type="number" name="stock" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Low Stock Threshold</label>
+                                <input type="number" name="low_stock_threshold" value="5" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                            </div>
                             <div style="margin-bottom: 1.5rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Image</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Primary Product Image</label>
                                 <input type="file" name="image" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Additional Images</label>
+                                <input type="file" name="additional_images" accept="image/*" multiple style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Video</label>
+                                <input type="file" name="video" accept="video/*" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
                             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                                 <button type="button" onclick="closeModal()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer;">Cancel</button>
@@ -2015,7 +2157,7 @@
                 if (data.success) {
                     showNotification('Product added successfully', 'success');
                     closeModal();
-                    location.reload();
+                    showSection('products');
                 } else {
                     showNotification(data.error || 'Failed to add product', 'error');
                 }
@@ -2081,103 +2223,35 @@
             }
         }
 
-        function showEditProductModal(product, categories = []) {
-            const modal = document.createElement('div');
-            modal.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 style="margin: 0; color: var(--text);">Edit Product</h3>
-                            <button onclick="closeEditProductModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
-                        </div>
-                        
-                        <form id="editProductForm" enctype="multipart/form-data">
-                            <div style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Name</label>
-                                <input type="text" name="name" value="${product.name}" required 
-                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
-                            </div>
-                            
-                            <div style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
-                                <textarea name="description" required rows="3"
-                                          style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; resize: vertical;">${product.description}</textarea>
-                            </div>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Price (₹)</label>
-                                    <input type="number" name="price" value="${product.price}" step="0.01" min="0" required
-                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Stock</label>
-                                    <input type="number" name="stock" value="${product.stock}" min="0" required
-                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                            </div>
-                            
-                            <div style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Category</label>
-                                <select name="category" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
-                                    ${(categories && categories.length > 0) ? categories.map(cat => `<option value="${cat.id}" ${cat.id === product.category_id ? 'selected' : ''}>${cat.name}</option>`).join('') : '<option value="">No categories available</option>'}
-                                </select>
-                            </div>
-                            
-                            <div style="margin-bottom: 1.5rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Image</label>
-                                <input type="file" name="image" accept="image/*"
-                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
-                                ${product.image_url ? `<div style="margin-top: 0.5rem;"><img src="${product.image_url}" alt="Current image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px;"></div>` : ''}
-                            </div>
-                            
-                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                                <button type="button" onclick="closeEditProductModal()" 
-                                        style="padding: 0.75rem 1.5rem; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer;">Cancel</button>
-                                <button type="submit" 
-                                        style="padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">Update Product</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            // Handle form submission
-            document.getElementById('editProductForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                formData.append('product_id', product.id);
-                
-                const csrfToken = getCookie('csrftoken');
-                
-                fetch('/admin-dashboard/api/update-product/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification('Product updated successfully', 'success');
-                        closeEditProductModal();
-                        location.reload();
-                    } else {
-                        showNotification(data.error || 'Failed to update product', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Error updating product', 'error');
-                });
+        function toggleProductActive(productId) {
+            const csrfToken = getCookie('csrftoken');
+            fetch(`/admin-dashboard/api/product/${productId}/toggle-active/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    showNotification(data.error || 'Could not update product status', 'error');
+                    return;
+                }
+                const badge = document.getElementById('prod-status-' + productId);
+                if (badge) {
+                    badge.textContent = data.is_active ? 'Active' : 'Inactive';
+                    badge.classList.toggle('status-delivered', data.is_active);
+                    badge.classList.toggle('status-cancelled', !data.is_active);
+                }
+                const toggleBtn = document.querySelector('[data-product-toggle="' + productId + '"]');
+                if (toggleBtn) {
+                    const icon = toggleBtn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-toggle-' + (data.is_active ? 'on' : 'off');
+                }
+                showNotification(data.is_active ? 'Product is now active' : 'Product is now inactive', 'success');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error updating product status', 'error');
             });
-            
-            window.closeEditProductModal = function() {
-                modal.remove();
-            };
         }
 
         // Newsletter Subscribers Functions
@@ -2469,13 +2543,65 @@
                                 </select>
                             </div>
                             
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cost Price (₹)</label>
+                                    <input type="number" name="cost_price" value="${product.cost_price}" step="0.01" min="0"
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Low Stock Threshold</label>
+                                    <input type="number" name="low_stock_threshold" value="${product.low_stock_threshold}" min="0"
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <input type="hidden" name="is_active" value="0">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+                                    <input type="checkbox" name="is_active" value="1" ${product.is_active ? 'checked' : ''}
+                                           style="width: 1.1rem; height: 1.1rem;">
+                                    Active on storefront
+                                </label>
+                            </div>
+
                             <div style="margin-bottom: 1.5rem;">
                                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Image</label>
                                 <input type="file" name="image" accept="image/*"
                                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                                 ${product.image_url ? `<div style="margin-top: 0.5rem;"><img src="${product.image_url}" alt="Current image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px;"></div>` : ''}
                             </div>
-                            
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Additional Images</label>
+                                ${product.additional_images && product.additional_images.length > 0 ? `
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                                    ${product.additional_images.map(img => `
+                                    <div style="position: relative;">
+                                        <img src="${img.url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
+                                        <label style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">
+                                            <input type="checkbox" name="delete_image_ids" value="${img.id}" style="display:none;">×
+                                        </label>
+                                    </div>`).join('')}
+                                </div>
+                                <small style="color: var(--subtext);">Tick × on existing images to delete them.</small>` : ''}
+                                <input type="file" name="additional_images" accept="image/*" multiple
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 0.5rem;">
+                            </div>
+
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Video</label>
+                                ${product.videos && product.videos.length > 0 ? `
+                                <div style="margin-bottom: 0.5rem; color: var(--subtext); font-size: 0.85rem;">
+                                    Current: <a href="${product.videos[0].url}" target="_blank" style="color: var(--primary);">View video</a>
+                                    <label style="margin-left: 1rem; cursor: pointer;">
+                                        <input type="checkbox" name="replace_video" value="1"> Replace with new upload
+                                    </label>
+                                </div>` : ''}
+                                <input type="file" name="video" accept="video/*"
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                            </div>
+
                             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                                 <button type="button" onclick="closeEditProductModal()" 
                                         style="padding: 0.75rem 1.5rem; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer;">Cancel</button>
@@ -2507,8 +2633,7 @@
                     if (data.success) {
                         showNotification(data.message, 'success');
                         closeEditProductModal();
-                        // Refresh the page to show updated product
-                        location.reload();
+                        showSection('products');
                     } else {
                         showNotification(data.error || 'Failed to update product', 'error');
                     }
@@ -2820,6 +2945,8 @@
                         <button class="btn btn-primary btn-sm" onclick="toggleHomepageProduct(${item.id})">
                             <i class="fas ${item.is_active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i> ${item.is_active ? 'Active' : 'Inactive'}
                         </button>
+                        ${item.section_type === 'exquisite' ? `<button class="btn btn-outline btn-sm" onclick="shiftHomepageProduct(${item.id}, '${item.section_type}', ${item.position}, -1)"><i class="fas fa-arrow-up"></i></button>` : ''}
+                        ${item.section_type === 'exquisite' ? `<button class="btn btn-outline btn-sm" onclick="shiftHomepageProduct(${item.id}, '${item.section_type}', ${item.position}, 1)"><i class="fas fa-arrow-down"></i></button>` : ''}
                         <button class="btn btn-danger btn-sm" onclick="deleteHomepageProduct(${item.id})"><i class="fas fa-trash"></i> Remove</button>
                     </td>
                 </tr>
@@ -2904,11 +3031,15 @@
                     wrap.innerHTML = `<div style="color:var(--danger)">Failed to load images</div>`;
                 } else {
                     wrap.innerHTML = imagesData.items.map(i => `
-                        <div style="position:relative;">
-                            <img src="${i.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+                        <div style="position:relative; display:flex; flex-direction:column; gap:0.4rem;" class="sortable-image-item" draggable="true" data-image-id="${i.id}">
+                            <img src="${i.url}" style="width:92px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+                            <label style="font-size:0.7rem; display:flex; align-items:center; gap:0.25rem;">
+                              <input type="radio" name="primaryImage" ${i.is_primary ? 'checked' : ''} onchange="setPrimaryImage(${i.id})"> Primary
+                            </label>
                             <button class="btn btn-danger btn-sm" style="position:absolute;top:-10px;right:-10px;padding:0.25rem 0.4rem;" onclick="deleteProductImage(${i.id})">x</button>
                         </div>
                     `).join('') || '<div style="color:var(--subtext)">No additional images.</div>';
+                    initSortableImages();
                 }
             }
             const vTbody = document.getElementById('variantTbody');
@@ -2944,10 +3075,51 @@
             }
         }
 
+        async function shiftHomepageProduct(itemId, sectionType, currentPosition, delta) {
+            const nextPosition = Math.max(1, Number(currentPosition || 1) + Number(delta || 0));
+            await updateHomepageProduct(itemId, nextPosition, sectionType);
+        }
+
         async function deleteProductImage(imageId) {
             const data = await apiFetchJson(`/admin-dashboard/api/product-images/${imageId}/delete/`, { method: 'POST' });
             if (data.success) {
                 showNotification('Image deleted', 'success');
+                loadProductMediaData();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function setPrimaryImage(imageId) {
+            const data = await apiFetchJson(`/admin-dashboard/api/product-images/${imageId}/set-primary/`, { method: 'POST' });
+            if (!data.success) showNotification(data.error || 'Failed', 'error');
+        }
+
+        function initSortableImages() {
+            const wrap = document.getElementById('productImagesWrap');
+            if (!wrap) return;
+            let dragEl = null;
+            wrap.querySelectorAll('.sortable-image-item').forEach((el) => {
+                el.addEventListener('dragstart', () => { dragEl = el; });
+                el.addEventListener('dragover', (e) => { e.preventDefault(); });
+                el.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (!dragEl || dragEl === el) return;
+                    wrap.insertBefore(dragEl, el);
+                });
+            });
+        }
+
+        async function saveImageOrder() {
+            const productId = document.getElementById('apProductId')?.value;
+            if (!productId) return showNotification('Enter Product ID', 'error');
+            const ids = Array.from(document.querySelectorAll('#productImagesWrap .sortable-image-item')).map(el => el.dataset.imageId);
+            if (!ids.length) return;
+            const fd = new FormData();
+            fd.append('order', ids.join(','));
+            const data = await apiFetchJson(`/admin-dashboard/api/products/${productId}/images/reorder/`, { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Image order saved', 'success');
                 loadProductMediaData();
             } else {
                 showNotification(data.error || 'Failed', 'error');
@@ -3354,39 +3526,97 @@
             }
         }
 
+        let reviewCache = {};
+
         async function loadReviews() {
             const tbody = document.getElementById('reviewsTbody');
             if (!tbody) return;
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>`;
             const status = document.getElementById('reviewsFilter')?.value || 'pending';
             const q = status === 'all' ? '' : `?status=${encodeURIComponent(status)}`;
             const data = await apiFetchJson(`/admin-dashboard/api/reviews/${q}`);
             if (!data.success) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 1.5rem;">Failed to load</td></tr>`;
                 return;
             }
-            const rows = data.reviews.map(r => `
+            reviewCache = {};
+            const rows = data.reviews.map(r => {
+                reviewCache[r.id] = r;
+                return `
                 <tr>
                     <td>${r.product}</td>
-                    <td>${r.user}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:.5rem;">
+                            ${r.reviewer_image ? `<img src="${r.reviewer_image}" alt="" style="width:28px; height:28px; border-radius:999px; object-fit:cover;">` : ''}
+                            <span>${r.reviewer_name || r.user}</span>
+                        </div>
+                    </td>
                     <td>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
                     <td>
                         <div style="font-weight:600;">${r.title || ''}</div>
                         <div style="font-size:0.85rem; color: var(--subtext);">${r.body || ''}</div>
                     </td>
                     <td>
-                        ${r.is_approved ? '' : `<button class="btn btn-success btn-sm" onclick="reviewAction(${r.id}, 'approve')"><i class="fas fa-check"></i> Approve</button>`}
+                        <span class="status-badge ${r.is_approved ? 'status-delivered' : 'status-pending'}">
+                            ${r.is_approved ? 'Visible' : 'Hidden'}
+                        </span>
+                        <span class="status-badge ${r.is_visible ? 'status-delivered' : 'status-cancelled'}" style="margin-left:.25rem;">
+                            ${r.is_visible ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td style="display:flex; gap:.4rem; flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" onclick="reviewAction(${r.id}, 'toggle_visibility', ${r.is_approved ? 0 : 1})">
+                            <i class="fas fa-eye${r.is_approved ? '-slash' : ''}"></i> ${r.is_approved ? 'Hide' : 'Show'}
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="reviewAction(${r.id}, 'toggle_active', ${r.is_visible ? 0 : 1})">
+                            <i class="fas fa-toggle-${r.is_visible ? 'on' : 'off'}"></i> ${r.is_visible ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="openReviewEdit(${r.id})">
+                            <i class="fas fa-pen"></i> Edit
+                        </button>
                         <button class="btn btn-danger btn-sm" onclick="reviewAction(${r.id}, 'reject')"><i class="fas fa-times"></i> Delete</button>
                     </td>
                 </tr>
-            `);
-            tbody.innerHTML = rows.join('') || `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">No reviews</td></tr>`;
+            `});
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="6" style="text-align:center; padding: 1.5rem;">No reviews</td></tr>`;
         }
 
-        async function reviewAction(reviewId, action) {
+        async function createAdminReview() {
+            const productId = document.getElementById('adminReviewProduct')?.value;
+            const rating = document.getElementById('adminReviewRating')?.value || '5';
+            const title = document.getElementById('adminReviewTitle')?.value || '';
+            const body = document.getElementById('adminReviewBody')?.value || '';
+            const isApproved = document.getElementById('adminReviewVisible')?.checked ? '1' : '0';
+            const image = document.getElementById('adminReviewImage')?.files?.[0];
+            if (!productId || !body.trim()) {
+                showNotification('Product and review text are required', 'error');
+                return;
+            }
+            const fd = new FormData();
+            fd.append('action', 'create');
+            fd.append('product_id', productId);
+            fd.append('rating', rating);
+            fd.append('title', title);
+            fd.append('body', body);
+            fd.append('is_approved', isApproved);
+            fd.append('is_visible', '1');
+            fd.append('reviewer_name', document.getElementById('adminReviewerName')?.value || '');
+            if (image) fd.append('reviewer_image', image);
+            const data = await apiFetchJson('/admin-dashboard/api/reviews/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Review added', 'success');
+                document.getElementById('adminReviewForm')?.reset();
+                loadReviews();
+            } else {
+                showNotification(data.error || 'Failed to add review', 'error');
+            }
+        }
+
+        async function reviewAction(reviewId, action, value = null) {
             const fd = new FormData();
             fd.append('review_id', reviewId);
             fd.append('action', action);
+            if (value !== null) fd.append('value', value);
             const data = await apiFetchJson('/admin-dashboard/api/reviews/', { method: 'POST', body: fd });
             if (data.success) {
                 showNotification('Updated', 'success');
@@ -3396,7 +3626,260 @@
             }
         }
 
-        google.charts.load('current', { packages: ['geochart'] });
+        function openReviewEdit(id) {
+            const r = reviewCache[id];
+            if (!r) return;
+            const fd = new FormData();
+            fd.append('action', 'edit');
+            fd.append('review_id', id);
+            fd.append('reviewer_name', prompt('Edit reviewer name', r.reviewer_name || r.user || '') || '');
+            fd.append('rating', prompt('Edit rating (1-5)', String(r.rating || 5)) || String(r.rating || 5));
+            fd.append('title', prompt('Edit review title', r.title || '') || '');
+            fd.append('body', prompt('Edit review body', r.body || '') || '');
+            fd.append('is_approved', r.is_approved ? '1' : '0');
+            fd.append('is_visible', r.is_visible ? '1' : '0');
+            apiFetchJson('/admin-dashboard/api/reviews/', { method: 'POST', body: fd }).then((data) => {
+                if (data.success) {
+                    showNotification('Review updated', 'success');
+                    loadReviews();
+                } else {
+                    showNotification(data.error || 'Failed to update', 'error');
+                }
+            });
+        }
+
+        async function loadAnnouncements() {
+            const tbody = document.getElementById('announcementsTbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem;">Loading…</td></tr>`;
+            const data = await apiFetchJson('/admin-dashboard/api/announcements/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem;">Failed to load</td></tr>`;
+                return;
+            }
+            const rows = (data.items || []).map((a) => `
+                <tr>
+                    <td>${a.title || '-'}</td>
+                    <td>${a.message}</td>
+                    <td><span class="status-badge ${a.is_active ? 'status-delivered' : 'status-cancelled'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${a.created_at}</td>
+                    <td style="display:flex; gap:.4rem; flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" onclick="toggleAnnouncement(${a.id})"><i class="fas fa-toggle-${a.is_active ? 'on' : 'off'}"></i> ${a.is_active ? 'Disable' : 'Enable'}</button>
+                        <button class="btn btn-secondary btn-sm" onclick="editAnnouncement(${a.id}, '${(a.title || '').replace(/'/g, "\\'")}', '${(a.message || '').replace(/'/g, "\\'")}', ${a.is_active ? 1 : 0})"><i class="fas fa-pen"></i> Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement(${a.id})"><i class="fas fa-trash"></i> Delete</button>
+                    </td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || `<tr><td colspan="5" style="text-align:center; padding:1.5rem;">No announcements</td></tr>`;
+        }
+
+        async function createAnnouncement() {
+            const fd = new FormData();
+            fd.append('action', 'create');
+            fd.append('title', document.getElementById('annTitle')?.value || '');
+            fd.append('message', document.getElementById('annMessage')?.value || '');
+            fd.append('is_active', document.getElementById('annActive')?.checked ? '1' : '0');
+            const data = await apiFetchJson('/admin-dashboard/api/announcements/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Announcement added', 'success');
+                document.getElementById('announcementForm')?.reset();
+                loadAnnouncements();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function toggleAnnouncement(id) {
+            const fd = new FormData();
+            fd.append('action', 'toggle');
+            fd.append('announcement_id', id);
+            const data = await apiFetchJson('/admin-dashboard/api/announcements/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Announcement updated', 'success');
+                loadAnnouncements();
+            }
+        }
+
+        async function editAnnouncement(id, title, message, isActive) {
+            const newTitle = prompt('Edit announcement title', title || '');
+            if (newTitle === null) return;
+            const newMessage = prompt('Edit announcement message', message || '');
+            if (newMessage === null || !newMessage.trim()) return;
+            const fd = new FormData();
+            fd.append('action', 'edit');
+            fd.append('announcement_id', id);
+            fd.append('title', newTitle);
+            fd.append('message', newMessage);
+            fd.append('is_active', isActive ? '1' : '0');
+            const data = await apiFetchJson('/admin-dashboard/api/announcements/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Announcement updated', 'success');
+                loadAnnouncements();
+            } else {
+                showNotification(data.error || 'Failed', 'error');
+            }
+        }
+
+        async function deleteAnnouncement(id) {
+            if (!confirm('Delete this announcement?')) return;
+            const fd = new FormData();
+            fd.append('action', 'delete');
+            fd.append('announcement_id', id);
+            const data = await apiFetchJson('/admin-dashboard/api/announcements/', { method: 'POST', body: fd });
+            if (data.success) {
+                showNotification('Announcement deleted', 'success');
+                loadAnnouncements();
+            }
+        }
+
+        google.charts.load('current', { packages: ['corechart', 'geochart'] });
+        let dashboardOrdersPage = 1;
+
+        function renderGrowth(elId, val) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const n = Number(val || 0);
+            const arrow = n >= 0 ? '▲' : '▼';
+            const color = n >= 0 ? '#16a34a' : '#dc2626';
+            el.style.color = color;
+            el.textContent = `${arrow} ${Math.abs(n).toFixed(2)}% vs previous period`;
+        }
+
+        async function loadDashboardKpis(period = null) {
+            const p = period || document.getElementById('dashboardPeriod')?.value || 'monthly';
+            const data = await apiFetchJson(`/admin-dashboard/api/dashboard-kpis/?period=${encodeURIComponent(p)}`);
+            if (!data.success || !data.kpis) return;
+            document.getElementById('kpiEarnings').textContent = `₹${Number(data.kpis.earnings.value || 0).toFixed(2)}`;
+            document.getElementById('kpiOrders').textContent = Number(data.kpis.orders.value || 0).toLocaleString();
+            document.getElementById('kpiCustomers').textContent = Number(data.kpis.customers.value || 0).toLocaleString();
+            document.getElementById('kpiBalance').textContent = `₹${Number(data.kpis.balance.value || 0).toFixed(2)}`;
+            renderGrowth('kpiEarningsGrowth', data.kpis.earnings.growth);
+            renderGrowth('kpiOrdersGrowth', data.kpis.orders.growth);
+            renderGrowth('kpiCustomersGrowth', data.kpis.customers.growth);
+            renderGrowth('kpiBalanceGrowth', data.kpis.balance.growth);
+        }
+
+        async function loadDashboardTopProducts() {
+            const data = await apiFetchJson('/admin-dashboard/api/dashboard-top-products/?limit=30');
+            const el = document.getElementById('dashboardTopProductsList');
+            if (!el) return;
+            if (!data.success) {
+                el.innerHTML = '<div style="color:var(--subtext)">Failed to load top products</div>';
+                return;
+            }
+            const rows = (data.items || []).map((p, i) => `
+                <div style="display:grid; grid-template-columns: 30px 46px 1fr auto; gap:.6rem; align-items:center; padding:.5rem 0; border-bottom:1px solid var(--border);">
+                    <div style="font-size:.78rem; color:var(--subtext);">${i + 1}</div>
+                    <img src="${p.image_url || ''}" alt="" style="width:42px; height:42px; border-radius:8px; object-fit:cover; background:#f4f4f5;" />
+                    <div>
+                        <div style="font-weight:600;">${p.name}</div>
+                        <div style="font-size:.78rem; color:var(--subtext);">₹${Number(p.price || 0).toFixed(2)} · ${p.units_sold} sold</div>
+                    </div>
+                    <div style="font-size:.78rem; color:var(--primary); font-weight:700;">₹${Number(p.revenue || 0).toFixed(0)}</div>
+                </div>
+            `);
+            el.innerHTML = rows.join('') || '<div style="color:var(--subtext)">No sales data yet</div>';
+        }
+
+        async function loadDashboardRecentOrders(page = 1) {
+            dashboardOrdersPage = page;
+            const status = document.getElementById('dashboardOrderStatus')?.value || '';
+            const data = await apiFetchJson(`/admin-dashboard/api/dashboard-recent-orders/?page=${page}&page_size=8&status=${encodeURIComponent(status)}`);
+            const tbody = document.getElementById('dashboardRecentOrdersBody');
+            const pager = document.getElementById('dashboardRecentOrdersPagination');
+            if (!tbody || !pager) return;
+            if (!data.success) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem;">Failed to load</td></tr>';
+                pager.innerHTML = '';
+                return;
+            }
+            const rows = (data.items || []).map((o) => `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td>
+                        <div style="font-weight:600;">${o.customer_name}</div>
+                        <div style="font-size:.75rem; color:var(--subtext);">${o.email || ''}</div>
+                    </td>
+                    <td>${o.mobile || 'N/A'}</td>
+                    <td>₹${Number(o.total || 0).toFixed(2)}</td>
+                    <td><span class="status-badge status-${o.status}">${o.status_display}</span></td>
+                    <td>${o.created_at}</td>
+                </tr>
+            `);
+            tbody.innerHTML = rows.join('') || '<tr><td colspan="6" style="text-align:center; padding:1.5rem;">No orders found</td></tr>';
+            const pg = data.pagination || {};
+            pager.innerHTML = `
+                <button class="btn btn-outline btn-sm" ${pg.has_previous ? '' : 'disabled'} onclick="loadDashboardRecentOrders(${Math.max(1, (pg.page || 1) - 1)})">Prev</button>
+                <span style="padding:.3rem .55rem; border:1px solid var(--border); border-radius:6px;">${pg.page || 1} / ${pg.num_pages || 1}</span>
+                <button class="btn btn-outline btn-sm" ${pg.has_next ? '' : 'disabled'} onclick="loadDashboardRecentOrders(${(pg.page || 1) + 1})">Next</button>
+            `;
+        }
+
+        async function loadDashboardGraphs() {
+            const start = document.getElementById('dashboardStartDate')?.value || '';
+            const end = document.getElementById('dashboardEndDate')?.value || '';
+            const period = document.getElementById('dashboardPeriod')?.value || 'monthly';
+            const params = new URLSearchParams();
+            if (start) params.set('start', start);
+            if (end) params.set('end', end);
+            params.set('period', period);
+            const query = params.toString() ? `?${params.toString()}` : '';
+            const data = await apiFetchJson(`/admin-dashboard/api/dashboard-graphs/${query}`);
+            if (!data.success) return;
+            loadDashboardKpis(period);
+            loadDashboardTopProducts();
+            loadDashboardRecentOrders(dashboardOrdersPage);
+            google.charts.setOnLoadCallback(() => {
+                const salesRows = [['Day', 'Sales']];
+                (data.sales || []).forEach(r => salesRows.push([r.day, Number(r.value || 0)]));
+                const salesData = google.visualization.arrayToDataTable(salesRows.length > 1 ? salesRows : [['Day', 'Sales'], ['-', 0]]);
+                const salesChart = new google.visualization.LineChart(document.getElementById('salesTimeChart'));
+                salesChart.draw(salesData, {
+                    colors: ['#CA6180'],
+                    chartArea: { width: '82%', height: '72%' },
+                    backgroundColor: '#fffafc',
+                    legend: { position: 'none' },
+                });
+
+                const woRows = [['Customer', 'Wishlist', 'Orders']];
+                (data.wishlist_vs_orders || []).forEach(r => woRows.push([r.user, Number(r.wishlist || 0), Number(r.orders || 0)]));
+                const woData = google.visualization.arrayToDataTable(woRows.length > 1 ? woRows : [['Customer', 'Wishlist', 'Orders'], ['-', 0, 0]]);
+                const woChart = new google.visualization.ColumnChart(document.getElementById('wishlistOrdersCustomerChart'));
+                woChart.draw(woData, {
+                    colors: ['#FCB7C7', '#9ED3DC'],
+                    isStacked: false,
+                    chartArea: { width: '82%', height: '72%' },
+                    backgroundColor: '#fffafc',
+                    legend: { position: 'top' },
+                });
+            });
+            loadDashboardIndiaMap();
+        }
+
+        async function loadDashboardIndiaMap() {
+            const mapEl = document.getElementById('dashboardIndiaMapChart');
+            if (!mapEl) return;
+            const data = await apiFetchJson('/admin-dashboard/api/india-state-orders/');
+            if (!data.success) return;
+            google.charts.setOnLoadCallback(() => {
+                const chartRows = [['Province', 'Orders']];
+                data.items.forEach(item => {
+                    if (item.code) chartRows.push([item.code, item.total]);
+                });
+                const chartData = google.visualization.arrayToDataTable(chartRows.length > 1 ? chartRows : [['Province', 'Orders'], ['IN-DL', 0]]);
+                const chart = new google.visualization.GeoChart(mapEl);
+                chart.draw(chartData, {
+                    region: 'IN',
+                    resolution: 'provinces',
+                    colorAxis: { colors: ['#fde7ec', '#f9b4c7', '#CA6180', '#7c2d45'] },
+                    backgroundColor: '#fffafc',
+                    datalessRegionColor: '#f7edf1',
+                    defaultColor: '#f7edf1',
+                    tooltip: { textStyle: { color: '#2f1b24', fontSize: 12 } },
+                    legend: { textStyle: { color: '#8f5e71' } },
+                });
+            });
+        }
 
         async function loadIndiaMap() {
             const tbody = document.getElementById('indiaStateTbody');
@@ -3428,10 +3911,11 @@
                 chart.draw(chartData, {
                     region: 'IN',
                     resolution: 'provinces',
-                    colorAxis: { colors: ['#FEFD99', '#FCB7C7', '#CA6180'] },
+                    colorAxis: { colors: ['#fde7ec', '#f9b4c7', '#CA6180', '#7c2d45'] },
                     backgroundColor: '#fffafc',
                     datalessRegionColor: '#f7edf1',
                     defaultColor: '#f7edf1',
+                    tooltip: { textStyle: { color: '#2f1b24', fontSize: 12 } },
                     legend: { textStyle: { color: '#8f5e71' } }
                 });
             });
@@ -3461,6 +3945,153 @@
                 closeSidebar();
             }
         });
+
+        document.getElementById('dashboardPeriod')?.addEventListener('change', function () {
+            document.querySelectorAll('.kpi-period').forEach(sel => { sel.value = this.value; });
+            dashboardOrdersPage = 1;
+            loadDashboardGraphs();
+        });
+        document.querySelectorAll('.kpi-period').forEach(sel => {
+            sel.addEventListener('change', function () {
+                const period = this.value || 'monthly';
+                const mainPeriod = document.getElementById('dashboardPeriod');
+                if (mainPeriod) mainPeriod.value = period;
+                dashboardOrdersPage = 1;
+                loadDashboardGraphs();
+            });
+        });
+        document.getElementById('dashboardOrderStatus')?.addEventListener('change', () => loadDashboardRecentOrders(1));
+
+        // Initial dashboard charts load + auto refresh
+        loadDashboardGraphs();
+        setInterval(() => {
+            const dashboardVisible = document.getElementById('dashboard-section')?.style.display !== 'none';
+            if (dashboardVisible) loadDashboardGraphs();
+        }, 60000);
+
+        /* ── Editorial Gallery ─────────────────────────────────────── */
+        async function loadEditorial() {
+            const tbody = document.getElementById('editorialTbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;">Loading…</td></tr>';
+            const data = await apiFetchJson('/admin-dashboard/api/editorial/');
+            if (!data.success) { tbody.innerHTML = '<tr><td colspan="6">Failed to load.</td></tr>'; return; }
+            if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--subtext);">No items yet. Click "Add Media" to get started.</td></tr>'; return; }
+            tbody.innerHTML = data.items.map(item => `
+                <tr>
+                    <td>
+                        ${item.media_type === 'image'
+                            ? `<img src="${item.file_url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">`
+                            : `<video src="${item.file_url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;" muted loop playsinline></video>`}
+                    </td>
+                    <td><span class="badge ${item.media_type === 'video' ? 'badge-info' : 'badge-success'}">${item.media_type}</span></td>
+                    <td>${item.product_name || '<span style="color:var(--subtext);">—</span>'}</td>
+                    <td>${item.order}</td>
+                    <td>
+                        <button onclick="toggleEditorial(${item.id})" class="btn btn-outline btn-sm" title="Toggle active">
+                            ${item.is_active ? '✅' : '❌'}
+                        </button>
+                    </td>
+                    <td>
+                        <button onclick="openEditorialEditModal(${item.id})" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteEditorial(${item.id})" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function _buildEditorialModal({ title, item, products }) {
+            const defaultSelected = (!item && products.length > 0) ? products[0].id : null;
+            const opts = products.map(p =>
+                `<option value="${p.id}" ${(item ? item.product_id === p.id : p.id === defaultSelected) ? 'selected' : ''}>${p.name}</option>`
+            ).join('');
+            const modal = document.createElement('div');
+            modal.id = 'editorialModal';
+            modal.innerHTML = `
+                <div style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem;">
+                    <div style="background:white;padding:2rem;border-radius:12px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                            <h3 style="margin:0;color:var(--text);">${title}</h3>
+                            <button onclick="document.getElementById('editorialModal').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>
+                        </div>
+                        <form id="editorialForm" enctype="multipart/form-data">
+                            <div style="margin-bottom:1rem;">
+                                <label style="display:block;margin-bottom:.5rem;font-weight:500;">Media Type</label>
+                                <select name="media_type" style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:6px;">
+                                    <option value="image" ${!item || item.media_type === 'image' ? 'selected' : ''}>Image</option>
+                                    <option value="video" ${item && item.media_type === 'video' ? 'selected' : ''}>Video</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom:1rem;">
+                                <label style="display:block;margin-bottom:.5rem;font-weight:500;">File ${item ? '(leave empty to keep current)' : '*'}</label>
+                                ${item ? `<div style="margin-bottom:.5rem;font-size:.85rem;color:var(--subtext);">Current: <a href="${item.file_url}" target="_blank" style="color:var(--primary);">view</a></div>` : ''}
+                                <input type="file" name="file" accept="image/*,video/mp4,video/webm,video/mov" ${item ? '' : 'required'}
+                                       style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:6px;">
+                            </div>
+                            <div style="margin-bottom:1rem;">
+                                <label style="display:block;margin-bottom:.5rem;font-weight:500;">Linked Product <span style="color:#e53e3e;">*</span></label>
+                                <select name="product_id" required style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:6px;">
+                                    <option value="" disabled ${!item ? 'selected' : ''}>— Select a product —</option>
+                                    ${opts}
+                                </select>
+                            </div>
+                            <div style="margin-bottom:1.5rem;">
+                                <label style="display:block;margin-bottom:.5rem;font-weight:500;">Sort Order</label>
+                                <input type="number" name="order" value="${item ? item.order : 0}" min="0"
+                                       style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:6px;">
+                            </div>
+                            <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                                <button type="button" onclick="document.getElementById('editorialModal').remove()"
+                                        style="padding:.75rem 1.5rem;border:1px solid var(--border);background:white;border-radius:6px;cursor:pointer;">Cancel</button>
+                                <button type="submit"
+                                        style="padding:.75rem 1.5rem;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        async function openEditorialAddModal() {
+            const prodData = await apiFetchJson('/admin-dashboard/api/product-list-simple/');
+            const modal = _buildEditorialModal({ title: 'Add Editorial Media', item: null, products: prodData.products || [] });
+            modal.querySelector('#editorialForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fd = new FormData(this);
+                const data = await apiFetchJson('/admin-dashboard/api/editorial/', { method: 'POST', body: fd });
+                if (data.success) { showNotification('Media added', 'success'); modal.remove(); loadEditorial(); }
+                else showNotification(data.error || 'Failed', 'error');
+            });
+        }
+
+        async function openEditorialEditModal(itemId) {
+            const listData = await apiFetchJson('/admin-dashboard/api/editorial/');
+            const item = listData.items.find(i => i.id === itemId);
+            if (!item) return;
+            const prodData = await fetch('/admin-dashboard/api/product-list-simple/').then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] }));
+            const modal = _buildEditorialModal({ title: 'Edit Editorial Media', item, products: prodData.products || [] });
+            modal.querySelector('#editorialForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fd = new FormData(this);
+                const data = await apiFetchJson(`/admin-dashboard/api/editorial/${itemId}/update/`, { method: 'POST', body: fd });
+                if (data.success) { showNotification('Media updated', 'success'); modal.remove(); loadEditorial(); }
+                else showNotification(data.error || 'Failed', 'error');
+            });
+        }
+
+        async function deleteEditorial(itemId) {
+            if (!confirm('Delete this media item? This cannot be undone.')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/editorial/${itemId}/delete/`, { method: 'POST' });
+            if (data.success) { showNotification('Deleted', 'success'); loadEditorial(); }
+            else showNotification(data.error || 'Failed', 'error');
+        }
+
+        async function toggleEditorial(itemId) {
+            const data = await apiFetchJson(`/admin-dashboard/api/editorial/${itemId}/toggle/`, { method: 'POST' });
+            if (data.success) loadEditorial();
+        }
     </script>
 </body>
 </html>

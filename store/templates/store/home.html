@@ -94,13 +94,15 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {% for product in most_selling %}
-          <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group">
+          <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
+               onclick="window.location.href='{% url 'product_detail' product.pk %}'">
             <div class="relative overflow-hidden">
               {% if product.image %}
                 <img src="{{ product.image.url }}" alt="{{ product.name }}" 
                      class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
                      data-main-src="{{ product.image.url }}"
-                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
+                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                     data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
               {% else %}
                 <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
                   <i class="fas fa-gem text-6xl text-pink-400"></i>
@@ -111,6 +113,17 @@
                   Best Seller
                 </span>
               </div>
+              {% if user.is_authenticated %}
+              <button type="button"
+                      onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                      class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+              </button>
+              {% else %}
+              <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                <i class="far fa-heart text-pink-600"></i>
+              </a>
+              {% endif %}
             </div>
             <div class="p-5">
               <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
@@ -124,12 +137,12 @@
                 {% endif %}
               </div>
               <div class="flex space-x-2">
-                <a href="{% url 'product_detail' product.pk %}" 
+                <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
                    class="flex-1 bg-pink-600 text-white text-center py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors font-semibold text-sm">
                   View Details
                 </a>
                 {% if product.stock > 0 and user.is_authenticated %}
-                  <a href="{% url 'add_to_cart' product.pk %}" 
+                  <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
                      class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
                     <i class="fas fa-shopping-cart"></i>
                   </a>
@@ -142,149 +155,245 @@
       </div>
       {% endif %}
 
-      <!-- New Launch Products Section -->
-      {% if new_launch %}
-      <div class="mb-16 relative overflow-hidden rounded-[2rem] p-6 md:p-8" data-aos="fade-up">
+      <!-- New Launch + Featured: single shared background video / image -->
+      </div></div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- EDITORIAL GALLERY                                               -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      {% if editorial_items %}
+      <section class="editorial-section w-full bg-white py-14" data-aos="fade-up">
+        <style>
+          .editorial-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: 8px;
+            gap: 10px;
+            width: 100%;
+          }
+          @media (max-width: 1023px) {
+            .editorial-grid { grid-template-columns: repeat(3, 1fr); }
+          }
+          @media (max-width: 639px) {
+            .editorial-grid { grid-template-columns: repeat(2, 1fr); }
+          }
+          .editorial-item {
+            border-radius: 12px;
+            overflow: hidden;
+            display: block;
+            position: relative;
+            cursor: pointer;
+            transition: transform .3s, box-shadow .3s;
+          }
+          .editorial-item:hover { transform: scale(1.02); box-shadow: 0 12px 32px rgba(0,0,0,.18); }
+          .editorial-item img,
+          .editorial-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+          /* Scrambled heights via nth-child patterns */
+          .editorial-item:nth-child(5n+1) { grid-row-end: span 36; }
+          .editorial-item:nth-child(5n+2) { grid-row-end: span 28; }
+          .editorial-item:nth-child(5n+3) { grid-row-end: span 44; }
+          .editorial-item:nth-child(5n+4) { grid-row-end: span 32; }
+          .editorial-item:nth-child(5n+5) { grid-row-end: span 40; }
+        </style>
+
+        <div class="px-4 sm:px-6 lg:px-8 mb-8 flex items-center gap-3">
+          <h2 class="text-3xl md:text-4xl font-bold text-gray-900">
+            <span class="text-pink-600">Editorial</span> Gallery
+          </h2>
+        </div>
+
+        <div class="editorial-grid px-4 sm:px-6 lg:px-8" id="editorialGallery">
+          {% for item in editorial_items %}
+            {% if item.product %}
+            <a href="{% url 'product_detail' item.product.pk %}" class="editorial-item">
+            {% else %}
+            <div class="editorial-item">
+            {% endif %}
+
+              {% if item.media_type == 'image' %}
+                <img src="{{ item.file.url }}" alt="Editorial" loading="lazy">
+              {% else %}
+                <video autoplay muted loop playsinline preload="metadata">
+                  <source src="{{ item.file.url }}">
+                </video>
+              {% endif %}
+
+            {% if item.product %}</a>{% else %}</div>{% endif %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if new_launch or featured_products %}
+      <div class="relative overflow-hidden py-16 md:py-20 mb-0" data-aos="fade-up">
         {% if launch_featured_media and launch_featured_media.background_video %}
-        <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+        <video class="absolute inset-0 w-full h-full object-cover pointer-events-none" autoplay muted loop playsinline>
           <source src="{{ launch_featured_media.background_video.url }}">
         </video>
-        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="absolute inset-0 bg-black/42 pointer-events-none"></div>
         {% elif launch_featured_media and launch_featured_media.background_image %}
-        <img src="{{ launch_featured_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
-        <div class="absolute inset-0 bg-black/35"></div>
+        <img src="{{ launch_featured_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none">
+        <div class="absolute inset-0 bg-black/38 pointer-events-none"></div>
         {% endif %}
-        <div class="relative">
-        <div class="flex justify-between items-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-white">
-            <span class="text-pink-200">New Launch</span> Products
-          </h2>
-          {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
-          {% endif %}
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {% for product in new_launch %}
-          <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group">
-            <div class="relative overflow-hidden">
-              {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" 
-                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
-                     data-main-src="{{ product.image.url }}"
-                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
-              {% else %}
-                <div class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                  <i class="fas fa-gem text-6xl text-purple-400"></i>
-                </div>
+        <div class="container mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
+        <div class="space-y-14 md:space-y-16">
+          {% if new_launch %}
+          <section>
+            <div class="flex justify-between items-center mb-8">
+              <h2 class="text-3xl md:text-4xl font-bold text-white">
+                <span class="text-pink-200">New Launch</span> Products
+              </h2>
+              {% if user.is_authenticated %}
+              <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
               {% endif %}
-              <div class="absolute top-4 right-4">
-                <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                  New
-                </span>
-              </div>
             </div>
-            <div class="p-5">
-              <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
-              <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
-              <div class="flex items-center justify-between mb-4">
-                <span class="text-2xl font-bold text-purple-600">₹{{ product.price|floatformat:2 }}</span>
-                {% if product.stock > 0 %}
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
-                {% else %}
-                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
-                {% endif %}
-              </div>
-              <div class="flex space-x-2">
-                <a href="{% url 'product_detail' product.pk %}" 
-                   class="flex-1 bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm">
-                  View Details
-                </a>
-                {% if product.stock > 0 and user.is_authenticated %}
-                  <a href="{% url 'add_to_cart' product.pk %}" 
-                     class="bg-pink-600 text-white py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors">
-                    <i class="fas fa-shopping-cart"></i>
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {% for product in new_launch %}
+              <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
+                   onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+                <div class="relative overflow-hidden">
+                  {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                         class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                         data-main-src="{{ product.image.url }}"
+                         data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                         data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                  {% else %}
+                    <div class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                      <i class="fas fa-gem text-6xl text-purple-400"></i>
+                    </div>
+                  {% endif %}
+                  <div class="absolute top-4 right-4">
+                    <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                      New
+                    </span>
+                  </div>
+                  {% if user.is_authenticated %}
+                  <button type="button"
+                          onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                          class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                    <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                  </button>
+                  {% else %}
+                  <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                    <i class="far fa-heart text-pink-600"></i>
                   </a>
-                {% endif %}
+                  {% endif %}
+                </div>
+                <div class="p-5">
+                  <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
+                  <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
+                  <div class="flex items-center justify-between mb-4">
+                    <span class="text-2xl font-bold text-purple-600">₹{{ product.price|floatformat:2 }}</span>
+                    {% if product.stock > 0 %}
+                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
+                    {% else %}
+                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
+                    {% endif %}
+                  </div>
+                  <div class="flex space-x-2">
+                    <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                       class="flex-1 bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm">
+                      View Details
+                    </a>
+                    {% if product.stock > 0 and user.is_authenticated %}
+                      <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                         class="bg-pink-600 text-white py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors">
+                        <i class="fas fa-shopping-cart"></i>
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
               </div>
+              {% endfor %}
             </div>
-          </div>
-          {% endfor %}
+          </section>
+          {% endif %}
+
+          {% if featured_products %}
+          <section>
+            <div class="flex justify-between items-center mb-8">
+              <h2 class="text-3xl md:text-4xl font-bold text-white">
+                <span class="text-yellow-200">Featured</span> Products
+              </h2>
+              {% if user.is_authenticated %}
+              <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
+              {% endif %}
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {% for product in featured_products %}
+              <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
+                   onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+                <div class="relative overflow-hidden">
+                  {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                         class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                         data-main-src="{{ product.image.url }}"
+                         data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                         data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                  {% else %}
+                    <div class="w-full h-64 bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
+                      <i class="fas fa-gem text-6xl text-yellow-400"></i>
+                    </div>
+                  {% endif %}
+                  <div class="absolute top-4 right-4">
+                    <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                      Featured
+                    </span>
+                  </div>
+                  {% if user.is_authenticated %}
+                  <button type="button"
+                          onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                          class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                    <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                  </button>
+                  {% else %}
+                  <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                    <i class="far fa-heart text-pink-600"></i>
+                  </a>
+                  {% endif %}
+                </div>
+                <div class="p-5">
+                  <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
+                  <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
+                  <div class="flex items-center justify-between mb-4">
+                    <span class="text-2xl font-bold text-yellow-600">₹{{ product.price|floatformat:2 }}</span>
+                    {% if product.stock > 0 %}
+                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
+                    {% else %}
+                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
+                    {% endif %}
+                  </div>
+                  <div class="flex space-x-2">
+                    <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                       class="flex-1 bg-yellow-600 text-white text-center py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold text-sm">
+                      View Details
+                    </a>
+                    {% if product.stock > 0 and user.is_authenticated %}
+                      <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                         class="bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
+                        <i class="fas fa-shopping-cart"></i>
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </section>
+          {% endif %}
         </div>
         </div>
       </div>
       {% endif %}
 
-      <!-- Featured Products Section -->
-      {% if featured_products %}
-      <div class="mb-16 relative overflow-hidden rounded-[2rem] p-6 md:p-8" data-aos="fade-up">
-        {% if launch_featured_media and launch_featured_media.background_video %}
-        <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
-          <source src="{{ launch_featured_media.background_video.url }}">
-        </video>
-        <div class="absolute inset-0 bg-black/45"></div>
-        {% elif launch_featured_media and launch_featured_media.background_image %}
-        <img src="{{ launch_featured_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
-        <div class="absolute inset-0 bg-black/40"></div>
-        {% endif %}
-        <div class="relative">
-        <div class="flex justify-between items-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-white">
-            <span class="text-yellow-200">Featured</span> Products
-          </h2>
-          {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
-          {% endif %}
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {% for product in featured_products %}
-          <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group">
-            <div class="relative overflow-hidden">
-              {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" 
-                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
-                     data-main-src="{{ product.image.url }}"
-                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
-              {% else %}
-                <div class="w-full h-64 bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
-                  <i class="fas fa-gem text-6xl text-yellow-400"></i>
-                </div>
-              {% endif %}
-              <div class="absolute top-4 right-4">
-                <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                  Featured
-                </span>
-              </div>
-            </div>
-            <div class="p-5">
-              <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
-              <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
-              <div class="flex items-center justify-between mb-4">
-                <span class="text-2xl font-bold text-yellow-600">₹{{ product.price|floatformat:2 }}</span>
-                {% if product.stock > 0 %}
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
-                {% else %}
-                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
-                {% endif %}
-              </div>
-              <div class="flex space-x-2">
-                <a href="{% url 'product_detail' product.pk %}" 
-                   class="flex-1 bg-yellow-600 text-white text-center py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold text-sm">
-                  View Details
-                </a>
-                {% if product.stock > 0 and user.is_authenticated %}
-                  <a href="{% url 'add_to_cart' product.pk %}" 
-                     class="bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
-                    <i class="fas fa-shopping-cart"></i>
-                  </a>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        </div>
-      </div>
-      {% endif %}
+      <div class="py-8 bg-white">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
 
       <!-- Instagram Reels -->
       {% if active_reels %}
@@ -299,7 +408,7 @@
           <div class="reels-track flex gap-5 pr-5">
             {% for cycle in '12' %}
               {% for reel in active_reels %}
-              <div class="relative w-[220px] sm:w-[250px] lg:w-[280px] rounded-[2rem] overflow-hidden shadow-xl bg-white/70 backdrop-blur-md border border-white/50 flex-shrink-0 group transform transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]">
+              <div class="relative w-[220px] sm:w-[250px] lg:w-[280px] rounded-[2rem] overflow-hidden shadow-xl  backdrop-blur-md border border-white/50 flex-shrink-0 group transform transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]">
                 <button type="button" class="block w-full text-left" onclick="openReelModal('{{ reel.get_video_source }}')">
                   <div class="relative h-[360px]">
                     {% if reel.get_video_source %}
@@ -400,10 +509,31 @@
       document.querySelectorAll('.product-hover-image').forEach((img) => {
         const main = img.dataset.mainSrc;
         const hover = img.dataset.hoverSrc;
-        if (!hover) return;
+        const hoverVideo = img.dataset.hoverVideo;
+        if (!hover && !hoverVideo) return;
         const wrap = img.closest('.group') || img.parentElement;
-        wrap?.addEventListener('mouseenter', () => { img.src = hover; });
-        wrap?.addEventListener('mouseleave', () => { img.src = main; });
+        wrap?.addEventListener('mouseenter', () => {
+          if (hoverVideo && window.innerWidth >= 768) {
+            const video = document.createElement('video');
+            video.src = hoverVideo;
+            video.muted = true;
+            video.loop = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.className = img.className;
+            video.dataset.hoverPlayer = '1';
+            img.style.display = 'none';
+            img.parentElement.appendChild(video);
+            return;
+          }
+          img.src = hover;
+        });
+        wrap?.addEventListener('mouseleave', () => {
+          img.src = main;
+          img.style.display = '';
+          const v = img.parentElement.querySelector('video[data-hover-player="1"]');
+          if (v) v.remove();
+        });
       });
     });
   </script>
@@ -520,172 +650,189 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- HORIZONTAL SCROLLING PRODUCTS (Visible to All)                      -->
+  <!-- Exquisite row + logged-in dashboard: one shared exquisite background -->
   <!-- =================================================================== -->
-  <div class="bg-white py-16 relative overflow-hidden">
+  <div class="relative overflow-hidden py-16 md:py-20">
     {% if exquisite_content and exquisite_content.background_video %}
-      <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+      <video class="absolute inset-0 w-full h-full object-cover pointer-events-none" autoplay muted loop playsinline>
         <source src="{{ exquisite_content.background_video.url }}">
       </video>
-      <div class="absolute inset-0 bg-white/70 backdrop-blur-[1px]"></div>
+      <div class="absolute inset-0 bg-black/20 pointer-events-none backdrop-blur-[1px]"></div>
     {% elif exquisite_content and exquisite_content.background_image %}
-      <img src="{{ exquisite_content.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
-      <div class="absolute inset-0 bg-white/75"></div>
+      <img src="{{ exquisite_content.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none">
+      <div class="absolute inset-0 bg-white/72 pointer-events-none"></div>
+    {% else %}
+      <div class="absolute inset-0 bg-gradient-to-b from-pink-50/90 to-white pointer-events-none"></div>
     {% endif %}
-    <div class="container mx-auto relative">
-      <div class="flex justify-between items-center mb-6 px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-gray-800">
+
+    <div class="container mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-pink-700 drop-shadow-sm">
           {% if exquisite_content and exquisite_content.title %}{{ exquisite_content.title }}{% else %}Exquisite Jewelry Collection{% endif %}
         </h2>
-        <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="text-pink-600 font-semibold hover:underline whitespace-nowrap">See all</a>
+        <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="text-pink-700 font-semibold hover:underline whitespace-nowrap bg-white/80 px-3 py-1 rounded-full">See all</a>
       </div>
-      
-      <div class="relative overflow-hidden">
-        <!-- Auto-scrolling gallery container -->
-        <div id="jewelry-gallery" class="flex space-x-4 pb-6 transition-transform duration-1000 ease-linear">
-          <!-- First set of images -->
-          {% for product in top_picks %}
-            <a href="{% url 'product_detail' pk=product.pk %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 block bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group">
-              <div class="p-4">
-                {% if product.image %}
-                  <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg group-hover:scale-110 transition-transform duration-300 product-hover-image"
+
+      <div class="exquisite-marquee-outer">
+        <div class="exquisite-marquee-track flex gap-4 py-2">
+          {% if top_picks %}
+            {% for product in top_picks %}
+            <a href="{% url 'product_detail' pk=product.pk %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px] group relative">
+              <div class="relative flex-shrink-0 p-3 pb-0">
+                <div class="relative w-full h-40 md:h-44 rounded-lg overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100">
+                  {% if product.image %}
+                  <img class="w-full h-full object-cover product-hover-image"
                        src="{{ product.image.url }}" alt="{{ product.name }}"
                        data-main-src="{{ product.image.url }}"
-                       data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
+                       data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                       data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                  {% else %}
+                  <div class="w-full h-full flex items-center justify-center"><i class="fas fa-gem text-4xl text-pink-400"></i></div>
+                  {% endif %}
+                </div>
+                {% if user.is_authenticated %}
+                <button type="button"
+                        onclick="event.preventDefault(); event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                        class="absolute top-5 right-5 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                </button>
                 {% else %}
-                  <div class="w-full h-40 sm:h-44 md:h-48 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center rounded-lg">
-                    <i class="fas fa-gem text-4xl text-pink-400"></i>
-                  </div>
+                <a href="{% url 'login' %}" onclick="event.preventDefault(); event.stopPropagation()" class="absolute top-5 right-5 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="far fa-heart text-pink-600"></i>
+                </a>
                 {% endif %}
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800 truncate">{{ product.name }}</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹{{ product.price }}</p>
-                </div>
+              </div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1 min-h-0">
+                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug min-h-[2.75rem]">{{ product.name }}</h3>
+                <p class="text-pink-600 font-bold mt-auto pt-2">₹{{ product.price|floatformat:2 }}</p>
               </div>
             </a>
-          {% empty %}
-            <!-- Placeholder jewelry products -->
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/generated-image (6).png' %}" alt="Diamond Ring">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Pearl hoop earrings</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹120</p>
+            {% endfor %}
+            {% for product in top_picks %}
+            <a href="{% url 'product_detail' pk=product.pk %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px] group relative">
+              <div class="relative flex-shrink-0 p-3 pb-0">
+                <div class="relative w-full h-40 md:h-44 rounded-lg overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100">
+                  {% if product.image %}
+                  <img class="w-full h-full object-cover product-hover-image"
+                       src="{{ product.image.url }}" alt="{{ product.name }}"
+                       data-main-src="{{ product.image.url }}"
+                       data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                       data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                  {% else %}
+                  <div class="w-full h-full flex items-center justify-center"><i class="fas fa-gem text-4xl text-pink-400"></i></div>
+                  {% endif %}
                 </div>
+                {% if user.is_authenticated %}
+                <button type="button"
+                        onclick="event.preventDefault(); event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                        class="absolute top-5 right-5 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                </button>
+                {% else %}
+                <a href="{% url 'login' %}" onclick="event.preventDefault(); event.stopPropagation()" class="absolute top-5 right-5 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="far fa-heart text-pink-600"></i>
+                </a>
+                {% endif %}
+              </div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1 min-h-0">
+                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug min-h-[2.75rem]">{{ product.name }}</h3>
+                <p class="text-pink-600 font-bold mt-auto pt-2">₹{{ product.price|floatformat:2 }}</p>
               </div>
             </a>
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/generated-image (8).png' %}" alt="Pearl Necklace">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Bow Earrings</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹130</p>
+            {% endfor %}
+          {% else %}
+            {% for _dup in "12"|make_list %}
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0 flex-shrink-0">
+                <div class="w-full h-40 md:h-44 rounded-lg overflow-hidden">
+                  <img class="w-full h-full object-cover" src="{% static 'images/generated-image (6).png' %}" alt="">
                 </div>
               </div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Pearl hoop earrings</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹120.00</p></div>
             </a>
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/generated-image (9).png' %}" alt="Gold Earrings">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Gold Heart Pendant</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹500</p>
-                </div>
-              </div>
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0"><div class="w-full h-40 md:h-44 rounded-lg overflow-hidden"><img class="w-full h-full object-cover" src="{% static 'images/generated-image (8).png' %}" alt=""></div></div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Bow Earrings</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹130.00</p></div>
             </a>
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/generated-image (10).png' %}" alt="Silver Bracelet">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Purple Hoop Earrings</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹120</p>
-                </div>
-              </div>
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0"><div class="w-full h-40 md:h-44 rounded-lg overflow-hidden"><img class="w-full h-full object-cover" src="{% static 'images/generated-image (9).png' %}" alt=""></div></div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Gold Heart Pendant</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹500.00</p></div>
             </a>
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/Gemini_Generated_Image_1qnm901qnm901qnm.png' %}" alt="Emerald Ring">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Red Heart Pendant</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹700</p>
-                </div>
-              </div>
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0"><div class="w-full h-40 md:h-44 rounded-lg overflow-hidden"><img class="w-full h-full object-cover" src="{% static 'images/generated-image (10).png' %}" alt=""></div></div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Purple Hoop Earrings</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹120.00</p></div>
             </a>
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/Gemini_Generated_Image_48k3l048k3l048k3.png' %}" alt="Ruby Pendant">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Set of bangle and Ring</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹1200</p>
-                </div>
-              </div>
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0"><div class="w-full h-40 md:h-44 rounded-lg overflow-hidden"><img class="w-full h-full object-cover" src="{% static 'images/Gemini_Generated_Image_1qnm901qnm901qnm.png' %}" alt=""></div></div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Red Heart Pendant</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹700.00</p></div>
             </a>
-            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="flex-shrink-0 w-48 sm:w-56 md:w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 block">
-              <div class="p-4">
-                <img class="w-full h-40 sm:h-44 md:h-48 object-cover rounded-lg" src="{% static 'images/Gemini_Generated_Image_6839vd6839vd6839.png' %}" alt="Sapphire Earrings">
-                <div class="mt-3">
-                  <h3 class="text-sm font-semibold text-gray-800">Purple moon Pendant</h3>
-                  <p class="text-pink-600 font-bold mt-1">₹350</p>
-                </div>
-              </div>
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0"><div class="w-full h-40 md:h-44 rounded-lg overflow-hidden"><img class="w-full h-full object-cover" src="{% static 'images/Gemini_Generated_Image_48k3l048k3l048k3.png' %}" alt=""></div></div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Set of bangle and Ring</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹1200.00</p></div>
             </a>
-          {% endfor %}
+            <a href="{% if user.is_authenticated %}{% url 'product_list' %}{% else %}{% url 'login' %}{% endif %}" class="exquisite-marquee-card flex-shrink-0 w-52 sm:w-56 md:w-60 flex flex-col bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/70 overflow-hidden h-[296px] sm:h-[304px]">
+              <div class="p-3 pb-0"><div class="w-full h-40 md:h-44 rounded-lg overflow-hidden"><img class="w-full h-full object-cover" src="{% static 'images/Gemini_Generated_Image_6839vd6839vd6839.png' %}" alt=""></div></div>
+              <div class="flex flex-col flex-grow px-3 pb-3 pt-1"><h3 class="text-sm font-semibold text-gray-800 line-clamp-2 min-h-[2.75rem]">Purple moon Pendant</h3><p class="text-pink-600 font-bold mt-auto pt-2">₹350.00</p></div>
+            </a>
+            {% endfor %}
+          {% endif %}
         </div>
-        
       </div>
-    </div>
-  </div>
 
-  <!-- =================================================================== -->
-  <!-- LOGGED-IN USER DASHBOARD                                            -->
-  <!-- =================================================================== -->
-  {% if user.is_authenticated %}
-  <div class="bg-white py-16 relative overflow-hidden">
-    {% if account_cards_media and account_cards_media.background_video %}
-      <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
-        <source src="{{ account_cards_media.background_video.url }}">
-      </video>
-      <div class="absolute inset-0 bg-white/75"></div>
-    {% elif account_cards_media and account_cards_media.background_image %}
-      <img src="{{ account_cards_media.background_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
-      <div class="absolute inset-0 bg-white/80"></div>
-    {% endif %}
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mx-auto">
-        <!-- Your Orders Card -->
-        <a href="{% url 'order_history' %}" class="group block">
-          <div class="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex items-start space-x-4">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8Cap_pISd3usqDe7LO-gUhqSxmgXfGgnSiA&s" class="w-24 h-24 object-cover rounded-md" alt="Orders">
-            <div>
-              <h3 class="text-2xl font-bold text-gray-800">Your Orders</h3>
-              <p class="text-gray-500 mt-1">Track, return, or buy things again.</p>
+      {% if user.is_authenticated %}
+      <div class="mt-14 md:mt-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch max-w-6xl mx-auto">
+          <a href="{% url 'order_history' %}" class="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+            <div class="bg-white/90 backdrop-blur-sm h-full min-h-[152px] rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-row items-stretch gap-4 p-6 border border-white/70">
+              <div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-100">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8Cap_pISd3usqDe7LO-gUhqSxmgXfGgnSiA&s" class="w-full h-full object-cover" alt="Orders">
+              </div>
+              <div class="flex flex-col justify-center min-w-0 flex-1">
+                <h3 class="text-xl font-bold text-gray-800 leading-tight">Your Orders</h3>
+                <p class="text-gray-600 mt-1 text-sm leading-snug">Track, return, or buy things again.</p>
+              </div>
             </div>
-          </div>
-        </a>
-        <!-- Your Cart Card -->
-        <a href="{% url 'cart' %}" class="group block">
-          <div class="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex items-start space-x-4">
-            <img src="https://cdn-icons-png.flaticon.com/512/263/263142.png" class="w-24 h-24 object-contain rounded-md" alt="Cart">
-            <div>
-              <h3 class="text-2xl font-bold text-gray-800">Your Cart</h3>
-              <p class="text-gray-500 mt-1">View items and checkout.</p>
-              <p class="text-blue-600 font-bold text-lg mt-2">{{ cart_items|length }} Items</p>
+          </a>
+          <a href="{% url 'cart' %}" class="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+            <div class="bg-white/90 backdrop-blur-sm h-full min-h-[152px] rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-row items-stretch gap-4 p-6 border border-white/70">
+              <div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white flex items-center justify-center border border-gray-100 p-1">
+                <img src="https://cdn-icons-png.flaticon.com/512/263/263142.png" class="w-full h-full object-contain" alt="Cart">
+              </div>
+              <div class="flex flex-col justify-center min-w-0 flex-1">
+                <h3 class="text-xl font-bold text-gray-800 leading-tight">Your Cart</h3>
+                <p class="text-gray-600 mt-1 text-sm leading-snug">View items and checkout.</p>
+                <p class="text-blue-600 font-bold text-base mt-2">{{ cart_items|length }} Items</p>
+              </div>
             </div>
-          </div>
-        </a>
-        <!-- Your Profile Card -->
-        <a href="{% url 'profile' %}" class="group block">
-          <div class="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex items-start space-x-4">
-            <img src="https://cdn-icons-png.freepik.com/512/8188/8188353.png" class="w-24 h-24 object-contain rounded-md" alt="Profile">
-            <div>
-              <h3 class="text-2xl font-bold text-gray-800">Your Profile</h3>
-              <p class="text-gray-500 mt-1">Edit login, name, and address.</p>
+          </a>
+          <a href="{% url 'profile' %}" class="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+            <div class="bg-white/90 backdrop-blur-sm h-full min-h-[152px] rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-row items-stretch gap-4 p-6 border border-white/70">
+              <div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white flex items-center justify-center border border-gray-100 p-1">
+                <img src="https://cdn-icons-png.freepik.com/512/8188/8188353.png" class="w-full h-full object-contain" alt="Profile">
+              </div>
+              <div class="flex flex-col justify-center min-w-0 flex-1">
+                <h3 class="text-xl font-bold text-gray-800 leading-tight">Your Profile</h3>
+                <p class="text-gray-600 mt-1 text-sm leading-snug">Edit login, name, and address.</p>
+              </div>
             </div>
-          </div>
-        </a>
+          </a>
+          <a href="{% url 'wishlist' %}" class="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+            <div class="bg-white/90 backdrop-blur-sm h-full min-h-[152px] rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-row items-stretch gap-4 p-6 border border-white/70">
+              <div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white flex items-center justify-center border border-gray-100 p-1">
+                <img src="https://cdn-icons-png.flaticon.com/512/1077/1077035.png" class="w-full h-full object-contain" alt="Wishlist">
+              </div>
+              <div class="flex flex-col justify-center min-w-0 flex-1">
+                <h3 class="text-xl font-bold text-gray-800 leading-tight">Your Wishlist</h3>
+                <p class="text-gray-600 mt-1 text-sm leading-snug">Saved products you love.</p>
+                <p class="text-pink-600 font-bold text-base mt-2">{{ wishlist_count|default:0 }} Items</p>
+              </div>
+            </div>
+          </a>
+        </div>
       </div>
+      {% endif %}
     </div>
   </div>
-  {% endif %}
 
   <!-- =================================================================== -->
   <!-- TRENDING PRODUCTS SECTION                                          -->
@@ -703,12 +850,14 @@
       
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {% for product in trending_products %}
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden cursor-pointer"
+             onclick="window.location.href='{% url 'product_detail' product.pk %}'">
           <div class="relative group">
             {% if product.image %}
               <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 product-hover-image"
                    data-main-src="{{ product.image.url }}"
-                   data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}">
+                   data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                   data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
             {% else %}
               <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
                 <i class="fas fa-gem text-6xl text-pink-400"></i>
@@ -719,6 +868,17 @@
                 Trending
               </span>
             </div>
+            {% if user.is_authenticated %}
+            <button type="button"
+                    onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                    class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+              <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+            </button>
+            {% else %}
+            <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+              <i class="far fa-heart text-pink-600"></i>
+            </a>
+            {% endif %}
           </div>
           
           <div class="p-6">
@@ -741,12 +901,12 @@
             </div>
             
             <div class="flex space-x-2">
-              <a href="{% url 'product_detail' product.pk %}" 
+              <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
                  class="flex-1 bg-pink-600 text-white text-center py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors duration-300 font-semibold">
                 View Details
               </a>
               {% if product.stock > 0 %}
-                <a href="{% url 'add_to_cart' product.pk %}" 
+                <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
                    class="bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300">
                   <i class="fas fa-shopping-cart"></i>
                 </a>
@@ -772,65 +932,197 @@
     </div>
   </div>
 
+  {% if approved_reviews %}
+  <div class="py-16 bg-gradient-to-b from-amber-50 to-pink-50 overflow-hidden">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800">What Our Customers Say</h2>
+        {% comment %} <p class="text-gray-600 mt-2">Real reviews approved by admin panel</p> {% endcomment %}
+      </div>
+      <div class="rope-line"></div>
+      <div class="review-slider-wrap mt-8">
+        <div id="reviewsRopeTrack" class="review-rope-track">
+          {% for review in approved_reviews %}
+          <article class="review-clip-card">
+            <div class="review-clip-pin">📎</div>
+            <div class="flex items-center gap-3 mb-2">
+              {% if review.reviewer_image %}
+              <img src="{{ review.reviewer_image.url }}" alt="{{ review.reviewer_name|default:review.user.username }}" class="w-10 h-10 rounded-full object-cover border border-pink-200">
+              {% else %}
+              <div class="w-10 h-10 rounded-full bg-pink-100 text-pink-600 font-bold flex items-center justify-center">
+                {% if review.reviewer_name %}{{ review.reviewer_name|slice:":1"|upper }}{% else %}{{ review.user.username|slice:":1"|upper }}{% endif %}
+              </div>
+              {% endif %}
+              <div>
+                <div class="font-semibold text-gray-800 text-sm">{{ review.reviewer_name|default:review.user.username }}</div>
+                <div class="text-xs text-yellow-500">
+                  {% for _ in "12345" %}
+                    {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <h4 class="font-semibold text-gray-800 text-sm mb-1">{{ review.title|default:"Loved this product!" }}</h4>
+            <p class="text-sm text-gray-600 line-clamp-4">{{ review.body|default:"Beautiful quality and premium finish." }}</p>
+            <div class="text-xs text-gray-400 mt-3">{{ review.product.name }}</div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
 <style>
-  /* Auto-scrolling gallery styles */
-  #jewelry-gallery {
-    animation: scroll-left 30s linear infinite;
+  .exquisite-marquee-outer {
+    overflow: hidden;
+    width: 100%;
+    mask-image: linear-gradient(90deg, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, black 5%, black 95%, transparent);
   }
-  
-  #jewelry-gallery.paused {
+  .exquisite-marquee-track {
+    width: max-content;
+    display: flex;
+    gap: 1rem;
+    animation: exquisite-marquee-loop 55s linear infinite;
+    will-change: transform;
+  }
+  .exquisite-marquee-track:hover {
     animation-play-state: paused;
   }
-  
-  @keyframes scroll-left {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-100%);
+  @keyframes exquisite-marquee-loop {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .exquisite-marquee-track {
+      animation: none;
     }
   }
-  
-  /* Responsive adjustments */
-  @media (max-width: 640px) {
-    #jewelry-gallery {
-      animation-duration: 25s;
-    }
+
+  .rope-line {
+    height: 4px;
+    background: repeating-linear-gradient(
+      90deg,
+      #7c5a3f 0px,
+      #7c5a3f 8px,
+      #8f6a4b 8px,
+      #8f6a4b 16px
+    );
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(124, 90, 63, 0.2);
   }
-  
-  @media (min-width: 1024px) {
-    #jewelry-gallery {
-      animation-duration: 35s;
-    }
+  .review-slider-wrap {
+    overflow: hidden;
+    padding: 0.5rem 0;
   }
-  
-  /* Smooth hover effects */
-  .jewelry-item:hover {
-    transform: translateY(-4px) scale(1.02);
+  .review-rope-track {
+    display: flex;
+    gap: 1rem;
+    will-change: transform;
+  }
+  .review-clip-card {
+    position: relative;
+    flex: 0 0 280px;
+    background: #fffaf6;
+    border: 1px solid #f2d9de;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    transform: rotate(-1deg);
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .review-clip-card:nth-child(even) { transform: rotate(1deg); }
+  .review-clip-card:hover {
+    transform: translateY(-4px) rotate(0deg);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.12);
+  }
+  .review-clip-pin {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.1rem;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.2));
   }
 </style>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const gallery = document.getElementById('jewelry-gallery');
-    
-    if (gallery) {
-      // Clone gallery items for seamless loop
-      const galleryItems = gallery.innerHTML;
-      gallery.innerHTML = galleryItems + galleryItems;
-      
-      // Pause on hover for better user interaction
-      gallery.addEventListener('mouseenter', function() {
-        gallery.classList.add('paused');
-      });
-      
-      // Resume on mouse leave
-      gallery.addEventListener('mouseleave', function() {
-        gallery.classList.remove('paused');
-      });
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
     }
+    return cookieValue;
+  }
+
+  function showWishlistToast(message) {
+    const el = document.createElement('div');
+    el.textContent = message;
+    el.className = 'fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-xl z-[9999] opacity-0 transition-opacity duration-300';
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.classList.remove('opacity-0'); });
+    setTimeout(() => {
+      el.classList.add('opacity-0');
+      setTimeout(() => el.remove(), 280);
+    }, 1600);
+  }
+
+  function updateWishlistCount(newCount) {
+    const dashboardCount = document.querySelector('a[href$="{% url "wishlist" %}"] p.text-pink-600');
+    if (dashboardCount) dashboardCount.textContent = `${newCount} Items`;
+  }
+
+  async function toggleWishlistCard(productId, btn) {
+    const res = await fetch(`/store/wishlist/toggle/${productId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    const icon = btn.querySelector('i');
+    if (icon) {
+      icon.classList.toggle('far', !data.in_wishlist);
+      icon.classList.toggle('fas', data.in_wishlist);
+    }
+    const currentCount = Number((document.querySelector('a[href$="{% url "wishlist" %}"] p.text-pink-600')?.textContent || '0').replace(/\D/g, '')) || 0;
+    const nextCount = data.in_wishlist ? currentCount + 1 : Math.max(0, currentCount - 1);
+    updateWishlistCount(nextCount);
+    showWishlistToast(data.in_wishlist ? 'Added to wishlist' : 'Removed from wishlist');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const reviewTrack = document.getElementById('reviewsRopeTrack');
+    if (!reviewTrack) return;
+    const originalItems = Array.from(reviewTrack.children);
+    if (originalItems.length < 2) return;
+    originalItems.forEach(item => reviewTrack.appendChild(item.cloneNode(true)));
+
+    let x = 0;
+    let paused = false;
+    const speed = 0.45;
+    const singleSetWidth = reviewTrack.scrollWidth / 2;
+
+    function animate() {
+      if (!paused) {
+        x -= speed;
+        if (Math.abs(x) >= singleSetWidth) x = 0;
+        reviewTrack.style.transform = `translateX(${x}px)`;
+      }
+      requestAnimationFrame(animate);
+    }
+    reviewTrack.addEventListener('mouseenter', () => { paused = true; });
+    reviewTrack.addEventListener('mouseleave', () => { paused = false; });
+    animate();
   });
 </script>
 

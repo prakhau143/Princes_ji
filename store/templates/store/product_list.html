@@ -59,7 +59,8 @@
   <!-- Product Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
     {% for product in products %}
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col group transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+    <div class="relative bg-white rounded-lg shadow-lg overflow-hidden flex flex-col group transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer"
+         onclick="window.location.href='{% url 'product_detail' product.pk %}'">
       <a href="{% url 'product_detail' product.pk %}" class="block overflow-hidden">
         {% if product.image %}
         <img
@@ -68,6 +69,7 @@
           class="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110 product-hover-image"
           data-main-src="{{ product.image.url }}"
           data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+          data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}"
         />
         {% else %}
         <div class="h-48 flex items-center justify-center bg-gray-100 text-gray-500">
@@ -75,6 +77,17 @@
         </div>
         {% endif %}
       </a>
+      {% if user.is_authenticated %}
+      <button type="button"
+              onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+              class="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+        <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+      </button>
+      {% else %}
+      <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+        <i class="far fa-heart text-pink-600"></i>
+      </a>
+      {% endif %}
 
       <div class="p-4 flex flex-col flex-grow">
         <h3 class="font-semibold text-lg text-gray-800 mb-1 truncate">
@@ -91,7 +104,7 @@
         </p>
 
         <div class="mt-auto space-y-2">
-          <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-full">
+          <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-full" onclick="event.stopPropagation();">
             {% csrf_token %}
             <button
               type="submit"
@@ -100,7 +113,7 @@
               Add to Cart
             </button>
           </form>
-          <form method="post" action="{% url 'add_to_cart' product.id %}?buynow=1" class="w-full">
+          <form method="post" action="{% url 'add_to_cart' product.id %}?buynow=1" class="w-full" onclick="event.stopPropagation();">
             {% csrf_token %}
             <button
               type="submit"
@@ -121,13 +134,63 @@
 
 </div>
 <script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  async function toggleWishlistCard(productId, btn) {
+    const res = await fetch(`/store/wishlist/toggle/${productId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    const icon = btn.querySelector('i');
+    if (!icon) return;
+    icon.classList.toggle('far', !data.in_wishlist);
+    icon.classList.toggle('fas', data.in_wishlist);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.product-hover-image').forEach((img) => {
       const main = img.dataset.mainSrc;
       const hover = img.dataset.hoverSrc;
-      if (!hover) return;
-      img.closest('.group')?.addEventListener('mouseenter', () => { img.src = hover; });
-      img.closest('.group')?.addEventListener('mouseleave', () => { img.src = main; });
+      const hoverVideo = img.dataset.hoverVideo;
+      const wrap = img.closest('.group');
+      if (!wrap) return;
+      wrap.addEventListener('mouseenter', () => {
+        if (hoverVideo && window.innerWidth >= 768) {
+          const video = document.createElement('video');
+          video.src = hoverVideo;
+          video.muted = true;
+          video.loop = true;
+          video.autoplay = true;
+          video.playsInline = true;
+          video.className = img.className;
+          video.dataset.hoverPlayer = '1';
+          img.style.display = 'none';
+          img.parentElement.appendChild(video);
+          return;
+        }
+        if (hover) img.src = hover;
+      });
+      wrap.addEventListener('mouseleave', () => {
+        img.src = main;
+        img.style.display = '';
+        const v = img.parentElement.querySelector('video[data-hover-player="1"]');
+        if (v) v.remove();
+      });
     });
   });
 </script>

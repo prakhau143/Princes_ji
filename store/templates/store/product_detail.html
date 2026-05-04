@@ -30,6 +30,18 @@
             </div>
             {% endif %}
           </div>
+          {% if product_videos %}
+          <div class="lg:col-span-2 -mt-4">
+            <div class="text-sm font-semibold text-gray-600 mb-2">Product Videos</div>
+            <div class="flex flex-wrap gap-3">
+              {% for pv in product_videos %}
+              <button type="button" onclick="swapMainVideo('{{ pv.video.url }}')" class="w-20 h-20 rounded-lg overflow-hidden border border-pink-200 bg-black text-white text-xs px-1">
+                ▶ Video {{ forloop.counter }}
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
           {% if product.additional_images.all %}
           <div class="lg:col-span-2 -mt-4">
             <div class="flex flex-wrap gap-3">
@@ -56,7 +68,7 @@
                 </span>
                 {% if product.stock > 0 %}
                 <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                  In Stock ({{ product.stock }})
+                  In Stock
                 </span>
                 {% else %}
                 <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
@@ -181,6 +193,14 @@
   function swapMainImage(url) {
     const img = document.getElementById('mainProductImage');
     if (img && url) img.src = url;
+  }
+
+  function swapMainVideo(url) {
+    const img = document.getElementById('mainProductImage');
+    if (!img || !url) return;
+    const wrapper = img.parentElement;
+    if (!wrapper) return;
+    wrapper.innerHTML = `<video id="mainProductImage" src="${url}" class="w-full max-w-md h-80 sm:h-96 object-cover rounded-2xl shadow-lg" autoplay muted loop playsinline controls></video>`;
   }
 </script>
   <!-- =================================================================== -->

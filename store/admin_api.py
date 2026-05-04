@@ -4,6 +4,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Sum, Count, F, ExpressionWrapper, DecimalField
+from django.db.models.functions import TruncDate, TruncMonth
 import json
 from .models import (
     Order,
@@ -17,18 +18,23 @@ from .models import (
     MarketingSpend,
     ExpenseEntry,
     ProductReview,
+    Announcement,
     WishlistItem,
     HomepageSectionProduct,
     HomepageSectionContent,
     ProductImage,
+    ProductVideo,
     ProductVariant,
     OrderLifecycleLog,
+    EditorialMedia,
 )
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import csv
 import io
 from django.http import HttpResponse
+from django.core.paginator import Paginator
+from django.conf import settings
 from datetime import datetime
 from django.utils import timezone
 from datetime import timedelta
@@ -238,7 +244,7 @@ def add_product(request):
             if not all([name, price, category_id, stock]):
                 return JsonResponse({'success': False, 'error': 'Missing required fields'})
             
-            category = Category.objects.get(id=category_id)
+            category = Category.objects.get(id=category_id, is_active=True)
             
             product = Product.objects.create(
                 name=name,
@@ -251,6 +257,11 @@ def add_product(request):
                 is_active=request.POST.get('is_active', '1') in ['1', 'true', 'on', 'yes'],
                 image=image
             )
+            for extra in request.FILES.getlist('additional_images'):
+                ProductImage.objects.create(product=product, image=extra)
+            video_file = request.FILES.get('video')
+            if video_file:
+                ProductVideo.objects.create(product=product, video=video_file)
             
             return JsonResponse({'success': True, 'message': 'Product created successfully'})
         except Exception as e:
@@ -346,17 +357,37 @@ def edit_product_api(request, product_id):
             if request.POST.get('is_active') is not None:
                 product.is_active = request.POST.get('is_active') in ['1', 'true', 'on', 'yes']
             
-            # Handle image upload if provided
             if 'image' in request.FILES:
                 product.image = request.FILES['image']
-            
+
             product.save()
-            
+
+            for extra in request.FILES.getlist('additional_images'):
+                ProductImage.objects.create(product=product, image=extra)
+
+            delete_img_ids = request.POST.getlist('delete_image_ids')
+            if delete_img_ids:
+                ProductImage.objects.filter(product=product, id__in=delete_img_ids).delete()
+
+            video_file = request.FILES.get('video')
+            if video_file:
+                product.videos.all().delete()
+                ProductVideo.objects.create(product=product, video=video_file)
+
             return JsonResponse({'success': True, 'message': 'Product updated successfully'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@staff_member_required
+@require_http_methods(["POST"])
+def toggle_product_active_api(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    product.is_active = not product.is_active
+    product.save(update_fields=["is_active"])
+    return JsonResponse({"success": True, "is_active": product.is_active})
+
 
 @staff_member_required
 def delete_product_api(request, product_id):
@@ -390,9 +421,17 @@ def get_product_api(request, product_id):
             'cost_price': float(product.cost_price),
             'low_stock_threshold': product.low_stock_threshold,
             'is_active': product.is_active,
-            'image_url': product.image.url if product.image else None
+            'image_url': product.image.url if product.image else None,
+            'additional_images': [
+                {'id': img.id, 'url': img.image.url}
+                for img in product.additional_images.all()
+            ],
+            'videos': [
+                {'id': v.id, 'url': v.video.url}
+                for v in product.videos.all()
+            ],
         }
-        
+
         return JsonResponse({'success': True, 'product': product_data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -498,7 +537,7 @@ def mark_all_notifications_read(request):
 @require_http_methods(["GET", "POST"])
 def categories_api(request):
     if request.method == "GET":
-        categories = Category.objects.order_by("name")
+        categories = Category.objects.filter(is_active=True).order_by("name")
         return JsonResponse(
             {
                 "success": True,
@@ -511,6 +550,9 @@ def categories_api(request):
         return JsonResponse({"success": False, "error": "Category name is required"})
 
     category, created = Category.objects.get_or_create(name=name)
+    if not category.is_active:
+        category.is_active = True
+        category.save(update_fields=["is_active"])
     return JsonResponse(
         {
             "success": True,
@@ -524,15 +566,8 @@ def categories_api(request):
 @require_http_methods(["POST"])
 def delete_category_api(request, category_id):
     category = get_object_or_404(Category, id=category_id)
-    # If products exist, prevent accidental delete
-    if category.products.exists():
-        return JsonResponse(
-            {
-                "success": False,
-                "error": "Category has products. Move products first, then delete.",
-            }
-        )
-    category.delete()
+    category.is_active = False
+    category.save(update_fields=["is_active"])
     return JsonResponse({"success": True})
 
 
@@ -829,9 +864,12 @@ def reviews_admin_api(request):
                         "product": r.product.name,
                         "user": r.user.username,
                         "rating": r.rating,
+                        "reviewer_name": r.reviewer_name,
+                        "reviewer_image": r.reviewer_image.url if r.reviewer_image else "",
                         "title": r.title,
                         "body": r.body,
                         "is_approved": r.is_approved,
+                        "is_visible": r.is_visible,
                         "created_at": r.created_at.strftime("%Y-%m-%d %H:%M"),
                     }
                     for r in reviews
@@ -839,12 +877,64 @@ def reviews_admin_api(request):
             }
         )
 
-    review_id = request.POST.get("review_id")
     action = request.POST.get("action")
+    if action == "create":
+        product_id = request.POST.get("product_id")
+        rating = int(request.POST.get("rating") or 5)
+        title = (request.POST.get("title") or "").strip()
+        body = (request.POST.get("body") or "").strip()
+        is_approved = str(request.POST.get("is_approved") or "1").lower() in ["1", "true", "yes", "on"]
+        is_visible = str(request.POST.get("is_visible") or "1").lower() in ["1", "true", "yes", "on"]
+        reviewer_name = (request.POST.get("reviewer_name") or "").strip()
+        if not product_id or not body:
+            return JsonResponse({"success": False, "error": "Product and review text are required"})
+        review = ProductReview.objects.create(
+            product_id=product_id,
+            user=request.user,
+            rating=max(1, min(5, rating)),
+            title=title,
+            body=body,
+            reviewer_name=reviewer_name,
+            is_approved=is_approved,
+            is_visible=is_visible,
+        )
+        if request.FILES.get("reviewer_image"):
+            review.reviewer_image = request.FILES["reviewer_image"]
+            review.save(update_fields=["reviewer_image"])
+        return JsonResponse({"success": True, "id": review.id})
+    if action == "edit":
+        review_id = request.POST.get("review_id")
+        review = get_object_or_404(ProductReview, id=review_id)
+        review.rating = max(1, min(5, int(request.POST.get("rating") or review.rating)))
+        review.title = (request.POST.get("title") or "").strip()
+        review.body = (request.POST.get("body") or "").strip()
+        review.reviewer_name = (request.POST.get("reviewer_name") or "").strip()
+        review.is_approved = str(request.POST.get("is_approved") or "0").lower() in ["1", "true", "yes", "on"]
+        review.is_visible = str(request.POST.get("is_visible") or "0").lower() in ["1", "true", "yes", "on"]
+        if request.FILES.get("reviewer_image"):
+            review.reviewer_image = request.FILES["reviewer_image"]
+        review.save()
+        return JsonResponse({"success": True})
+
+    review_id = request.POST.get("review_id")
     review = get_object_or_404(ProductReview, id=review_id)
     if action == "approve":
         review.is_approved = True
         review.save(update_fields=["is_approved"])
+    elif action == "toggle_visibility":
+        value = str(request.POST.get("value") or "").strip()
+        if value in ["0", "1"]:
+            review.is_approved = value == "1"
+        else:
+            review.is_approved = not review.is_approved
+        review.save(update_fields=["is_approved"])
+    elif action == "toggle_active":
+        value = str(request.POST.get("value") or "").strip()
+        if value in ["0", "1"]:
+            review.is_visible = value == "1"
+        else:
+            review.is_visible = not review.is_visible
+        review.save(update_fields=["is_visible"])
     elif action == "reject":
         review.delete()
         return JsonResponse({"success": True, "deleted": True})
@@ -852,6 +942,59 @@ def reviews_admin_api(request):
         return JsonResponse({"success": False, "error": "Invalid action"})
 
     return JsonResponse({"success": True, "is_approved": review.is_approved})
+
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def announcements_api(request):
+    if request.method == "GET":
+        items = Announcement.objects.order_by("-created_at")[:200]
+        return JsonResponse(
+            {
+                "success": True,
+                "items": [
+                    {
+                        "id": a.id,
+                        "title": a.title,
+                        "message": a.message,
+                        "is_active": a.is_active,
+                        "created_at": a.created_at.strftime("%Y-%m-%d %H:%M"),
+                    }
+                    for a in items
+                ],
+            }
+        )
+    action = (request.POST.get("action") or "create").strip()
+    if action == "create":
+        message = (request.POST.get("message") or "").strip()
+        if not message:
+            return JsonResponse({"success": False, "error": "Message is required"})
+        Announcement.objects.create(
+            title=(request.POST.get("title") or "").strip(),
+            message=message,
+            is_active=str(request.POST.get("is_active") or "1").lower() in ["1", "true", "yes", "on"],
+        )
+        return JsonResponse({"success": True})
+    if action == "edit":
+        item = get_object_or_404(Announcement, id=request.POST.get("announcement_id"))
+        message = (request.POST.get("message") or "").strip()
+        if not message:
+            return JsonResponse({"success": False, "error": "Message is required"})
+        item.title = (request.POST.get("title") or "").strip()
+        item.message = message
+        item.is_active = str(request.POST.get("is_active") or "1").lower() in ["1", "true", "yes", "on"]
+        item.save()
+        return JsonResponse({"success": True})
+    if action == "toggle":
+        item = get_object_or_404(Announcement, id=request.POST.get("announcement_id"))
+        item.is_active = not item.is_active
+        item.save(update_fields=["is_active"])
+        return JsonResponse({"success": True, "is_active": item.is_active})
+    if action == "delete":
+        item = get_object_or_404(Announcement, id=request.POST.get("announcement_id"))
+        item.delete()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "error": "Invalid action"})
 
 
 @staff_member_required
@@ -1045,15 +1188,29 @@ def product_images_api(request, product_id):
         return JsonResponse(
             {
                 "success": True,
-                "items": [{"id": i.id, "url": i.image.url} for i in images if i.image],
+                "items": [
+                    {
+                        "id": i.id,
+                        "url": i.image.url,
+                        "is_primary": i.is_primary,
+                        "sort_order": i.sort_order,
+                    }
+                    for i in images if i.image
+                ],
             }
         )
 
     files = request.FILES.getlist("images")
     if not files:
         return JsonResponse({"success": False, "error": "No images uploaded"})
-    for f in files[:6]:
-        ProductImage.objects.create(product=product, image=f)
+    current_count = product.additional_images.count()
+    for index, f in enumerate(files[:6]):
+        ProductImage.objects.create(
+            product=product,
+            image=f,
+            sort_order=current_count + index,
+            is_primary=(current_count == 0 and index == 0),
+        )
     return JsonResponse({"success": True})
 
 
@@ -1062,6 +1219,37 @@ def product_images_api(request, product_id):
 def delete_product_image_api(request, image_id):
     image = get_object_or_404(ProductImage, id=image_id)
     image.delete()
+    return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def set_primary_product_image_api(request, image_id):
+    image = get_object_or_404(ProductImage, id=image_id)
+    ProductImage.objects.filter(product=image.product).update(is_primary=False)
+    image.is_primary = True
+    image.save(update_fields=["is_primary"])
+    return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def reorder_product_images_api(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    order = request.POST.get("order", "")
+    image_ids = []
+    for token in order.split(","):
+        token = token.strip()
+        if token.isdigit():
+            image_ids.append(int(token))
+    if not image_ids:
+        return JsonResponse({"success": False, "error": "No order data provided"})
+    images = {img.id: img for img in product.additional_images.all()}
+    for idx, image_id in enumerate(image_ids):
+        img = images.get(image_id)
+        if img:
+            img.sort_order = idx
+            img.save(update_fields=["sort_order"])
     return JsonResponse({"success": True})
 
 
@@ -1241,6 +1429,245 @@ def purchase_analytics_api(request):
 
 
 @staff_member_required
+@require_http_methods(["GET"])
+def dashboard_graphs_api(request):
+    start = request.GET.get("start")
+    end = request.GET.get("end")
+    period = (request.GET.get("period") or "monthly").lower()
+    order_qs = Order.objects.filter(status="delivered")
+    wishlist_qs = WishlistItem.objects.all()
+    if start:
+        order_qs = order_qs.filter(created_at__date__gte=start)
+        wishlist_qs = wishlist_qs.filter(created_at__date__gte=start)
+    if end:
+        order_qs = order_qs.filter(created_at__date__lte=end)
+        wishlist_qs = wishlist_qs.filter(created_at__date__lte=end)
+
+    if period in ["yearly", "monthly"]:
+        sales_grouped = (
+            order_qs.annotate(day=TruncMonth("created_at"))
+            .values("day")
+            .annotate(total_sales=Sum("total"))
+            .order_by("day")
+        )
+        sales = [
+            {"day": d["day"].strftime("%Y-%m"), "value": float(d["total_sales"] or 0)}
+            for d in sales_grouped
+            if d["day"]
+        ][-12:]
+    else:
+        sales_grouped = (
+            order_qs.annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(total_sales=Sum("total"))
+            .order_by("day")
+        )
+        limit = 7 if period == "daily" else 8
+        sales = [
+            {"day": d["day"].strftime("%Y-%m-%d"), "value": float(d["total_sales"] or 0)}
+            for d in sales_grouped
+            if d["day"]
+        ][-limit:]
+
+    wishlist_counts = wishlist_qs.values("user_id").annotate(wishlist_count=Count("id"))
+    order_counts = (
+        order_qs
+        .values("user_id")
+        .annotate(order_count=Count("id"))
+    )
+    user_map = {}
+    for w in wishlist_counts:
+        user_map[w["user_id"]] = {"wishlist": w["wishlist_count"], "orders": 0}
+    for o in order_counts:
+        row = user_map.setdefault(o["user_id"], {"wishlist": 0, "orders": 0})
+        row["orders"] = o["order_count"]
+    users = User.objects.filter(id__in=list(user_map.keys())).only("id", "username", "first_name", "last_name")
+    name_map = {u.id: (u.get_full_name().strip() or u.username) for u in users}
+    wishlist_vs_orders = sorted(
+        [
+            {
+                "user": name_map.get(uid, f"User {uid}"),
+                "wishlist": vals["wishlist"],
+                "orders": vals["orders"],
+                "activity": vals["wishlist"] + vals["orders"],
+            }
+            for uid, vals in user_map.items()
+        ],
+        key=lambda x: x["activity"],
+        reverse=True,
+    )[:10]
+    for row in wishlist_vs_orders:
+        row.pop("activity", None)
+
+    return JsonResponse(
+        {
+            "success": True,
+            "sales": sales,
+            "wishlist_vs_orders": wishlist_vs_orders,
+        }
+    )
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def dashboard_kpis_api(request):
+    period = (request.GET.get("period") or "monthly").lower()
+    now = timezone.now()
+    period_days = {
+        "daily": 1,
+        "weekly": 7,
+        "monthly": 30,
+        "yearly": 365,
+    }
+    days = period_days.get(period, 30)
+    start = now - timedelta(days=days)
+    previous_start = start - timedelta(days=days)
+
+    delivered_now = Order.objects.filter(status="delivered", created_at__gte=start)
+    delivered_prev = Order.objects.filter(
+        status="delivered", created_at__gte=previous_start, created_at__lt=start
+    )
+    orders_now = Order.objects.filter(created_at__gte=start)
+    orders_prev = Order.objects.filter(created_at__gte=previous_start, created_at__lt=start)
+
+    earnings_now = float(delivered_now.aggregate(total=Sum("total"))["total"] or 0)
+    earnings_prev = float(delivered_prev.aggregate(total=Sum("total"))["total"] or 0)
+    total_orders_now = orders_now.count()
+    total_orders_prev = orders_prev.count()
+    customers_now = orders_now.values("user_id").distinct().count()
+    customers_prev = orders_prev.values("user_id").distinct().count()
+
+    delivered_items_now = OrderItem.objects.filter(order__in=delivered_now).annotate(
+        line_cost=ExpressionWrapper(F("quantity") * F("product__cost_price"), output_field=DecimalField(max_digits=12, decimal_places=2))
+    )
+    delivered_items_prev = OrderItem.objects.filter(order__in=delivered_prev).annotate(
+        line_cost=ExpressionWrapper(F("quantity") * F("product__cost_price"), output_field=DecimalField(max_digits=12, decimal_places=2))
+    )
+    cost_now = float(delivered_items_now.aggregate(total=Sum("line_cost"))["total"] or 0)
+    cost_prev = float(delivered_items_prev.aggregate(total=Sum("line_cost"))["total"] or 0)
+    balance_now = earnings_now - cost_now
+    balance_prev = earnings_prev - cost_prev
+
+    def growth(current, previous):
+        if not previous:
+            return 100.0 if current else 0.0
+        return round(((current - previous) / previous) * 100, 2)
+
+    return JsonResponse(
+        {
+            "success": True,
+            "period": period,
+            "kpis": {
+                "earnings": {"value": round(earnings_now, 2), "growth": growth(earnings_now, earnings_prev)},
+                "orders": {"value": total_orders_now, "growth": growth(total_orders_now, total_orders_prev)},
+                "customers": {"value": customers_now, "growth": growth(customers_now, customers_prev)},
+                "balance": {"value": round(balance_now, 2), "growth": growth(balance_now, balance_prev)},
+            },
+        }
+    )
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def dashboard_top_products_api(request):
+    limit = int(request.GET.get("limit") or 30)
+    top_products = (
+        OrderItem.objects.values("product_id", "product__name", "product__price", "product__image")
+        .annotate(
+            order_count=Count("order_id", distinct=True),
+            units_sold=Sum("quantity"),
+            revenue=Sum(
+                ExpressionWrapper(
+                    F("quantity") * F("product__price"),
+                    output_field=DecimalField(max_digits=12, decimal_places=2),
+                )
+            ),
+        )
+        .order_by("-units_sold", "-order_count")[:limit]
+    )
+    product_ids = [p["product_id"] for p in top_products if p.get("product_id")]
+    primary_extra_map = {
+        img.product_id: img.image.url
+        for img in ProductImage.objects.filter(product_id__in=product_ids, is_primary=True)
+    }
+
+    def normalized_media_url(raw_value):
+        if not raw_value:
+            return ""
+        if str(raw_value).startswith(("http://", "https://", "/")):
+            return str(raw_value)
+        return f"{settings.MEDIA_URL}{raw_value}"
+
+    return JsonResponse(
+        {
+            "success": True,
+            "items": [
+                {
+                    "product_id": p["product_id"],
+                    "name": p["product__name"] or "Untitled",
+                    "price": float(p["product__price"] or 0),
+                    "image_url": (
+                        primary_extra_map.get(p["product_id"])
+                        or normalized_media_url(p["product__image"])
+                    ),
+                    "units_sold": int(p["units_sold"] or 0),
+                    "order_count": int(p["order_count"] or 0),
+                    "revenue": float(p["revenue"] or 0),
+                }
+                for p in top_products
+            ],
+        }
+    )
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def dashboard_recent_orders_api(request):
+    page = int(request.GET.get("page") or 1)
+    page_size = int(request.GET.get("page_size") or 8)
+    status = (request.GET.get("status") or "").strip().lower()
+
+    qs = Order.objects.select_related("user").order_by("-created_at")
+    if status:
+        qs = qs.filter(status=status)
+
+    paginator = Paginator(qs, page_size)
+    page_obj = paginator.get_page(page)
+    items = []
+    for order in page_obj.object_list:
+        mobile = order.mobile_number
+        if not mobile:
+            profile = getattr(order.user, "userprofile", None)
+            mobile = getattr(profile, "mobile", "") if profile else ""
+        items.append(
+            {
+                "id": order.id,
+                "customer_name": (order.user.get_full_name().strip() or order.user.username),
+                "email": order.user.email,
+                "mobile": mobile or "N/A",
+                "address": order.shipping_address or "",
+                "total": float(order.total or 0),
+                "status": order.status,
+                "status_display": order.get_status_display(),
+                "created_at": order.created_at.strftime("%Y-%m-%d %H:%M"),
+            }
+        )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "items": items,
+            "pagination": {
+                "page": page_obj.number,
+                "num_pages": paginator.num_pages,
+                "has_previous": page_obj.has_previous(),
+                "has_next": page_obj.has_next(),
+            },
+        }
+    )
+
+
+@staff_member_required
 @require_http_methods(["POST"])
 def bulk_import_products_api(request):
     csv_file = request.FILES.get("file")
@@ -1269,3 +1696,103 @@ def bulk_import_products_api(request):
         return JsonResponse({"success": True, "created": created})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
+
+
+# ─── Simple Product List (for dropdowns) ─────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET"])
+def product_list_simple_api(request):
+    products = Product.objects.filter(is_active=True).order_by('name').values('id', 'name')
+    return JsonResponse({"success": True, "products": list(products)})
+
+
+# ─── Editorial Gallery ────────────────────────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def editorial_api(request):
+    if request.method == "GET":
+        items = EditorialMedia.objects.select_related("product").all()
+        return JsonResponse({
+            "success": True,
+            "items": [
+                {
+                    "id": item.id,
+                    "media_type": item.media_type,
+                    "file_url": item.file.url,
+                    "product_id": item.product_id,
+                    "product_name": item.product.name if item.product else "",
+                    "product_url": f"/store/product/{item.product_id}/" if item.product_id else "",
+                    "order": item.order,
+                    "is_active": item.is_active,
+                }
+                for item in items
+            ],
+        })
+
+    # POST – create
+    try:
+        media_type = request.POST.get("media_type", "image")
+        file = request.FILES.get("file")
+        if not file:
+            return JsonResponse({"success": False, "error": "File is required"})
+        product_id = request.POST.get("product_id") or None
+        if not product_id:
+            return JsonResponse({"success": False, "error": "A linked product must be selected"})
+        try:
+            order = int(request.POST.get("order") or 0)
+        except ValueError:
+            order = 0
+        item = EditorialMedia.objects.create(
+            media_type=media_type,
+            file=file,
+            product_id=product_id,
+            order=order,
+            is_active=True,
+        )
+        return JsonResponse({"success": True, "id": item.id})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def editorial_update_api(request, item_id):
+    item = get_object_or_404(EditorialMedia, id=item_id)
+    try:
+        if "file" in request.FILES:
+            item.file = request.FILES["file"]
+        product_id = request.POST.get("product_id") or None
+        if not product_id:
+            return JsonResponse({"success": False, "error": "A linked product must be selected"})
+        item.product_id = product_id
+        try:
+            item.order = int(request.POST.get("order") or item.order)
+        except ValueError:
+            pass
+        is_active = request.POST.get("is_active")
+        if is_active is not None:
+            item.is_active = is_active in ["1", "true", "on", "yes"]
+        item.save()
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def editorial_delete_api(request, item_id):
+    item = get_object_or_404(EditorialMedia, id=item_id)
+    item.file.delete(save=False)
+    item.delete()
+    return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def editorial_toggle_api(request, item_id):
+    item = get_object_or_404(EditorialMedia, id=item_id)
+    item.is_active = not item.is_active
+    item.save(update_fields=["is_active"])
+    return JsonResponse({"success": True, "is_active": item.is_active})

@@ -2,70 +2,220 @@
 {% load static %}
 
 {% block content %}
+<style>
+  .wishlist-carousel-track {
+    display: flex;
+    transition: transform 0.4s ease;
+  }
+  .wishlist-carousel-card {
+    flex: 0 0 calc(50% - 0.75rem);
+  }
+  @media (min-width: 640px) {
+    .wishlist-carousel-card {
+      flex: 0 0 calc(33.333% - 0.75rem);
+    }
+  }
+  @media (min-width: 1024px) {
+    .wishlist-carousel-card {
+      flex: 0 0 calc(25% - 0.75rem);
+    }
+  }
+</style>
+
 <div class="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 py-10">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">My Wishlist</h1>
       <a href="{% url 'product_list' %}" class="text-pink-600 font-semibold hover:underline">Continue shopping →</a>
     </div>
 
     {% if items %}
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-        {% for item in items %}
-          <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <a href="{% url 'product_detail' item.product.pk %}">
-              {% if item.product.image %}
-                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-full h-44 sm:h-52 object-cover">
-              {% else %}
-                <div class="w-full h-44 sm:h-52 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                  <i class="fas fa-gem text-5xl text-pink-400"></i>
-                </div>
-              {% endif %}
-            </a>
-            <div class="p-4">
-              <div class="font-bold text-gray-900 truncate">{{ item.product.name }}</div>
-              <div class="text-pink-600 font-extrabold mt-1">₹{{ item.product.price|floatformat:2 }}</div>
-              <div class="mt-4 flex gap-2">
-                <a class="flex-1 bg-pink-600 hover:bg-pink-700 text-white text-center py-2 rounded-xl font-semibold"
-                   href="{% url 'product_detail' item.product.pk %}">
-                  View
+      <!-- Carousel wrapper -->
+      <div class="relative">
+        <!-- Left button -->
+        <button id="wishlistPrev"
+                class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-pink-600 hover:bg-pink-50 transition"
+                onclick="wishlistSlide(-1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Overflow container -->
+        <div class="overflow-hidden mx-6" id="wishlistViewport">
+          <div class="wishlist-carousel-track gap-x-6" id="wishlistTrack">
+            {% for item in items %}
+            <div class="wishlist-carousel-card">
+              <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <a href="{% url 'product_detail' item.product.pk %}">
+                  {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}"
+                         class="w-full h-44 sm:h-52 object-cover">
+                  {% else %}
+                    <div class="w-full h-44 sm:h-52 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                      <i class="fas fa-gem text-5xl text-pink-400"></i>
+                    </div>
+                  {% endif %}
                 </a>
-                <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-xl"
-                        onclick="toggleWishlist({{ item.product.pk }}, this)">
-                  <i class="fas fa-heart-broken"></i>
-                </button>
+                <div class="p-4">
+                  <div class="font-bold text-gray-900 truncate">{{ item.product.name }}</div>
+                  <div class="text-pink-600 font-extrabold mt-1">₹{{ item.product.price|floatformat:2 }}</div>
+                  <div class="mt-4 flex gap-2">
+                    <a class="flex-1 bg-pink-600 hover:bg-pink-700 text-white text-center py-2 rounded-xl font-semibold"
+                       href="{% url 'product_detail' item.product.pk %}">View</a>
+                    <button class="bg-gray-100 hover:bg-red-100 text-gray-800 hover:text-red-600 py-2 px-4 rounded-xl transition"
+                            onclick="toggleWishlist({{ item.product.pk }}, this)">
+                      <i class="fas fa-heart-broken"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+            {% endfor %}
           </div>
-        {% endfor %}
+        </div>
+
+        <!-- Right button -->
+        <button id="wishlistNext"
+                class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-pink-600 hover:bg-pink-50 transition"
+                onclick="wishlistSlide(1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
+
+      <!-- Dot indicators -->
+      <div class="flex justify-center gap-2 mt-6" id="wishlistDots"></div>
+
     {% else %}
       <div class="bg-white rounded-2xl shadow-lg p-10 text-center">
         <div class="text-6xl text-pink-400 mb-4"><i class="fas fa-heart"></i></div>
         <p class="text-xl font-bold text-gray-900">Your wishlist is empty</p>
         <p class="text-gray-600 mt-2">Tap the heart icon on any product to save it here.</p>
-        <a href="{% url 'product_list' %}" class="inline-block mt-6 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-semibold">
+        <a href="{% url 'product_list' %}"
+           class="inline-block mt-6 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-semibold">
           Browse products
         </a>
       </div>
     {% endif %}
+
+    <!-- Owner's Favourites Section -->
+    {% if owners_fav %}
+    <div class="mt-16">
+      <div class="flex items-center gap-3 mb-8">
+        <span class="text-3xl">👑</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900">
+          Owner's <span class="text-pink-600">Favourites</span>
+        </h2>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for product in owners_fav %}
+        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden cursor-pointer"
+             onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+          {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                 class="w-full h-44 sm:h-52 object-cover">
+          {% else %}
+            <div class="w-full h-44 sm:h-52 bg-gradient-to-br from-yellow-100 to-pink-100 flex items-center justify-center">
+              <i class="fas fa-gem text-5xl text-yellow-400"></i>
+            </div>
+          {% endif %}
+          <div class="p-4">
+            <div class="font-bold text-gray-900 truncate">{{ product.name }}</div>
+            <div class="text-pink-600 font-extrabold mt-1">₹{{ product.price|floatformat:2 }}</div>
+            <div class="mt-3 flex gap-2">
+              <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                 class="flex-1 bg-pink-600 hover:bg-pink-700 text-white text-center py-2 rounded-xl font-semibold text-sm">
+                View
+              </a>
+              {% if product.stock > 0 %}
+              <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                 class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded-xl">
+                <i class="fas fa-shopping-cart text-sm"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 </div>
 
 <script>
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
+  /* ---- Carousel ---- */
+  let currentSlide = 0;
+
+  function getVisibleCount() {
+    if (window.innerWidth >= 1024) return 4;
+    if (window.innerWidth >= 640)  return 3;
+    return 2;
+  }
+
+  function getCardWidth() {
+    const track = document.getElementById('wishlistTrack');
+    if (!track) return 0;
+    const card = track.querySelector('.wishlist-carousel-card');
+    if (!card) return 0;
+    return card.offsetWidth + 24; /* 24px = gap-x-6 */
+  }
+
+  function totalSlides() {
+    const track = document.getElementById('wishlistTrack');
+    if (!track) return 0;
+    return track.querySelectorAll('.wishlist-carousel-card').length;
+  }
+
+  function renderDots() {
+    const dotsEl = document.getElementById('wishlistDots');
+    if (!dotsEl) return;
+    const count = totalSlides();
+    const vis = getVisibleCount();
+    const pages = Math.max(1, count - vis + 1);
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < pages; i++) {
+      const dot = document.createElement('button');
+      dot.className = `w-2 h-2 rounded-full transition-all ${i === currentSlide ? 'bg-pink-600 w-4' : 'bg-gray-300'}`;
+      dot.onclick = () => goToSlide(i);
+      dotsEl.appendChild(dot);
     }
-    return cookieValue;
+  }
+
+  function goToSlide(index) {
+    const track = document.getElementById('wishlistTrack');
+    if (!track) return;
+    const count = totalSlides();
+    const vis = getVisibleCount();
+    const maxSlide = Math.max(0, count - vis);
+    currentSlide = Math.min(Math.max(index, 0), maxSlide);
+    track.style.transform = `translateX(-${currentSlide * getCardWidth()}px)`;
+    renderDots();
+    document.getElementById('wishlistPrev').style.opacity = currentSlide === 0 ? '0.4' : '1';
+    document.getElementById('wishlistNext').style.opacity = currentSlide >= maxSlide ? '0.4' : '1';
+  }
+
+  function wishlistSlide(dir) {
+    goToSlide(currentSlide + dir);
+  }
+
+  window.addEventListener('resize', () => goToSlide(currentSlide));
+  document.addEventListener('DOMContentLoaded', () => {
+    renderDots();
+    goToSlide(0);
+  });
+
+  /* ---- Wishlist toggle ---- */
+  function getCookie(name) {
+    let v = null;
+    if (document.cookie) {
+      document.cookie.split(';').forEach(c => {
+        c = c.trim();
+        if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+      });
+    }
+    return v;
   }
 
   async function toggleWishlist(productId, btn) {
@@ -74,14 +224,14 @@
       headers: { 'X-CSRFToken': getCookie('csrftoken') }
     });
     const data = await res.json();
-    if (data.success) {
-      // remove card from DOM if removed
-      if (!data.in_wishlist) {
-        const card = btn.closest('.bg-white');
-        if (card) card.remove();
+    if (data.success && !data.in_wishlist) {
+      const card = btn.closest('.wishlist-carousel-card');
+      if (card) {
+        card.remove();
+        goToSlide(currentSlide);
+        renderDots();
       }
     }
   }
 </script>
 {% endblock %}
-

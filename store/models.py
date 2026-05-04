@@ -35,6 +35,7 @@ class UserProfile(models.Model):
 # Category model
 class Category(models.Model):
 	name = models.CharField(max_length=100, unique=True)
+	is_active = models.BooleanField(default=True)
 
 	def __str__(self):
 		return self.name
@@ -71,18 +72,38 @@ class Product(models.Model):
 			return self.image.url
 		return None
 
+	def first_video_url(self):
+		first_video = self.videos.first()
+		if first_video and first_video.video:
+			return first_video.video.url
+		return None
+
 
 # Product Additional Images (max 4 images per product including main)
 class ProductImage(models.Model):
 	product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='additional_images')
 	image = models.ImageField(upload_to='products/additional/')
+	is_primary = models.BooleanField(default=False)
+	sort_order = models.PositiveIntegerField(default=0)
 	created_at = models.DateTimeField(auto_now_add=True)
 	
 	class Meta:
-		ordering = ['created_at']
+		ordering = ['sort_order', 'created_at']
 	
 	def __str__(self):
 		return f"Image for {self.product.name}"
+
+
+class ProductVideo(models.Model):
+	product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='videos')
+	video = models.FileField(upload_to='products/videos/')
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['created_at']
+
+	def __str__(self):
+		return f"Video for {self.product.name}"
 
 
 # Order model
@@ -212,6 +233,7 @@ class HomepageSectionProduct(models.Model):
 		('new_launch', 'New Launch Products'),
 		('featured', 'Featured Products'),
 		('exquisite', 'Exquisite Collection'),
+		('owners_fav', "Owner's Favourites"),
 	]
 	
 	section_type = models.CharField(max_length=20, choices=SECTION_CHOICES)
@@ -276,10 +298,13 @@ class ProductReview(models.Model):
 	product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
 	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='product_reviews')
 	order_item = models.OneToOneField('OrderItem', on_delete=models.CASCADE, null=True, blank=True, related_name='review')
+	reviewer_name = models.CharField(max_length=120, blank=True)
+	reviewer_image = models.ImageField(upload_to='reviewers/', blank=True, null=True)
 	rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
 	title = models.CharField(max_length=200, blank=True)
 	body = models.TextField(blank=True)
 	is_approved = models.BooleanField(default=False)
+	is_visible = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 
 	class Meta:
@@ -424,3 +449,25 @@ class OrderLifecycleLog(models.Model):
 
 	def __str__(self):
 		return f"Order #{self.order_id} - {self.event_type}"
+
+
+class EditorialMedia(models.Model):
+	MEDIA_TYPES = [('image', 'Image'), ('video', 'Video')]
+	media_type = models.CharField(max_length=5, choices=MEDIA_TYPES, default='image')
+	file = models.FileField(upload_to='editorial/')
+	product = models.ForeignKey(
+		'Product', on_delete=models.SET_NULL, null=True, blank=True,
+		related_name='editorial_media',
+		help_text='Redirect to this product when clicked',
+	)
+	order = models.PositiveIntegerField(default=0, help_text='Sort order (lower = first)')
+	is_active = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['order', 'created_at']
+		verbose_name = 'Editorial Media'
+		verbose_name_plural = '🗞️ Editorial Gallery'
+
+	def __str__(self):
+		return f"{self.get_media_type_display()} — {self.file.name}"

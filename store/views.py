@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from .models import (
 	UserProfile, Order, OrderItem, Product, Category, Cart, CartItem,
 	Announcement, HomepageSectionProduct, InstagramReel, TrustBadge, WishlistItem, ProductReview,
-	HomepageSectionContent, OrderLifecycleLog
+	HomepageSectionContent, OrderLifecycleLog, EditorialMedia,
 )
 from django import forms
 
@@ -206,15 +206,19 @@ def remove_from_cart_view(request, item_id):
 # List products by category
 @login_required
 def category_products_view(request, category_id):
-	category = get_object_or_404(Category, pk=category_id)
+	category = get_object_or_404(Category, pk=category_id, is_active=True)
 	products = Product.objects.filter(category=category).prefetch_related('additional_images')
-	categories = Category.objects.all()
+	categories = Category.objects.filter(is_active=True)
+	wishlist_product_ids = set(
+		WishlistItem.objects.filter(user=request.user).values_list('product_id', flat=True)
+	)
 	return render(request, 'store/product_list.html', {
 		'products': products,
 		'categories': categories,
 		'selected_category': str(category_id),
 		'search_query': '',
 		'category_obj': category,
+		'wishlist_product_ids': wishlist_product_ids,
 	})
 
 def product_detail_view(request, pk):
@@ -223,7 +227,7 @@ def product_detail_view(request, pk):
 	related_products = Product.objects.filter(
 		category=product.category,
 		stock__gt=0
-	).exclude(pk=pk)[:4]
+	).prefetch_related('additional_images', 'videos').exclude(pk=pk)[:4]
 	in_wishlist = False
 	if request.user.is_authenticated:
 		in_wishlist = WishlistItem.objects.filter(user=request.user, product=product).exists()
@@ -232,6 +236,7 @@ def product_detail_view(request, pk):
 		'product': product,
 		'related_products': related_products,
 		'in_wishlist': in_wishlist,
+		'product_videos': product.videos.all(),
 	})
 
 
@@ -251,7 +256,12 @@ def toggle_wishlist_view(request, product_id):
 @login_required
 def wishlist_view(request):
 	items = WishlistItem.objects.filter(user=request.user).select_related('product').order_by('-created_at')
-	return render(request, 'store/wishlist.html', {'items': items})
+	owners_fav = list(Product.objects.filter(
+		homepage_sections__section_type='owners_fav',
+		homepage_sections__is_active=True,
+		is_active=True,
+	).order_by('homepage_sections__position').distinct())
+	return render(request, 'store/wishlist.html', {'items': items, 'owners_fav': owners_fav})
 
 
 @login_required
@@ -272,18 +282,24 @@ def add_order_item_review_view(request, order_id, item_id):
 		rating = 0
 	title = (request.POST.get('title') or '').strip()
 	body = (request.POST.get('body') or '').strip()
+	reviewer_name = (request.POST.get('reviewer_name') or '').strip()
 	if rating < 1 or rating > 5:
 		messages.error(request, 'Please select a valid rating (1-5).')
 		return redirect('order_detail', order_id=order_id)
-	ProductReview.objects.create(
+	review = ProductReview.objects.create(
 		product=item.product,
 		user=request.user,
 		order_item=item,
 		rating=rating,
 		title=title,
 		body=body,
+		reviewer_name=reviewer_name,
 		is_approved=False,
+		is_visible=False,
 	)
+	if request.FILES.get('reviewer_image'):
+		review.reviewer_image = request.FILES['reviewer_image']
+		review.save(update_fields=['reviewer_image'])
 	messages.success(request, 'Review submitted successfully.')
 	return redirect('order_detail', order_id=order_id)
 
@@ -291,8 +307,11 @@ def add_order_item_review_view(request, order_id, item_id):
 def product_list_view(request):
 	query = request.GET.get('q', '')
 	category_id = request.GET.get('category', '')
-	products = Product.objects.all().prefetch_related('additional_images').order_by('-id')
-	categories = Category.objects.all()
+	products = Product.objects.all().prefetch_related('additional_images', 'videos').order_by('-id')
+	categories = Category.objects.filter(is_active=True)
+	wishlist_product_ids = set(
+		WishlistItem.objects.filter(user=request.user).values_list('product_id', flat=True)
+	)
 	if query:
 		products = products.filter(Q(name__icontains=query) | Q(description__icontains=query))
 	if category_id:
@@ -302,6 +321,7 @@ def product_list_view(request):
 		'categories': categories,
 		'selected_category': category_id,
 		'search_query': query,
+		'wishlist_product_ids': wishlist_product_ids,
 	})
 from django import forms
 from django.contrib import messages
@@ -321,38 +341,40 @@ def home_view(request):
 			homepage_sections__section_type='most_selling',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
 		
 		trending_products = Product.objects.filter(
 			homepage_sections__section_type='trending',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
 		
 		new_launch = Product.objects.filter(
 			homepage_sections__section_type='new_launch',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
 		
 		featured_products = Product.objects.filter(
 			homepage_sections__section_type='featured',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
 		exquisite_products = Product.objects.filter(
 			homepage_sections__section_type='exquisite',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images').distinct().order_by('homepage_sections__position')[:12]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:12]
 		
 		# Fallback: If no products in sections, show recent active products
 		if not trending_products.exists():
 			trending_products = Product.objects.filter(stock__gt=0, is_active=True)[:4]
 		
-		top_picks = exquisite_products if exquisite_products.exists() else Product.objects.filter(stock__gt=0, is_active=True).prefetch_related('additional_images').order_by('-created_at')[:12]
+		top_picks = exquisite_products if exquisite_products.exists() else Product.objects.filter(stock__gt=0, is_active=True).prefetch_related('additional_images', 'videos').order_by('-created_at')[:12]
 		active_reels = InstagramReel.objects.filter(is_active=True).order_by('sort_order', '-created_at')[:8]
 		trust_badges = TrustBadge.objects.filter(is_active=True).order_by('sort_order', 'id')[:8]
+		approved_reviews = ProductReview.objects.filter(is_approved=True, is_visible=True).select_related('product', 'user').order_by('-created_at')[:12]
+		editorial_items = EditorialMedia.objects.filter(is_active=True).select_related('product').order_by('order', 'created_at')
 
 		context = {
 			'announcements': announcements,
@@ -363,6 +385,8 @@ def home_view(request):
 			'top_picks': top_picks,
 			'active_reels': active_reels,
 			'trust_badges': trust_badges,
+			'approved_reviews': approved_reviews,
+			'editorial_items': editorial_items,
 			'hero_content': section_content.get('hero'),
 			'launch_featured_media': section_content.get('launch_featured_media'),
 			'exquisite_content': section_content.get('exquisite_collection'),
@@ -376,11 +400,17 @@ def home_view(request):
 			cart_items = cart.items.select_related('product')
 			cart_total = sum(item.product.price * item.quantity for item in cart_items)
 			order_count = Order.objects.filter(user=request.user).count()
+			wishlist_count = WishlistItem.objects.filter(user=request.user).count()
+			wishlist_product_ids = set(
+				WishlistItem.objects.filter(user=request.user).values_list('product_id', flat=True)
+			)
 			context.update({
 				'dashboard': True,
 				'cart_items': cart_items,
 				'cart_total': cart_total,
 				'order_count': order_count,
+				'wishlist_count': wishlist_count,
+				'wishlist_product_ids': wishlist_product_ids,
 			})
 		else:
 			context['dashboard'] = False
@@ -425,8 +455,17 @@ def profile_view(request):
 
 @login_required
 def order_history_view(request):
-	orders = Order.objects.filter(user=request.user).order_by('-created_at')
-	return render(request, 'store/order_history.html', {'orders': orders})
+	orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_by('-created_at')
+	reviewable_item_ids = set()
+	for order in orders:
+		if order.status == 'delivered':
+			for item in order.items.all():
+				if not hasattr(item, 'review'):
+					reviewable_item_ids.add(item.id)
+	return render(request, 'store/order_history.html', {
+		'orders': orders,
+		'reviewable_item_ids': reviewable_item_ids,
+	})
 
 @login_required
 def order_detail_view(request, order_id):
