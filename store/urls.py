@@ -35,4 +35,7 @@ urlpatterns = [
     # Wishlist
     path('wishlist/', views.wishlist_view, name='wishlist'),
     path('wishlist/toggle/<int:product_id>/', views.toggle_wishlist_view, name='toggle_wishlist'),
+
+    # Collections
+    path('collections/', views.collections_list_view, name='collections_list'),
 ]

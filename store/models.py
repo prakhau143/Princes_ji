@@ -471,3 +471,42 @@ class EditorialMedia(models.Model):
 
 	def __str__(self):
 		return f"{self.get_media_type_display()} — {self.file.name}"
+
+
+class HeroSlide(models.Model):
+	background_image = models.ImageField(upload_to='hero/', blank=True, null=True)
+	background_video = models.FileField(upload_to='hero/videos/', blank=True, null=True)
+	heading = models.CharField(max_length=200, blank=True)
+	subheading = models.TextField(blank=True)
+	button_text = models.CharField(max_length=80, blank=True)
+	button_url = models.CharField(max_length=255, blank=True)
+	order = models.PositiveIntegerField(default=0)
+	is_active = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['order', 'created_at']
+		verbose_name = "Hero Slide"
+		verbose_name_plural = "🖼️ Hero Slides"
+
+	def __str__(self):
+		return self.heading or f"Slide #{self.id}"
+
+
+class SiteSettings(models.Model):
+	glass_flash_enabled = models.BooleanField(
+		default=False,
+		help_text="Enable animated shine/gloss reflection effect on all product images"
+	)
+
+	class Meta:
+		verbose_name = "Site Settings"
+		verbose_name_plural = "⚙️ Site Settings"
+
+	def __str__(self):
+		return "Site Settings"
+
+	@classmethod
+	def get_settings(cls):
+		obj, _ = cls.objects.get_or_create(pk=1)
+		return obj

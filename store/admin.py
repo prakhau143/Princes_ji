@@ -2,8 +2,9 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.contrib import messages as admin_messages
 from .models import (
-	Category, Product, ProductImage, Order, OrderItem, 
-	NewsletterSubscriber, ContactMessage, Announcement, HomepageSectionProduct
+	Category, Product, ProductImage, Order, OrderItem,
+	NewsletterSubscriber, ContactMessage, Announcement, HomepageSectionProduct,
+	HeroSlide, SiteSettings,
 )
 class OrderItemInline(admin.TabularInline):
 	model = OrderItem
@@ -252,3 +253,33 @@ class FeaturedProductAdmin(HomepageSectionProductAdmin):
 
 # Register the main model with a general admin
 admin.site.register(HomepageSectionProduct, HomepageSectionProductAdmin)
+
+
+@admin.register(HeroSlide)
+class HeroSlideAdmin(admin.ModelAdmin):
+	list_display = ('__str__', 'order', 'is_active', 'created_at')
+	list_editable = ('order', 'is_active')
+	ordering = ('order',)
+	fieldsets = (
+		('Slide Background', {
+			'fields': ('background_image', 'background_video'),
+			'description': 'Provide either an image or a video as slide background.'
+		}),
+		('Content', {
+			'fields': ('heading', 'subheading', 'button_text', 'button_url'),
+		}),
+		('Display Settings', {
+			'fields': ('order', 'is_active'),
+		}),
+	)
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+	list_display = ('__str__', 'glass_flash_enabled')
+
+	def has_add_permission(self, request):
+		return not SiteSettings.objects.exists()
+
+	def has_delete_permission(self, request, obj=None):
+		return False

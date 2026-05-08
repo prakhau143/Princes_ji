@@ -2,7 +2,38 @@
 {% load static %}
 
 {% block content %}
+<!-- Swiper CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
 <style>
+  /* Glass flash shine effect */
+  .glass-flash {
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-flash::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 55%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255,255,255,0.38) 50%,
+      transparent 100%
+    );
+    transform: skewX(-18deg);
+    animation: glassFlash 3.8s infinite;
+    pointer-events: none;
+    z-index: 5;
+  }
+  @keyframes glassFlash {
+    0%   { left: -100%; }
+    45%, 100% { left: 150%; }
+  }
+
   @keyframes reelsMarquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -18,10 +49,53 @@
 <div>
 
   <!-- =================================================================== -->
-  <!-- HERO SECTION (Inspired by Amazon's Hero Carousel)                   -->
+  <!-- HERO SECTION — Swiper carousel (admin-managed slides) or fallback  -->
   <!-- =================================================================== -->
-  <div class="relative bg-gray-900 text-white overflow-hidden">
-    <!-- Background Image with Overlay -->
+  {% if hero_slides %}
+  <!-- Multi-slide Swiper hero -->
+  <div class="swiper hero-swiper" style="height:80vh;min-height:500px;max-height:850px;">
+    <div class="swiper-wrapper">
+      {% for slide in hero_slides %}
+      <div class="swiper-slide relative overflow-hidden bg-gray-900 text-white">
+        <!-- Slide background -->
+        <div class="absolute inset-0">
+          {% if slide.background_video %}
+          <video class="w-full h-full object-cover" autoplay muted loop playsinline>
+            <source src="{{ slide.background_video.url }}">
+          </video>
+          {% elif slide.background_image %}
+          <img src="{{ slide.background_image.url }}" alt="{{ slide.heading }}" class="w-full h-full object-cover">
+          {% else %}
+          <img src="{% static 'images/background.jpg' %}" alt="Princess Jewelry" class="w-full h-full object-cover">
+          {% endif %}
+          <div class="absolute inset-0 bg-black opacity-50"></div>
+        </div>
+        <!-- Slide content -->
+        <div class="relative h-full flex flex-col items-center justify-center text-center px-6 py-20">
+          <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-4">
+            {% if slide.heading %}{{ slide.heading }}{% else %}Welcome to <span class="text-pink-400">Princess</span>{% endif %}
+          </h1>
+          {% if slide.subheading %}
+          <p class="text-lg md:text-2xl text-gray-200 max-w-3xl mx-auto mb-10">{{ slide.subheading }}</p>
+          {% endif %}
+          {% if slide.button_text and slide.button_url %}
+          <a href="{{ slide.button_url }}"
+             class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
+            {{ slide.button_text }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="swiper-pagination"></div>
+    <div class="swiper-button-prev !text-white"></div>
+    <div class="swiper-button-next !text-white"></div>
+  </div>
+
+  {% else %}
+  <!-- Static fallback hero (single image/video from HomepageSectionContent) -->
+  <div id="hero-section-static" class="relative bg-gray-900 text-white overflow-hidden">
     <div class="absolute inset-0">
       {% if hero_content and hero_content.background_video %}
       <video class="w-full h-full object-cover" autoplay muted loop playsinline>
@@ -30,50 +104,43 @@
       {% elif hero_content and hero_content.background_image %}
       <img src="{{ hero_content.background_image.url }}" alt="Princess Jewelry" class="w-full h-full object-cover">
       {% else %}
-      <img src="{% static 'images/background.jpg' %}" 
-           alt="Princess Jewelry" 
-           class="w-full h-full object-cover">
+      <img src="{% static 'images/background.jpg' %}" alt="Princess Jewelry" class="w-full h-full object-cover">
       {% endif %}
       <div class="absolute inset-0 bg-black opacity-50"></div>
     </div>
-    
-    <!-- Hero Content -->
     <div class="relative container mx-auto px-6 py-24 md:py-32 lg:py-40 text-center">
       <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-4">
-        {% if hero_content and hero_content.title %}
-          {{ hero_content.title }}
-        {% else %}
-          Welcome to <span class="text-pink-400">Princess</span>
-        {% endif %}
+        {% if hero_content and hero_content.title %}{{ hero_content.title }}
+        {% else %}Welcome to <span class="text-pink-400">Princess</span>{% endif %}
       </h1>
       <p class="text-lg md:text-2xl text-gray-200 max-w-3xl mx-auto mb-10">
-        {% if hero_content and hero_content.subtitle %}
-          {{ hero_content.subtitle }}
-        {% else %}
-          Discover exquisite jewelry collections that make every moment sparkle.
-        {% endif %}
+        {% if hero_content and hero_content.subtitle %}{{ hero_content.subtitle }}
+        {% else %}Discover exquisite jewelry collections that make every moment sparkle.{% endif %}
       </p>
-      
-      <!-- Conditional Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
         {% if user.is_authenticated %}
-          <a href="{% if hero_content and hero_content.button_url %}{{ hero_content.button_url }}{% else %}{% url 'product_list' %}{% endif %}" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
+          <a href="{% if hero_content and hero_content.button_url %}{{ hero_content.button_url }}{% else %}{% url 'product_list' %}{% endif %}"
+             class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
             {% if hero_content and hero_content.button_text %}{{ hero_content.button_text }}{% else %}Shop Jewelry{% endif %}
           </a>
-          <a href="{% if hero_content and hero_content.secondary_button_url %}{{ hero_content.secondary_button_url }}{% else %}{% url 'profile' %}{% endif %}" class="px-8 py-3 bg-gray-700 text-white font-bold rounded-full shadow-lg hover:bg-gray-600 transition-all duration-300 text-lg transform hover:scale-105">
+          <a href="{% if hero_content and hero_content.secondary_button_url %}{{ hero_content.secondary_button_url }}{% else %}{% url 'profile' %}{% endif %}"
+             class="px-8 py-3 bg-gray-700 text-white font-bold rounded-full shadow-lg hover:bg-gray-600 transition-all duration-300 text-lg transform hover:scale-105">
             {% if hero_content and hero_content.secondary_button_text %}{{ hero_content.secondary_button_text }}{% else %}My Account{% endif %}
           </a>
         {% else %}
-          <a href="{% if hero_content and hero_content.button_url %}{{ hero_content.button_url }}{% else %}{% url 'login' %}{% endif %}" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
+          <a href="{% if hero_content and hero_content.button_url %}{{ hero_content.button_url }}{% else %}{% url 'login' %}{% endif %}"
+             class="px-8 py-3 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all duration-300 text-lg transform hover:scale-105">
             {% if hero_content and hero_content.button_text %}{{ hero_content.button_text }}{% else %}Login{% endif %}
           </a>
-          <a href="{% if hero_content and hero_content.secondary_button_url %}{{ hero_content.secondary_button_url }}{% else %}{% url 'register' %}{% endif %}" class="px-8 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition-all duration-300 text-lg transform hover:scale-105">
+          <a href="{% if hero_content and hero_content.secondary_button_url %}{{ hero_content.secondary_button_url }}{% else %}{% url 'register' %}{% endif %}"
+             class="px-8 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition-all duration-300 text-lg transform hover:scale-105">
             {% if hero_content and hero_content.secondary_button_text %}{{ hero_content.secondary_button_text }}{% else %}Create Account{% endif %}
           </a>
         {% endif %}
       </div>
     </div>
   </div>
+  {% endif %}
 
   <!-- =================================================================== -->
   <!-- HOMEPAGE PRODUCT SECTIONS (Admin Managed - 4 Sections)             -->
@@ -92,66 +159,120 @@
           <a href="{% url 'product_list' %}" class="text-pink-600 font-semibold hover:underline">View All →</a>
           {% endif %}
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {% if most_selling|length > 4 %}
+      <!-- Swiper carousel when more than 4 products -->
+      <div class="swiper most-selling-swiper overflow-hidden pb-10">
+        <div class="swiper-wrapper">
           {% for product in most_selling %}
-          <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
-               onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-            <div class="relative overflow-hidden">
-              {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" 
-                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
-                     data-main-src="{{ product.image.url }}"
-                     data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
-                     data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
-              {% else %}
-                <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                  <i class="fas fa-gem text-6xl text-pink-400"></i>
-                </div>
-              {% endif %}
-              <div class="absolute top-4 right-4">
-                <span class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                  Best Seller
-                </span>
-              </div>
-              {% if user.is_authenticated %}
-              <button type="button"
-                      onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
-                      class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
-              </button>
-              {% else %}
-              <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                <i class="far fa-heart text-pink-600"></i>
-              </a>
-              {% endif %}
-            </div>
-            <div class="p-5">
-              <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
-              <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
-              <div class="flex items-center justify-between mb-4">
-                <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
-                {% if product.stock > 0 %}
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
+          <div class="swiper-slide">
+            <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer h-full"
+                 onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+              <div class="relative overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                       class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                       data-main-src="{{ product.image.url }}"
+                       data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                       data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
                 {% else %}
-                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
+                  <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                    <i class="fas fa-gem text-6xl text-pink-400"></i>
+                  </div>
+                {% endif %}
+                <div class="absolute top-4 right-4">
+                  <span class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Best Seller</span>
+                </div>
+                {% if user.is_authenticated %}
+                <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                        class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                </button>
+                {% else %}
+                <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="far fa-heart text-pink-600"></i>
+                </a>
                 {% endif %}
               </div>
-              <div class="flex space-x-2">
-                <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
-                   class="flex-1 bg-pink-600 text-white text-center py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors font-semibold text-sm">
-                  View Details
-                </a>
-                {% if product.stock > 0 and user.is_authenticated %}
-                  <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
-                     class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
-                    <i class="fas fa-shopping-cart"></i>
+              <div class="p-5">
+                <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
+                <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
+                <div class="mb-4">
+                  <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
+                </div>
+                <div class="flex space-x-2">
+                  <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                     class="flex-1 bg-pink-600 text-white text-center py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors font-semibold text-sm">
+                    View Details
                   </a>
-                {% endif %}
+                  {% if product.stock > 0 and user.is_authenticated %}
+                    <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                       class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                      <i class="fas fa-shopping-cart"></i>
+                    </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
           {% endfor %}
         </div>
+        <div class="swiper-pagination"></div>
+      </div>
+      {% else %}
+      <!-- Static grid for 4 or fewer products -->
+      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for product in most_selling %}
+        <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
+             onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+          <div class="relative overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                   class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                   data-main-src="{{ product.image.url }}"
+                   data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                   data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+            {% else %}
+              <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                <i class="fas fa-gem text-6xl text-pink-400"></i>
+              </div>
+            {% endif %}
+            <div class="absolute top-4 right-4">
+              <span class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Best Seller</span>
+            </div>
+            {% if user.is_authenticated %}
+            <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                    class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+              <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+            </button>
+            {% else %}
+            <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+              <i class="far fa-heart text-pink-600"></i>
+            </a>
+            {% endif %}
+          </div>
+          <div class="p-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
+            <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
+            <div class="mb-4">
+              <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
+            </div>
+            <div class="flex space-x-2">
+              <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                 class="flex-1 bg-pink-600 text-white text-center py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors font-semibold text-sm">
+                View Details
+              </a>
+              {% if product.stock > 0 and user.is_authenticated %}
+                <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                   class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                  <i class="fas fa-shopping-cart"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
       </div>
       {% endif %}
 
@@ -252,13 +373,72 @@
               <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
               {% endif %}
             </div>
+          {% if new_launch|length > 4 %}
+            <div class="swiper new-launch-swiper overflow-hidden pb-10">
+              <div class="swiper-wrapper">
+                {% for product in new_launch %}
+                <div class="swiper-slide">
+                  <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer h-full"
+                       onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+                    <div class="relative overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
+                      {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                             class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                             data-main-src="{{ product.image.url }}"
+                             data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                             data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                      {% else %}
+                        <div class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                          <i class="fas fa-gem text-6xl text-purple-400"></i>
+                        </div>
+                      {% endif %}
+                      <div class="absolute top-4 right-4">
+                        <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">New</span>
+                      </div>
+                      {% if user.is_authenticated %}
+                      <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                              class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                        <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                      </button>
+                      {% else %}
+                      <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                        <i class="far fa-heart text-pink-600"></i>
+                      </a>
+                      {% endif %}
+                    </div>
+                    <div class="p-5">
+                      <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
+                      <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
+                      <div class="mb-4">
+                        <span class="text-2xl font-bold text-purple-600">₹{{ product.price|floatformat:2 }}</span>
+                      </div>
+                      <div class="flex space-x-2">
+                        <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                           class="flex-1 bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm">
+                          View Details
+                        </a>
+                        {% if product.stock > 0 and user.is_authenticated %}
+                          <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                             class="bg-pink-600 text-white py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors">
+                            <i class="fas fa-shopping-cart"></i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+          {% else %}
             <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {% for product in new_launch %}
               <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
                    onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-                <div class="relative overflow-hidden">
+                <div class="relative overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
                   {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}"
                          class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
                          data-main-src="{{ product.image.url }}"
                          data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
@@ -269,13 +449,10 @@
                     </div>
                   {% endif %}
                   <div class="absolute top-4 right-4">
-                    <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                      New
-                    </span>
+                    <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">New</span>
                   </div>
                   {% if user.is_authenticated %}
-                  <button type="button"
-                          onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                  <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
                           class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
                     <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
                   </button>
@@ -288,13 +465,8 @@
                 <div class="p-5">
                   <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
                   <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
-                  <div class="flex items-center justify-between mb-4">
+                  <div class="mb-4">
                     <span class="text-2xl font-bold text-purple-600">₹{{ product.price|floatformat:2 }}</span>
-                    {% if product.stock > 0 %}
-                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
-                    {% else %}
-                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
-                    {% endif %}
                   </div>
                   <div class="flex space-x-2">
                     <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
@@ -312,6 +484,7 @@
               </div>
               {% endfor %}
             </div>
+          {% endif %}
           </section>
           {% endif %}
 
@@ -325,13 +498,72 @@
               <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
               {% endif %}
             </div>
+          {% if featured_products|length > 4 %}
+            <div class="swiper featured-swiper overflow-hidden pb-10">
+              <div class="swiper-wrapper">
+                {% for product in featured_products %}
+                <div class="swiper-slide">
+                  <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer h-full"
+                       onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+                    <div class="relative overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
+                      {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                             class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                             data-main-src="{{ product.image.url }}"
+                             data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                             data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                      {% else %}
+                        <div class="w-full h-64 bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
+                          <i class="fas fa-gem text-6xl text-yellow-400"></i>
+                        </div>
+                      {% endif %}
+                      <div class="absolute top-4 right-4">
+                        <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Featured</span>
+                      </div>
+                      {% if user.is_authenticated %}
+                      <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                              class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                        <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                      </button>
+                      {% else %}
+                      <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                        <i class="far fa-heart text-pink-600"></i>
+                      </a>
+                      {% endif %}
+                    </div>
+                    <div class="p-5">
+                      <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
+                      <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
+                      <div class="mb-4">
+                        <span class="text-2xl font-bold text-yellow-600">₹{{ product.price|floatformat:2 }}</span>
+                      </div>
+                      <div class="flex space-x-2">
+                        <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                           class="flex-1 bg-yellow-600 text-white text-center py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold text-sm">
+                          View Details
+                        </a>
+                        {% if product.stock > 0 and user.is_authenticated %}
+                          <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                             class="bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
+                            <i class="fas fa-shopping-cart"></i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+          {% else %}
             <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {% for product in featured_products %}
               <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer"
                    onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-                <div class="relative overflow-hidden">
+                <div class="relative overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
                   {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}"
                          class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
                          data-main-src="{{ product.image.url }}"
                          data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
@@ -342,13 +574,10 @@
                     </div>
                   {% endif %}
                   <div class="absolute top-4 right-4">
-                    <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                      Featured
-                    </span>
+                    <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Featured</span>
                   </div>
                   {% if user.is_authenticated %}
-                  <button type="button"
-                          onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                  <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
                           class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
                     <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
                   </button>
@@ -361,13 +590,8 @@
                 <div class="p-5">
                   <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
                   <p class="text-gray-600 text-sm mb-3 h-10 overflow-hidden">{{ product.description|truncatewords:10 }}</p>
-                  <div class="flex items-center justify-between mb-4">
+                  <div class="mb-4">
                     <span class="text-2xl font-bold text-yellow-600">₹{{ product.price|floatformat:2 }}</span>
-                    {% if product.stock > 0 %}
-                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">In Stock</span>
-                    {% else %}
-                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Out of Stock</span>
-                    {% endif %}
                   </div>
                   <div class="flex space-x-2">
                     <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
@@ -385,6 +609,7 @@
               </div>
               {% endfor %}
             </div>
+          {% endif %}
           </section>
           {% endif %}
         </div>
@@ -848,13 +1073,80 @@
         </p>
       </div>
       
+      {% if trending_products|length > 4 %}
+      <div class="swiper trending-swiper overflow-hidden pb-10">
+        <div class="swiper-wrapper">
+          {% for product in trending_products %}
+          <div class="swiper-slide">
+            <div class="product-card bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden cursor-pointer h-full"
+                 onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+              <div class="relative group overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                       class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 product-hover-image"
+                       data-main-src="{{ product.image.url }}"
+                       data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+                       data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
+                {% else %}
+                  <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                    <i class="fas fa-gem text-6xl text-pink-400"></i>
+                  </div>
+                {% endif %}
+                <div class="absolute top-4 right-4">
+                  <span class="bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold">Trending</span>
+                </div>
+                {% if user.is_authenticated %}
+                <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+                        class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                </button>
+                {% else %}
+                <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
+                  <i class="far fa-heart text-pink-600"></i>
+                </a>
+                {% endif %}
+              </div>
+              <div class="p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-2 h-14 flex items-center">{{ product.name }}</h3>
+                <p class="text-gray-600 text-sm mb-4 h-12 overflow-hidden">{{ product.description|truncatewords:12 }}</p>
+                <div class="mb-4">
+                  <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
+                </div>
+                <div class="flex space-x-2">
+                  <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                     class="flex-1 bg-pink-600 text-white text-center py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors duration-300 font-semibold">
+                    View Details
+                  </a>
+                  {% if product.stock > 0 %}
+                    <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
+                       class="bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                      <i class="fas fa-shopping-cart"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="swiper-slide">
+            <div class="text-center py-12">
+              <i class="fas fa-gem text-6xl text-gray-300 mb-4"></i>
+              <p class="text-xl text-gray-500">No trending products available.</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="swiper-pagination"></div>
+      </div>
+      {% else %}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {% for product in trending_products %}
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden cursor-pointer"
+        <div class="product-card bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden cursor-pointer"
              onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-          <div class="relative group">
+          <div class="relative group overflow-hidden{% if glass_flash_enabled %} glass-flash{% endif %}">
             {% if product.image %}
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 product-hover-image"
+              <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                   class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 product-hover-image"
                    data-main-src="{{ product.image.url }}"
                    data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
                    data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
@@ -864,13 +1156,10 @@
               </div>
             {% endif %}
             <div class="absolute top-4 right-4">
-              <span class="bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                Trending
-              </span>
+              <span class="bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold">Trending</span>
             </div>
             {% if user.is_authenticated %}
-            <button type="button"
-                    onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
+            <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
                     class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
               <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
             </button>
@@ -880,26 +1169,12 @@
             </a>
             {% endif %}
           </div>
-          
           <div class="p-6">
             <h3 class="text-xl font-bold text-gray-800 mb-2 h-14 flex items-center">{{ product.name }}</h3>
             <p class="text-gray-600 text-sm mb-4 h-12 overflow-hidden">{{ product.description|truncatewords:12 }}</p>
-            
-            <div class="flex items-center justify-between mb-4">
+            <div class="mb-4">
               <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
-              <div class="flex items-center">
-                {% if product.stock > 0 %}
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Available
-                  </span>
-                {% else %}
-                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Out of Stock
-                  </span>
-                {% endif %}
-              </div>
             </div>
-            
             <div class="flex space-x-2">
               <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
                  class="flex-1 bg-pink-600 text-white text-center py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors duration-300 font-semibold">
@@ -921,6 +1196,7 @@
         </div>
         {% endfor %}
       </div>
+      {% endif %}
       
       <div class="text-center mt-12">
         <a href="{% url 'product_list' %}" 
@@ -1126,15 +1402,77 @@
   });
 </script>
 
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Hero carousel
+    if (document.querySelector('.hero-swiper')) {
+      new Swiper('.hero-swiper', {
+        loop: true,
+        autoplay: { delay: 3000, disableOnInteraction: false },
+        pagination: { el: '.hero-swiper .swiper-pagination', clickable: true },
+        navigation: {
+          nextEl: '.hero-swiper .swiper-button-next',
+          prevEl: '.hero-swiper .swiper-button-prev',
+        },
+      });
+    }
+
+    // Most Selling carousel (only rendered when >4 products)
+    if (document.querySelector('.most-selling-swiper')) {
+      new Swiper('.most-selling-swiper', {
+        slidesPerView: 2,
+        spaceBetween: 16,
+        breakpoints: { 1024: { slidesPerView: 4, spaceBetween: 24 } },
+        pagination: { el: '.most-selling-swiper .swiper-pagination', clickable: true },
+      });
+    }
+
+    // New Launch carousel
+    if (document.querySelector('.new-launch-swiper')) {
+      new Swiper('.new-launch-swiper', {
+        slidesPerView: 2,
+        spaceBetween: 16,
+        breakpoints: { 1024: { slidesPerView: 4, spaceBetween: 24 } },
+        pagination: { el: '.new-launch-swiper .swiper-pagination', clickable: true },
+      });
+    }
+
+    // Featured carousel
+    if (document.querySelector('.featured-swiper')) {
+      new Swiper('.featured-swiper', {
+        slidesPerView: 2,
+        spaceBetween: 16,
+        breakpoints: { 1024: { slidesPerView: 4, spaceBetween: 24 } },
+        pagination: { el: '.featured-swiper .swiper-pagination', clickable: true },
+      });
+    }
+
+    // Trending carousel
+    if (document.querySelector('.trending-swiper')) {
+      new Swiper('.trending-swiper', {
+        slidesPerView: 1,
+        spaceBetween: 16,
+        breakpoints: {
+          640: { slidesPerView: 2, spaceBetween: 24 },
+          1024: { slidesPerView: 4, spaceBetween: 32 },
+        },
+        pagination: { el: '.trending-swiper .swiper-pagination', clickable: true },
+      });
+    }
+  });
+</script>
+
 <!-- Three.js and GSAP for Premium Animations -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <script>
-// Three.js Background Animation for Hero Section
+// Three.js Background Animation for static Hero Section only
 (function() {
-  const heroSection = document.querySelector('.relative.bg-gray-900');
+  const heroSection = document.querySelector('#hero-section-static');
   if (!heroSection) return;
 
   // Check if device is mobile

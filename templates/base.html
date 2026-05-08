@@ -47,6 +47,7 @@
         {% if user.is_authenticated %}
           <!-- Products link is now only visible to authenticated users -->
           <a href="{% url 'product_list' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Jewelry</a>
+          <a href="{% url 'collections_list' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Collections</a>
           <a href="{% url 'profile' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Profile</a>
           <a href="{% url 'order_history' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">My Orders</a>
           <a href="{% url 'cart' %}" class="text-gray-600 hover:text-pink-600 relative">
@@ -93,6 +94,7 @@
             {% if user.is_authenticated %}
               <!-- Products link is now visible in the mobile menu for logged-in users -->
               <a href="{% url 'product_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Jewelry</a>
+              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Collections</a>
               <a href="{% url 'profile' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Profile</a>
               <a href="{% url 'order_history' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">My Orders</a>
               <a href="{% url 'cart' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Cart</a>

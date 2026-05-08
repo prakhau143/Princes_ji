@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from .models import (
 	UserProfile, Order, OrderItem, Product, Category, Cart, CartItem,
 	Announcement, HomepageSectionProduct, InstagramReel, TrustBadge, WishlistItem, ProductReview,
-	HomepageSectionContent, OrderLifecycleLog, EditorialMedia,
+	HomepageSectionContent, OrderLifecycleLog, EditorialMedia, HeroSlide, SiteSettings,
 )
 from django import forms
 
@@ -336,30 +336,30 @@ def home_view(request):
 			for item in HomepageSectionContent.objects.filter(is_active=True)
 		}
 		
-		# Get homepage section products
+		# Get homepage section products (no hard limit — slider handles >4)
 		most_selling = Product.objects.filter(
 			homepage_sections__section_type='most_selling',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
-		
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
+
 		trending_products = Product.objects.filter(
 			homepage_sections__section_type='trending',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
-		
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
+
 		new_launch = Product.objects.filter(
 			homepage_sections__section_type='new_launch',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
-		
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
+
 		featured_products = Product.objects.filter(
 			homepage_sections__section_type='featured',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
 		exquisite_products = Product.objects.filter(
 			homepage_sections__section_type='exquisite',
 			homepage_sections__is_active=True,
@@ -369,12 +369,14 @@ def home_view(request):
 		# Fallback: If no products in sections, show recent active products
 		if not trending_products.exists():
 			trending_products = Product.objects.filter(stock__gt=0, is_active=True)[:4]
-		
+
 		top_picks = exquisite_products if exquisite_products.exists() else Product.objects.filter(stock__gt=0, is_active=True).prefetch_related('additional_images', 'videos').order_by('-created_at')[:12]
 		active_reels = InstagramReel.objects.filter(is_active=True).order_by('sort_order', '-created_at')[:8]
 		trust_badges = TrustBadge.objects.filter(is_active=True).order_by('sort_order', 'id')[:8]
 		approved_reviews = ProductReview.objects.filter(is_approved=True, is_visible=True).select_related('product', 'user').order_by('-created_at')[:12]
 		editorial_items = EditorialMedia.objects.filter(is_active=True).select_related('product').order_by('order', 'created_at')
+		hero_slides = HeroSlide.objects.filter(is_active=True).order_by('order')
+		glass_flash_enabled = SiteSettings.get_settings().glass_flash_enabled
 
 		context = {
 			'announcements': announcements,
@@ -392,6 +394,8 @@ def home_view(request):
 			'exquisite_content': section_content.get('exquisite_collection'),
 			'account_cards_media': section_content.get('account_cards_media'),
 			'reels_content': section_content.get('instagram_reels'),
+			'hero_slides': hero_slides,
+			'glass_flash_enabled': glass_flash_enabled,
 		}
 		
 		if request.user.is_authenticated:
@@ -542,3 +546,8 @@ def newsletter_subscribe_view(request):
 @login_required
 def shipping_returns_view(request):
 	return render(request, 'store/shipping_returns.html')
+
+
+def collections_list_view(request):
+	collections = Category.objects.filter(is_active=True).order_by('name')
+	return render(request, 'store/collections_list.html', {'collections': collections})
