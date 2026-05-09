@@ -382,6 +382,106 @@
             color: var(--subtext);
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.125rem;
+            color: var(--text);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--subtext);
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: var(--surface);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(202, 97, 128, 0.15);
+        }
+
+        .form-control[type="file"] {
+            padding: 0.5rem;
+        }
+
+        /* Status badges for Collections */
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
+
         /* Responsive */
         @media (max-width: 768px) {
             .mobile-menu-btn { display: block; }
@@ -412,9 +512,8 @@
     <!-- Sidebar -->
     <div class="sidebar">
                 <div class="logo" style="padding: 1rem; text-align: center;">
-                    <i class="fas fa-gem" style="font-size: 2rem; color: var(--primary);"></i>
-                    <h2 style="margin: 0.5rem 0 0 0; font-size: 1.1rem; color: var(--primary); font-weight: 700;">Princess
-                    </h2>
+                    {% load static %}
+                    <img src="{% static 'images/logo.png' %}" alt="Princess Jewelry" style="max-height: 64px; width: auto; display: inline-block;">
           </div>
         <nav class="sidebar-nav">
             <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
@@ -468,6 +567,15 @@
             </a>
             <a href="#editorial" class="nav-item" onclick="showSection('editorial')">
                 <i class="fas fa-newspaper"></i> Editorial Gallery
+            </a>
+            <a href="#collections" class="nav-item" onclick="showSection('collections')">
+                <i class="fas fa-layer-group"></i> Collections
+            </a>
+            <a href="#collection-rows" class="nav-item" onclick="showSection('collection-rows')">
+                <i class="fas fa-th-large"></i> Collection Rows
+            </a>
+            <a href="#zoom-carousel" class="nav-item" onclick="showSection('zoom-carousel')">
+                <i class="fas fa-images"></i> Zoom Carousel
             </a>
             {% comment %} <a href="#reports" class="nav-item" onclick="showSection('reports')">
                 <i class="fas fa-file-alt"></i> Reports
@@ -648,6 +756,97 @@
                         <div id="dashboardIndiaMapChart" style="width:100%; min-height:420px;"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- Collections Section                                             -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div id="collections-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Collections</h3>
+                    <div class="table-actions">
+                        <button class="btn btn-success" onclick="openCollectionAddModal()"><i class="fas fa-plus"></i> Add Collection</button>
+                        <button class="btn btn-primary" onclick="loadCollections()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Slug</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="collectionsTbody">
+                        <tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- Collection Rows Section                                         -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div id="collection-rows-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Collection Rows</h3>
+                    <div class="table-actions">
+                        <button class="btn btn-success" onclick="openCollectionRowAddModal()"><i class="fas fa-plus"></i> Add Row</button>
+                        <button class="btn btn-primary" onclick="loadCollectionRows()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <div style="padding: 1rem; color: #6b7280;">Tip: Select products by IDs (comma-separated). You can use Products → dropdown list endpoint already available.</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Collection</th>
+                            <th>Title</th>
+                            <th>Image</th>
+                            <th>Position</th>
+                            <th>Order</th>
+                            <th>Products</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="collectionRowsTbody">
+                        <tr><td colspan="7" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- Zoom Carousel Section                                           -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div id="zoom-carousel-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Zoom Carousel</h3>
+                    <div class="table-actions">
+                        <button class="btn btn-success" onclick="openZoomAddModal()"><i class="fas fa-plus"></i> Add Item</button>
+                        <button class="btn btn-primary" onclick="loadZoomCarousel()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Preview</th>
+                            <th>Title</th>
+                            <th>Link</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="zoomCarouselTbody">
+                        <tr><td colspan="6" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -1705,6 +1904,9 @@
             if (sectionName === 'india-map') loadIndiaMap();
             if (sectionName === 'analytics') loadWishlistVsPurchase();
             if (sectionName === 'editorial') loadEditorial();
+            if (sectionName === 'collections') loadCollections();
+            if (sectionName === 'collection-rows') loadCollectionRows();
+            if (sectionName === 'zoom-carousel') loadZoomCarousel();
         }
 
         function updateOrderStatus(orderId, newStatus) {
@@ -2863,6 +3065,19 @@
             const res = await fetch(url, options);
             return await res.json();
         }
+
+		function escapeHtml(s) {
+			return String(s || '')
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#39;');
+		}
+
+		function escapeAttr(s) {
+			return escapeHtml(s);
+		}
 
         let homepageContentCache = {};
 
@@ -4091,6 +4306,316 @@
         async function toggleEditorial(itemId) {
             const data = await apiFetchJson(`/admin-dashboard/api/editorial/${itemId}/toggle/`, { method: 'POST' });
             if (data.success) loadEditorial();
+        }
+
+        /* ── Collections ───────────────────────────────────────────── */
+        async function loadCollections() {
+            const tbody = document.getElementById('collectionsTbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;">Loading…</td></tr>';
+            const data = await apiFetchJson('/admin-dashboard/api/collections/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:1.5rem; color:#b91c1c;">${data.error || 'Failed to load'}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.collections.map(c => `
+                <tr>
+                    <td>${escapeHtml(c.title)}</td>
+                    <td>${escapeHtml(c.slug)}</td>
+                    <td>${c.order ?? 0}</td>
+                    <td><span class="status-badge ${c.is_active ? 'status-active' : 'status-inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openCollectionEditModal(${c.id}, '${escapeAttr(c.title)}', '${escapeAttr(c.slug)}', ${c.order ?? 0}, ${c.is_active ? 'true' : 'false'})">Edit</button>
+                        <button class="btn btn-sm btn-warning" onclick="toggleCollection(${c.id})">Toggle</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCollection(${c.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center;padding:1.5rem;">No collections yet</td></tr>';
+        }
+
+        function openCollectionAddModal() {
+            openCollectionModal({ mode: 'add' });
+        }
+
+        function openCollectionEditModal(id, title, slug, order, isActive) {
+            openCollectionModal({ mode: 'edit', id, title, slug, order, isActive });
+        }
+
+        function openCollectionModal(opts) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>${opts.mode === 'add' ? 'Add Collection' : 'Edit Collection'}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <form id="collectionForm" class="modal-body" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input name="title" class="form-control" value="${opts.title || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Slug</label>
+                            <input name="slug" class="form-control" value="${opts.slug || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Order</label>
+                            <input name="order" type="number" class="form-control" value="${opts.order || 0}">
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" name="is_active" ${opts.isActive === false ? '' : 'checked'}> Active</label>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Save</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.querySelector('#collectionForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                if (!fd.has('is_active')) fd.append('is_active', '0');
+                const url = opts.mode === 'add' ? '/admin-dashboard/api/collections/' : `/admin-dashboard/api/collections/${opts.id}/update/`;
+                const data = await apiFetchJson(url, { method: 'POST', body: fd });
+                if (data.success) { showNotification('Saved', 'success'); modal.remove(); loadCollections(); }
+                else showNotification(data.error || 'Failed', 'error');
+            });
+        }
+
+        async function deleteCollection(id) {
+            if (!confirm('Delete this collection? Rows will also be deleted.')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/collections/${id}/delete/`, { method: 'POST' });
+            if (data.success) { showNotification('Deleted', 'success'); loadCollections(); }
+            else showNotification(data.error || 'Failed', 'error');
+        }
+
+        async function toggleCollection(id) {
+            const data = await apiFetchJson(`/admin-dashboard/api/collections/${id}/toggle/`, { method: 'POST' });
+            if (data.success) loadCollections();
+        }
+
+        /* ── Collection Rows ───────────────────────────────────────── */
+        async function loadCollectionRows() {
+            const tbody = document.getElementById('collectionRowsTbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:1.5rem;">Loading…</td></tr>';
+            const data = await apiFetchJson('/admin-dashboard/api/collection-rows/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:1.5rem; color:#b91c1c;">${data.error || 'Failed to load'}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.rows.map(r => `
+                <tr>
+                    <td>${escapeHtml(r.collection_title)}</td>
+                    <td>${escapeHtml(r.title || '')}</td>
+                    <td>${r.image_url ? `<img src="${r.image_url}" style="width:70px;height:70px;object-fit:cover;border-radius:10px;"/>` : ''}</td>
+                    <td>${escapeHtml(r.image_position)}</td>
+                    <td>${r.order ?? 0}</td>
+                    <td>${escapeHtml((r.product_names || []).join(', '))}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openCollectionRowEditModal(${r.id})">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCollectionRow(${r.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" style="text-align:center;padding:1.5rem;">No rows yet</td></tr>';
+        }
+
+        async function openCollectionRowAddModal() {
+            await openCollectionRowModal({ mode: 'add' });
+        }
+
+        async function openCollectionRowEditModal(rowId) {
+            const data = await apiFetchJson('/admin-dashboard/api/collection-rows/');
+            if (!data.success) return showNotification(data.error || 'Failed', 'error');
+            const row = (data.rows || []).find(x => x.id === rowId);
+            await openCollectionRowModal({ mode: 'edit', row });
+        }
+
+        async function openCollectionRowModal(opts) {
+            const collectionsResp = await apiFetchJson('/admin-dashboard/api/collections/');
+            const collections = collectionsResp.success ? (collectionsResp.collections || []) : [];
+            const row = opts.row || {};
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>${opts.mode === 'add' ? 'Add Collection Row' : 'Edit Collection Row'}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <form id="collectionRowForm" class="modal-body" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label>Collection</label>
+                            <select name="collection_id" class="form-control" required>
+                                ${collections.map(c => `<option value="${c.id}" ${String(c.id) === String(row.collection_id) ? 'selected' : ''}>${escapeHtml(c.title)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Title (optional)</label>
+                            <input name="title" class="form-control" value="${escapeAttr(row.title || '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>Image ${opts.mode === 'add' ? '(required)' : '(optional)'} </label>
+                            <input name="image" type="file" class="form-control" ${opts.mode === 'add' ? 'required' : ''}>
+                        </div>
+                        <div class="form-group">
+                            <label>Image Position</label>
+                            <select name="image_position" class="form-control">
+                                <option value="left" ${row.image_position === 'left' ? 'selected' : ''}>Left</option>
+                                <option value="right" ${row.image_position === 'right' ? 'selected' : ''}>Right</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Order</label>
+                            <input name="order" type="number" class="form-control" value="${row.order ?? 0}">
+                        </div>
+                        <div class="form-group">
+                            <label>Product IDs (comma-separated)</label>
+                            <input name="product_ids" class="form-control" value="${(row.product_ids || []).join(',')}">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Save</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.querySelector('#collectionRowForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                const url = opts.mode === 'add' ? '/admin-dashboard/api/collection-rows/' : `/admin-dashboard/api/collection-rows/${row.id}/update/`;
+                const data = await apiFetchJson(url, { method: 'POST', body: fd });
+                if (data.success) { showNotification('Saved', 'success'); modal.remove(); loadCollectionRows(); }
+                else showNotification(data.error || 'Failed', 'error');
+            });
+        }
+
+        async function deleteCollectionRow(rowId) {
+            if (!confirm('Delete this row?')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/collection-rows/${rowId}/delete/`, { method: 'POST' });
+            if (data.success) { showNotification('Deleted', 'success'); loadCollectionRows(); }
+            else showNotification(data.error || 'Failed', 'error');
+        }
+
+        /* ── Zoom Carousel ─────────────────────────────────────────── */
+        async function loadZoomCarousel() {
+            const tbody = document.getElementById('zoomCarouselTbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;">Loading…</td></tr>';
+            const data = await apiFetchJson('/admin-dashboard/api/zoom-carousel/');
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:1.5rem; color:#b91c1c;">${data.error || 'Failed to load'}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.items.map(i => `
+                <tr>
+                    <td>${i.image_url ? `<img src="${i.image_url}" style="width:70px;height:70px;object-fit:cover;border-radius:10px;"/>` : ''}</td>
+                    <td>${escapeHtml(i.title || '')}</td>
+                    <td style="max-width:240px;word-break:break-all;">${escapeHtml(i.link_url || '')}</td>
+                    <td>${i.order ?? 0}</td>
+                    <td><span class="status-badge ${i.is_active ? 'status-active' : 'status-inactive'}">${i.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openZoomEditModal(${i.id})">Edit</button>
+                        <button class="btn btn-sm btn-warning" onclick="toggleZoom(${i.id})">Toggle</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteZoom(${i.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center;padding:1.5rem;">No items yet</td></tr>';
+        }
+
+        async function openZoomAddModal() { await openZoomModal({ mode: 'add' }); }
+
+        async function openZoomEditModal(id) {
+            const data = await apiFetchJson('/admin-dashboard/api/zoom-carousel/');
+            if (!data.success) return showNotification(data.error || 'Failed', 'error');
+            const item = (data.items || []).find(x => x.id === id);
+            await openZoomModal({ mode: 'edit', item });
+        }
+
+        async function openZoomModal(opts) {
+            const item = opts.item || {};
+            const collectionsResp = await apiFetchJson('/admin-dashboard/api/collections/');
+            const collections = collectionsResp.success ? (collectionsResp.collections || []) : [];
+            const collectionBySlug = new Map(collections.map(c => [String(c.slug || ''), c]));
+            let preselectCollectionId = '';
+            try {
+                const url = String(item.link_url || '');
+                const m = url.match(/\/store\/collections\/([^/]+)\/?$/);
+                if (m && m[1] && collectionBySlug.has(m[1])) preselectCollectionId = String(collectionBySlug.get(m[1]).id);
+            } catch (e) {}
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>${opts.mode === 'add' ? 'Add Zoom Item' : 'Edit Zoom Item'}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <form id="zoomForm" class="modal-body" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input name="title" class="form-control" value="${escapeAttr(item.title || '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>Collection</label>
+                            <select id="zoomCollectionSelect" class="form-control">
+                                <option value="">No collection</option>
+                                ${collections.map(c => `<option value="${c.id}" ${String(c.id) === String(preselectCollectionId) ? 'selected' : ''}>${escapeHtml(c.title)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Order</label>
+                            <input name="order" type="number" class="form-control" value="${item.order ?? 0}">
+                        </div>
+                        <div class="form-group">
+                            <label>Image ${opts.mode === 'add' ? '(required)' : '(optional)'} </label>
+                            <input name="image" type="file" class="form-control" ${opts.mode === 'add' ? 'required' : ''}>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" name="is_active" ${item.is_active === false ? '' : 'checked'}> Active</label>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Save</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.querySelector('#zoomForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                if (!fd.has('is_active')) fd.append('is_active', '0');
+                const selectedCollectionId = (modal.querySelector('#zoomCollectionSelect')?.value || '').trim();
+                if (selectedCollectionId) {
+                    const selected = collections.find(c => String(c.id) === String(selectedCollectionId));
+                    if (selected && selected.slug) {
+                        fd.set('link_url', `/store/collections/${selected.slug}/`);
+                    }
+                } else {
+                    fd.set('link_url', '');
+                }
+                const url = opts.mode === 'add' ? '/admin-dashboard/api/zoom-carousel/' : `/admin-dashboard/api/zoom-carousel/${item.id}/update/`;
+                const data = await apiFetchJson(url, { method: 'POST', body: fd });
+                if (data.success) { showNotification('Saved', 'success'); modal.remove(); loadZoomCarousel(); }
+                else showNotification(data.error || 'Failed', 'error');
+            });
+        }
+
+        async function deleteZoom(id) {
+            if (!confirm('Delete this item?')) return;
+            const data = await apiFetchJson(`/admin-dashboard/api/zoom-carousel/${id}/delete/`, { method: 'POST' });
+            if (data.success) { showNotification('Deleted', 'success'); loadZoomCarousel(); }
+            else showNotification(data.error || 'Failed', 'error');
+        }
+
+        async function toggleZoom(id) {
+            const data = await apiFetchJson(`/admin-dashboard/api/zoom-carousel/${id}/toggle/`, { method: 'POST' });
+            if (data.success) loadZoomCarousel();
         }
     </script>
 </body>
