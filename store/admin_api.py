@@ -27,6 +27,9 @@ from .models import (
     ProductVariant,
     OrderLifecycleLog,
     EditorialMedia,
+	Collection,
+	CollectionRow,
+	ZoomCarouselItem,
 )
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -35,6 +38,7 @@ import io
 from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.conf import settings
+from django.utils.text import slugify
 from datetime import datetime
 from django.utils import timezone
 from datetime import timedelta
@@ -1796,3 +1800,271 @@ def editorial_toggle_api(request, item_id):
     item.is_active = not item.is_active
     item.save(update_fields=["is_active"])
     return JsonResponse({"success": True, "is_active": item.is_active})
+
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def collections_api(request):
+	if request.method == "GET":
+		items = Collection.objects.all().order_by('order', '-created_at')
+		return JsonResponse({
+			"success": True,
+			"collections": [
+				{
+					"id": c.id,
+					"title": c.title,
+					"slug": c.slug,
+					"order": c.order,
+					"is_active": c.is_active,
+				}
+				for c in items
+			],
+		})
+
+	try:
+		title = (request.POST.get("title") or "").strip()
+		slug_raw = (request.POST.get("slug") or "").strip()
+		slug = slugify(slug_raw.replace('/', '-').strip())
+		if not title or not slug:
+			return JsonResponse({"success": False, "error": "Title and slug are required"})
+		try:
+			order = int(request.POST.get("order") or 0)
+		except ValueError:
+			order = 0
+		is_active = (request.POST.get("is_active") or "on") in ["1", "true", "on", "yes"]
+		c = Collection.objects.create(title=title, slug=slug, order=order, is_active=is_active)
+		return JsonResponse({"success": True, "id": c.id})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def collections_update_api(request, collection_id):
+	c = get_object_or_404(Collection, id=collection_id)
+	try:
+		title = (request.POST.get("title") or "").strip()
+		slug_raw = (request.POST.get("slug") or "").strip()
+		slug = slugify(slug_raw.replace('/', '-').strip())
+		if title:
+			c.title = title
+		if slug:
+			c.slug = slug
+		try:
+			c.order = int(request.POST.get("order") or c.order)
+		except ValueError:
+			pass
+		is_active = request.POST.get("is_active")
+		if is_active is not None:
+			c.is_active = is_active in ["1", "true", "on", "yes"]
+		c.save()
+		return JsonResponse({"success": True})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def collections_delete_api(request, collection_id):
+	c = get_object_or_404(Collection, id=collection_id)
+	c.delete()
+	return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def collections_toggle_api(request, collection_id):
+	c = get_object_or_404(Collection, id=collection_id)
+	c.is_active = not c.is_active
+	c.save(update_fields=["is_active"])
+	return JsonResponse({"success": True, "is_active": c.is_active})
+
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def collection_rows_api(request):
+	if request.method == "GET":
+		rows = CollectionRow.objects.select_related('collection').prefetch_related('products').all().order_by('order')
+		return JsonResponse({
+			"success": True,
+			"rows": [
+				{
+					"id": r.id,
+					"collection_id": r.collection_id,
+					"collection_title": r.collection.title,
+					"title": r.title,
+					"image_url": r.image.url if r.image else "",
+					"image_position": r.image_position,
+					"order": r.order,
+					"product_ids": list(r.products.values_list('id', flat=True)),
+					"product_names": list(r.products.values_list('name', flat=True)),
+				}
+				for r in rows
+			],
+		})
+
+	try:
+		collection_id = request.POST.get("collection_id")
+		if not collection_id:
+			return JsonResponse({"success": False, "error": "Collection is required"})
+		title = (request.POST.get("title") or "").strip()
+		image_position = request.POST.get("image_position") or "left"
+		try:
+			order = int(request.POST.get("order") or 0)
+		except ValueError:
+			order = 0
+		image = request.FILES.get("image")
+		if not image:
+			return JsonResponse({"success": False, "error": "Image is required"})
+		row = CollectionRow.objects.create(
+			collection_id=collection_id,
+			title=title,
+			image=image,
+			image_position=image_position,
+			order=order,
+		)
+		product_ids_raw = (request.POST.get("product_ids") or "").strip()
+		if product_ids_raw:
+			ids = [int(x) for x in product_ids_raw.split(',') if x.strip().isdigit()]
+			row.products.set(Product.objects.filter(id__in=ids))
+		return JsonResponse({"success": True, "id": row.id})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def collection_rows_update_api(request, row_id):
+	row = get_object_or_404(CollectionRow, id=row_id)
+	try:
+		collection_id = request.POST.get("collection_id")
+		if collection_id:
+			row.collection_id = collection_id
+		title = request.POST.get("title")
+		if title is not None:
+			row.title = title
+		image_position = request.POST.get("image_position")
+		if image_position in ["left", "right"]:
+			row.image_position = image_position
+		try:
+			row.order = int(request.POST.get("order") or row.order)
+		except ValueError:
+			pass
+		if "image" in request.FILES:
+			row.image = request.FILES["image"]
+		row.save()
+		product_ids_raw = request.POST.get("product_ids")
+		if product_ids_raw is not None:
+			ids = [int(x) for x in (product_ids_raw or "").split(',') if x.strip().isdigit()]
+			row.products.set(Product.objects.filter(id__in=ids))
+		return JsonResponse({"success": True})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def collection_rows_delete_api(request, row_id):
+	row = get_object_or_404(CollectionRow, id=row_id)
+	row.image.delete(save=False)
+	row.delete()
+	return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def zoom_carousel_api(request):
+	if request.method == "GET":
+		items = ZoomCarouselItem.objects.all().order_by('order')
+		return JsonResponse({
+			"success": True,
+			"items": [
+				{
+					"id": i.id,
+					"title": i.title,
+					"image_url": i.image.url if i.image else "",
+					"link_url": i.link_url,
+					"order": i.order,
+					"is_active": i.is_active,
+				}
+				for i in items
+			],
+		})
+
+	try:
+		image = request.FILES.get("image")
+		if not image:
+			return JsonResponse({"success": False, "error": "Image is required"})
+		title = (request.POST.get("title") or "").strip()
+		collection_id = (request.POST.get("collection_id") or "").strip()
+		link_url = (request.POST.get("link_url") or "").strip()
+		if collection_id:
+			c = get_object_or_404(Collection, id=collection_id)
+			link_url = f"/store/collections/{c.slug}/"
+		try:
+			order = int(request.POST.get("order") or 0)
+		except ValueError:
+			order = 0
+		is_active = (request.POST.get("is_active") or "on") in ["1", "true", "on", "yes"]
+		item = ZoomCarouselItem.objects.create(
+			title=title,
+			image=image,
+			link_url=link_url,
+			order=order,
+			is_active=is_active,
+		)
+		return JsonResponse({"success": True, "id": item.id})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def zoom_carousel_update_api(request, item_id):
+	item = get_object_or_404(ZoomCarouselItem, id=item_id)
+	try:
+		title = request.POST.get("title")
+		if title is not None:
+			item.title = title
+		collection_id = request.POST.get("collection_id")
+		if collection_id is not None:
+			collection_id = str(collection_id).strip()
+			if collection_id:
+				c = get_object_or_404(Collection, id=collection_id)
+				item.link_url = f"/store/collections/{c.slug}/"
+			else:
+				item.link_url = ""
+		link_url = request.POST.get("link_url")
+		if link_url is not None and request.POST.get("collection_id") is None:
+			item.link_url = link_url
+		try:
+			item.order = int(request.POST.get("order") or item.order)
+		except ValueError:
+			pass
+		is_active = request.POST.get("is_active")
+		if is_active is not None:
+			item.is_active = is_active in ["1", "true", "on", "yes"]
+		if "image" in request.FILES:
+			item.image = request.FILES["image"]
+		item.save()
+		return JsonResponse({"success": True})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def zoom_carousel_delete_api(request, item_id):
+	item = get_object_or_404(ZoomCarouselItem, id=item_id)
+	item.image.delete(save=False)
+	item.delete()
+	return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def zoom_carousel_toggle_api(request, item_id):
+	item = get_object_or_404(ZoomCarouselItem, id=item_id)
+	item.is_active = not item.is_active
+	item.save(update_fields=["is_active"])
+	return JsonResponse({"success": True, "is_active": item.is_active})

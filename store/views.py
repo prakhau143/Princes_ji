@@ -9,6 +9,7 @@ from .models import (
 	UserProfile, Order, OrderItem, Product, Category, Cart, CartItem,
 	Announcement, HomepageSectionProduct, InstagramReel, TrustBadge, WishlistItem, ProductReview,
 	HomepageSectionContent, OrderLifecycleLog, EditorialMedia,
+	Collection, CollectionRow, ZoomCarouselItem, HeroSlide, SiteSettings,
 )
 from django import forms
 
@@ -336,30 +337,30 @@ def home_view(request):
 			for item in HomepageSectionContent.objects.filter(is_active=True)
 		}
 		
-		# Get homepage section products
+		# Get homepage section products (no hard limit — slider handles >4)
 		most_selling = Product.objects.filter(
 			homepage_sections__section_type='most_selling',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
-		
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
+
 		trending_products = Product.objects.filter(
 			homepage_sections__section_type='trending',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
-		
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
+
 		new_launch = Product.objects.filter(
 			homepage_sections__section_type='new_launch',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
-		
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
+
 		featured_products = Product.objects.filter(
 			homepage_sections__section_type='featured',
 			homepage_sections__is_active=True,
 			is_active=True
-		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')[:4]
+		).prefetch_related('additional_images', 'videos').distinct().order_by('homepage_sections__position')
 		exquisite_products = Product.objects.filter(
 			homepage_sections__section_type='exquisite',
 			homepage_sections__is_active=True,
@@ -375,6 +376,10 @@ def home_view(request):
 		trust_badges = TrustBadge.objects.filter(is_active=True).order_by('sort_order', 'id')[:8]
 		approved_reviews = ProductReview.objects.filter(is_approved=True, is_visible=True).select_related('product', 'user').order_by('-created_at')[:12]
 		editorial_items = EditorialMedia.objects.filter(is_active=True).select_related('product').order_by('order', 'created_at')
+		collection_rows = CollectionRow.objects.select_related('collection').prefetch_related('products').filter(collection__is_active=True).order_by('order')
+		zoom_carousel_items = ZoomCarouselItem.objects.filter(is_active=True).order_by('order')
+		hero_slides = HeroSlide.objects.filter(is_active=True).order_by('order')
+		glass_flash_enabled = SiteSettings.get_settings().glass_flash_enabled
 
 		context = {
 			'announcements': announcements,
@@ -387,11 +392,15 @@ def home_view(request):
 			'trust_badges': trust_badges,
 			'approved_reviews': approved_reviews,
 			'editorial_items': editorial_items,
+			'collection_rows': collection_rows,
+			'zoom_carousel_items': zoom_carousel_items,
 			'hero_content': section_content.get('hero'),
 			'launch_featured_media': section_content.get('launch_featured_media'),
 			'exquisite_content': section_content.get('exquisite_collection'),
 			'account_cards_media': section_content.get('account_cards_media'),
 			'reels_content': section_content.get('instagram_reels'),
+			'hero_slides': hero_slides,
+			'glass_flash_enabled': glass_flash_enabled,
 		}
 		
 		if request.user.is_authenticated:
@@ -416,6 +425,22 @@ def home_view(request):
 			context['dashboard'] = False
 		
 		return render(request, 'store/home.html', context)
+
+
+def collections_list_view(request):
+	collections = Collection.objects.filter(is_active=True).order_by('order', 'title')
+	return render(request, 'store/collections_list.html', {'collections': collections})
+
+
+def collection_detail_view(request, slug):
+	collection = get_object_or_404(Collection, slug=slug, is_active=True)
+	rows = collection.rows.prefetch_related('products').order_by('order')
+	products = Product.objects.filter(collection_rows__collection=collection, is_active=True).distinct().prefetch_related('additional_images', 'videos')
+	return render(request, 'store/collection_detail.html', {
+		'collection': collection,
+		'rows': rows,
+		'products': products,
+	})
 
 # Note: Authentication views have been moved to store/auth_views.py
 # These old functions are kept for reference but are no longer used

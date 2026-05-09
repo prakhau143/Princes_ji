@@ -2,6 +2,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils.text import slugify
 
 class Cart(models.Model):
 	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -256,6 +257,59 @@ class HomepageSectionProduct(models.Model):
 			raise ValidationError({'position': 'Position must be 1 or higher.'})
 
 
+class Collection(models.Model):
+	title = models.CharField(max_length=120)
+	slug = models.SlugField(unique=True)
+	is_active = models.BooleanField(default=True)
+	order = models.PositiveIntegerField(default=0)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['order', '-created_at']
+
+	def __str__(self):
+		return self.title
+
+	def save(self, *args, **kwargs):
+		candidate = (self.slug or self.title or "").replace('/', '-').strip()
+		normalized = slugify(candidate)
+		if not normalized:
+			raise ValueError("Collection slug is invalid")
+		self.slug = normalized
+		return super().save(*args, **kwargs)
+
+
+class CollectionRow(models.Model):
+	POSITION_CHOICES = [('left', 'Image Left'), ('right', 'Image Right')]
+
+	collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='rows')
+	title = models.CharField(max_length=120, blank=True)
+	image = models.ImageField(upload_to='collection_rows/')
+	image_position = models.CharField(max_length=5, choices=POSITION_CHOICES, default='left')
+	products = models.ManyToManyField('Product', blank=True, related_name='collection_rows')
+	order = models.PositiveIntegerField(default=0)
+
+	class Meta:
+		ordering = ['order']
+
+	def __str__(self):
+		return f"{self.collection.title} / Row #{self.order}"
+
+
+class ZoomCarouselItem(models.Model):
+	title = models.CharField(max_length=120, blank=True)
+	image = models.ImageField(upload_to='zoom_carousel/')
+	link_url = models.URLField(blank=True)
+	order = models.PositiveIntegerField(default=0)
+	is_active = models.BooleanField(default=True)
+
+	class Meta:
+		ordering = ['order']
+
+	def __str__(self):
+		return self.title or f"Zoom Item #{self.pk}"
+
+
 class InstagramReel(models.Model):
 	title = models.CharField(max_length=200, blank=True)
 	video = models.FileField(upload_to='reels/', blank=True, null=True)
@@ -471,3 +525,42 @@ class EditorialMedia(models.Model):
 
 	def __str__(self):
 		return f"{self.get_media_type_display()} — {self.file.name}"
+
+
+class HeroSlide(models.Model):
+	background_image = models.ImageField(upload_to='hero/', blank=True, null=True)
+	background_video = models.FileField(upload_to='hero/videos/', blank=True, null=True)
+	heading = models.CharField(max_length=200, blank=True)
+	subheading = models.TextField(blank=True)
+	button_text = models.CharField(max_length=80, blank=True)
+	button_url = models.CharField(max_length=255, blank=True)
+	order = models.PositiveIntegerField(default=0)
+	is_active = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['order', 'created_at']
+		verbose_name = "Hero Slide"
+		verbose_name_plural = "🖼️ Hero Slides"
+
+	def __str__(self):
+		return self.heading or f"Slide #{self.id}"
+
+
+class SiteSettings(models.Model):
+	glass_flash_enabled = models.BooleanField(
+		default=False,
+		help_text="Enable animated shine/gloss reflection effect on all product images"
+	)
+
+	class Meta:
+		verbose_name = "Site Settings"
+		verbose_name_plural = "⚙️ Site Settings"
+
+	def __str__(self):
+		return "Site Settings"
+
+	@classmethod
+	def get_settings(cls):
+		obj, _ = cls.objects.get_or_create(pk=1)
+		return obj

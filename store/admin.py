@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.contrib import messages as admin_messages
 from .models import (
-	Category, Product, ProductImage, Order, OrderItem, 
-	NewsletterSubscriber, ContactMessage, Announcement, HomepageSectionProduct
+	Category, Product, ProductImage, Order, OrderItem,
+	NewsletterSubscriber, ContactMessage, Announcement, HomepageSectionProduct,
+	Collection, CollectionRow, ZoomCarouselItem, HeroSlide, SiteSettings,
 )
+from .forms import CollectionForm, CollectionRowForm, ZoomCarouselItemForm
 class OrderItemInline(admin.TabularInline):
 	model = OrderItem
 	extra = 0
@@ -252,3 +254,173 @@ class FeaturedProductAdmin(HomepageSectionProductAdmin):
 
 # Register the main model with a general admin
 admin.site.register(HomepageSectionProduct, HomepageSectionProductAdmin)
+
+
+# ============================================================================
+# COLLECTIONS MANAGEMENT
+# ============================================================================
+
+class CollectionRowInline(admin.TabularInline):
+	model = CollectionRow
+	extra = 1
+	fields = ('title', 'image', 'image_position', 'order')
+	ordering = ('order',)
+
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+	form = CollectionForm
+	list_display = ('title', 'slug', 'is_active', 'num_rows', 'order', 'created_at')
+	list_filter = ('is_active', 'created_at')
+	search_fields = ('title', 'slug')
+	prepopulated_fields = {'slug': ('title',)}
+	list_editable = ('is_active', 'order')
+	inlines = [CollectionRowInline]
+	ordering = ('order', '-created_at')
+	
+	fieldsets = (
+		('Basic Information', {
+			'fields': ('title', 'slug', 'order'),
+			'description': 'Collection name and URL slug'
+		}),
+		('Display Settings', {
+			'fields': ('is_active',),
+		}),
+	)
+	
+	def num_rows(self, obj):
+		count = obj.rows.count()
+		return f"📌 {count} row{'s' if count != 1 else ''}"
+	num_rows.short_description = 'Rows'
+	
+	def save_model(self, request, obj, form, change):
+		super().save_model(request, obj, form, change)
+		action = "updated" if change else "created"
+		admin_messages.success(request, f'✓ Collection "{obj.title}" {action} successfully')
+
+
+@admin.register(CollectionRow)
+class CollectionRowAdmin(admin.ModelAdmin):
+	form = CollectionRowForm
+	list_display = ('collection', 'title_or_order', 'image_position', 'num_products', 'order')
+	list_filter = ('collection', 'image_position')
+	search_fields = ('collection__title', 'title')
+	ordering = ('collection', 'order')
+	filter_horizontal = ('products',)
+	
+	fieldsets = (
+		('Collection & Layout', {
+			'fields': ('collection', 'image_position', 'order'),
+			'description': 'Select which collection this row belongs to and where the image appears'
+		}),
+		('Image & Overlay', {
+			'fields': ('image', 'title'),
+			'description': 'Row image and optional overlay text'
+		}),
+		('Products', {
+			'fields': ('products',),
+			'description': 'Select products to display in the carousel (up to 12 will be shown, scrollable)',
+			'classes': ('wide',)
+		}),
+	)
+	
+	def title_or_order(self, obj):
+		return obj.title or f"Row #{obj.order}"
+	title_or_order.short_description = 'Title / Order'
+	
+	def num_products(self, obj):
+		count = obj.products.count()
+		return f"📦 {count}"
+	num_products.short_description = 'Products'
+	
+	def save_model(self, request, obj, form, change):
+		super().save_model(request, obj, form, change)
+		action = "updated" if change else "created"
+		admin_messages.success(request, f'✓ Collection row {action} successfully')
+
+
+# ============================================================================
+# ZOOM CAROUSEL MANAGEMENT
+# ============================================================================
+
+@admin.register(ZoomCarouselItem)
+class ZoomCarouselItemAdmin(admin.ModelAdmin):
+	form = ZoomCarouselItemForm
+	list_display = ('title_or_order', 'image_preview', 'is_active', 'order', 'has_link')
+	list_filter = ('is_active', 'order')
+	search_fields = ('title', 'link_url')
+	list_editable = ('is_active', 'order')
+	ordering = ('order',)
+	
+	fieldsets = (
+		('Item Information', {
+			'fields': ('title', 'order'),
+			'description': 'Title is optional; order defines position in carousel'
+		}),
+		('Image', {
+			'fields': ('image',),
+			'description': 'Square image recommended (will be displayed in 3D carousel)'
+		}),
+		('Link Settings', {
+			'fields': ('link_url',),
+			'description': 'URL to collection, product, or external link (optional)'
+		}),
+		('Display', {
+			'fields': ('is_active',),
+		}),
+	)
+	
+	def title_or_order(self, obj):
+		return obj.title or f"Item #{obj.pk}"
+	title_or_order.short_description = 'Title'
+	
+	def image_preview(self, obj):
+		if obj.image:
+			return f"✓ Uploaded"
+		return "✗ No image"
+	image_preview.short_description = 'Image'
+	
+	def has_link(self, obj):
+		if obj.link_url:
+			return "🔗 Yes"
+		return "—"
+	has_link.short_description = 'Link'
+	
+	def save_model(self, request, obj, form, change):
+		super().save_model(request, obj, form, change)
+		action = "updated" if change else "created"
+		admin_messages.success(request, f'✓ Carousel item {action} successfully')
+
+
+# ============================================================================
+# HERO SLIDES & SITE SETTINGS
+# ============================================================================
+
+@admin.register(HeroSlide)
+class HeroSlideAdmin(admin.ModelAdmin):
+	list_display = ('__str__', 'order', 'is_active', 'created_at')
+	list_editable = ('order', 'is_active')
+	ordering = ('order',)
+	fieldsets = (
+		('Slide Background', {
+			'fields': ('background_image', 'background_video'),
+			'description': 'Provide either an image or a video as slide background.',
+		}),
+		('Content', {
+			'fields': ('heading', 'subheading', 'button_text', 'button_url'),
+		}),
+		('Display Settings', {
+			'fields': ('order', 'is_active'),
+		}),
+	)
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+	list_display = ('__str__', 'glass_flash_enabled')
+
+	def has_add_permission(self, request):
+		return not SiteSettings.objects.exists()
+
+	def has_delete_permission(self, request, obj=None):
+		return False

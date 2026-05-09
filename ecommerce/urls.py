@@ -75,6 +75,17 @@ from store.admin_api import (
     editorial_delete_api,
     editorial_toggle_api,
     product_list_simple_api,
+    collections_api,
+    collections_update_api,
+    collections_delete_api,
+    collections_toggle_api,
+    collection_rows_api,
+    collection_rows_update_api,
+    collection_rows_delete_api,
+    zoom_carousel_api,
+    zoom_carousel_update_api,
+    zoom_carousel_delete_api,
+    zoom_carousel_toggle_api,
 )
 from store.auth_views import login_view, register_view, logout_view, forgot_password_view, verify_otp_view, reset_password_view, resend_otp
 
@@ -132,6 +143,19 @@ urlpatterns = [
     path('admin-dashboard/api/editorial/<int:item_id>/delete/', editorial_delete_api, name='editorial_delete_api'),
     path('admin-dashboard/api/editorial/<int:item_id>/toggle/', editorial_toggle_api, name='editorial_toggle_api'),
     path('admin-dashboard/api/product-list-simple/', product_list_simple_api, name='product_list_simple_api'),
+
+    # Collections CMS
+    path('admin-dashboard/api/collections/', collections_api, name='collections_api'),
+    path('admin-dashboard/api/collections/<int:collection_id>/update/', collections_update_api, name='collections_update_api'),
+    path('admin-dashboard/api/collections/<int:collection_id>/delete/', collections_delete_api, name='collections_delete_api'),
+    path('admin-dashboard/api/collections/<int:collection_id>/toggle/', collections_toggle_api, name='collections_toggle_api'),
+    path('admin-dashboard/api/collection-rows/', collection_rows_api, name='collection_rows_api'),
+    path('admin-dashboard/api/collection-rows/<int:row_id>/update/', collection_rows_update_api, name='collection_rows_update_api'),
+    path('admin-dashboard/api/collection-rows/<int:row_id>/delete/', collection_rows_delete_api, name='collection_rows_delete_api'),
+    path('admin-dashboard/api/zoom-carousel/', zoom_carousel_api, name='zoom_carousel_api'),
+    path('admin-dashboard/api/zoom-carousel/<int:item_id>/update/', zoom_carousel_update_api, name='zoom_carousel_update_api'),
+    path('admin-dashboard/api/zoom-carousel/<int:item_id>/delete/', zoom_carousel_delete_api, name='zoom_carousel_delete_api'),
+    path('admin-dashboard/api/zoom-carousel/<int:item_id>/toggle/', zoom_carousel_toggle_api, name='zoom_carousel_toggle_api'),
     path('admin-dashboard/export/orders/', export_orders, name='export-orders'),
     path('admin-dashboard/export/products/', export_products, name='export-products'),
     path('admin-dashboard/export/customers/', export_customers, name='export-customers'),
