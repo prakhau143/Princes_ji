@@ -1,4 +1,5 @@
 
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -6,10 +7,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from .models import (
-	UserProfile, Order, OrderItem, Product, Category, Cart, CartItem,
+	UserProfile, Address, Order, OrderItem, Product, Category, Cart, CartItem,
 	Announcement, HomepageSectionProduct, InstagramReel, TrustBadge, WishlistItem, ProductReview,
 	HomepageSectionContent, OrderLifecycleLog, EditorialMedia,
-	Collection, CollectionRow, ZoomCarouselItem, HeroSlide, SiteSettings,
+	Collection, CollectionRow, ZoomCarouselItem, HeroSlide, SiteSettings, Coupon,
 )
 from django import forms
 
@@ -64,72 +65,6 @@ class ShippingForm(forms.Form):
 		})
 	)
 
-
-# Checkout: collect shipping details
-@login_required
-def checkout_view(request):
-	cart, _ = Cart.objects.get_or_create(user=request.user)
-	items = cart.items.select_related('product')
-	total = sum(item.product.price * item.quantity for item in items)
-	if not items.exists():
-		messages.error(request, "Your cart is empty.")
-		return redirect('cart')
-	if request.method == 'POST':
-		form = ShippingForm(request.POST)
-		if form.is_valid():
-			# Save shipping info in session and go to review
-			request.session['shipping'] = form.cleaned_data
-			return redirect('checkout_review')
-	else:
-		form = ShippingForm()
-	return render(request, 'store/checkout.html', {'form': form, 'items': items, 'total': total})
-
-# Checkout: review order
-@login_required
-def checkout_review_view(request):
-	cart, _ = Cart.objects.get_or_create(user=request.user)
-	items = cart.items.select_related('product')
-	shipping = request.session.get('shipping')
-	if not shipping or not items.exists():
-		return redirect('checkout')
-	total = sum(item.product.price * item.quantity for item in items)
-	stock_errors = []
-	for item in items:
-		if item.quantity > item.product.stock:
-			stock_errors.append(f"Not enough stock for {item.product.name} (Available: {item.product.stock}, In cart: {item.quantity})")
-	if request.method == 'POST':
-		if stock_errors:
-			for err in stock_errors:
-				messages.error(request, err)
-			return redirect('checkout_review')
-		# Create order and order items
-		order = Order.objects.create(
-			user=request.user,
-			shipping_address=shipping['address'],
-			shipping_city=shipping['city'],
-			shipping_state=shipping['state'],
-			shipping_postal_code=shipping['postal_code'],
-			shipping_country=shipping['country'],
-			mobile_number=shipping['mobile_number'],
-			total=total
-		)
-		for item in items:
-			OrderItem.objects.create(
-				order=order,
-				product=item.product,
-				quantity=item.quantity,
-				price=item.product.price
-			)
-			# Deduct stock
-			item.product.stock -= item.quantity
-			item.product.save()
-		# Clear cart
-		items.delete()
-		messages.success(request, "Order placed successfully!")
-		# Optionally clear shipping info
-		request.session.pop('shipping', None)
-		return redirect('order_success', order_id=order.id)
-	return render(request, 'store/checkout_review.html', {'items': items, 'shipping': shipping, 'total': total, 'stock_errors': stock_errors})
 
 # Checkout: order success
 @login_required
@@ -192,7 +127,10 @@ def add_to_cart_view(request, product_id):
 	if not created:
 		item.quantity += 1
 		item.save()
-	# If 'buynow' param is present, go directly to checkout
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	if is_ajax:
+		item_count = sum(i.quantity for i in cart.items.all())
+		return JsonResponse({'ok': True, 'item_count': item_count})
 	if request.GET.get('buynow') == '1':
 		return redirect('checkout')
 	return redirect('cart')
@@ -224,20 +162,41 @@ def category_products_view(request, category_id):
 
 def product_detail_view(request, pk):
 	product = get_object_or_404(Product, pk=pk)
-	# Get related products from the same category, excluding the current product
 	related_products = Product.objects.filter(
-		category=product.category,
-		stock__gt=0
+		category=product.category, is_active=True
 	).prefetch_related('additional_images', 'videos').exclude(pk=pk)[:4]
 	in_wishlist = False
 	if request.user.is_authenticated:
 		in_wishlist = WishlistItem.objects.filter(user=request.user, product=product).exists()
-	
+
+	# Use direct rating fields on the product (set by admin)
+	average_rating = float(product.rating)
+	total_ratings = product.rating_count
+	full_stars = int(average_rating)
+	half_star = (average_rating - full_stars) >= 0.5
+	empty_stars = 5 - full_stars - (1 if half_star else 0)
+
+	# Keep approved reviews for the reviews section below the fold
+	approved_reviews = product.reviews.filter(is_approved=True)
+
+	# Build gallery images (main + up to 3 additional)
+	gallery_images = []
+	if product.image:
+		gallery_images.append(product.image.url)
+	gallery_images += [img.image.url for img in product.additional_images.all()[:3]]
+
 	return render(request, 'store/product_detail.html', {
 		'product': product,
 		'related_products': related_products,
 		'in_wishlist': in_wishlist,
 		'product_videos': product.videos.all(),
+		'approved_reviews': approved_reviews,
+		'total_ratings': total_ratings,
+		'average_rating': average_rating,
+		'full_stars': range(full_stars),
+		'half_star': half_star,
+		'empty_stars': range(empty_stars),
+		'gallery_images': gallery_images,
 	})
 
 
@@ -456,26 +415,23 @@ class UserProfileForm(forms.ModelForm):
 @login_required
 def profile_view(request):
 	user = request.user
-	# Get or create user profile
-	profile, created = UserProfile.objects.get_or_create(user=user)
-	# Get or create cart and items
-	cart, _ = Cart.objects.get_or_create(user=user)
-	cart_items = cart.items.select_related('product')
-	cart_total = sum(item.product.price * item.quantity for item in cart_items)
+	profile, _ = UserProfile.objects.get_or_create(user=user)
+	addresses = Address.objects.filter(user=user)
 	if request.method == 'POST':
-		form = UserProfileForm(request.POST, instance=profile)
-		if form.is_valid():
-			form.save()
-			messages.success(request, 'Profile updated!')
-			return redirect('profile')
-	else:
-		form = UserProfileForm(instance=profile)
+		for field in ('first_name', 'last_name', 'email', 'mobile', 'gender', 'occupation'):
+			val = request.POST.get(field, '').strip()
+			if val is not None:
+				setattr(profile, field, val)
+		for date_field in ('birthdate', 'anniversary', 'spouse_birthday', 'kids_birthday'):
+			val = request.POST.get(date_field, '').strip()
+			setattr(profile, date_field, val if val else None)
+		profile.save()
+		messages.success(request, 'Profile updated!')
+		return redirect('profile')
 	return render(request, 'store/profile.html', {
 		'user': user,
-		'form': form,
 		'profile': profile,
-		'cart_items': cart_items,
-		'cart_total': cart_total,
+		'addresses': addresses,
 	})
 
 @login_required
@@ -567,3 +523,420 @@ def newsletter_subscribe_view(request):
 @login_required
 def shipping_returns_view(request):
 	return render(request, 'store/shipping_returns.html')
+
+
+# ─── Cart JSON API ────────────────────────────────────────────────────────────
+
+def _cart_summary(cart, coupon_code=None):
+	"""Build the full cart payload dict for the slide-in panel."""
+	from decimal import Decimal
+	items = cart.items.select_related('product').prefetch_related('product__additional_images')
+	settings_obj = SiteSettings.objects.first()
+	shipping_charge = Decimal(str(settings_obj.shipping_charge)) if settings_obj else Decimal('0')
+	free_shipping_above = Decimal(str(settings_obj.free_shipping_above)) if settings_obj else Decimal('0')
+
+	items_data = []
+	mrp_total = Decimal('0')
+	price_total = Decimal('0')
+	for item in items:
+		p = item.product
+		mrp = Decimal(str(p.mrp)) if p.mrp else Decimal(str(p.price))
+		price = Decimal(str(p.price))
+		img_url = p.image.url if p.image else ''
+		items_data.append({
+			'id': item.id,
+			'product_id': p.id,
+			'name': p.name,
+			'image': img_url,
+			'price': float(price),
+			'mrp': float(mrp),
+			'quantity': item.quantity,
+			'subtotal': float(price * item.quantity),
+		})
+		mrp_total += mrp * item.quantity
+		price_total += price * item.quantity
+
+	discount_on_mrp = mrp_total - price_total
+
+	coupon_discount = Decimal('0')
+	coupon_error = None
+	coupon_obj = None
+	if coupon_code:
+		try:
+			coupon_obj = Coupon.objects.get(code__iexact=coupon_code)
+			valid, msg = coupon_obj.is_valid(price_total)
+			if valid:
+				coupon_discount = coupon_obj.calculate_discount(price_total)
+			else:
+				coupon_error = msg
+				coupon_obj = None
+		except Coupon.DoesNotExist:
+			coupon_error = 'Invalid coupon code'
+
+	subtotal_after_coupon = price_total - coupon_discount
+	shipping = Decimal('0')
+	if subtotal_after_coupon > 0:
+		if free_shipping_above > 0 and subtotal_after_coupon >= free_shipping_above:
+			shipping = Decimal('0')
+		else:
+			shipping = shipping_charge
+
+	estimated_total = subtotal_after_coupon + shipping
+
+	return {
+		'items': items_data,
+		'summary': {
+			'mrp_total': float(mrp_total),
+			'discount_on_mrp': float(discount_on_mrp),
+			'price_total': float(price_total),
+			'coupon_discount': float(coupon_discount),
+			'shipping': float(shipping),
+			'free_shipping_above': float(free_shipping_above),
+			'estimated_total': float(estimated_total),
+		},
+		'coupon_code': coupon_obj.code if coupon_obj else None,
+		'coupon_error': coupon_error,
+		'item_count': sum(i['quantity'] for i in items_data),
+	}
+
+
+@login_required
+def cart_data_api(request):
+	cart, _ = Cart.objects.get_or_create(user=request.user)
+	coupon_code = request.GET.get('coupon') or request.session.get('applied_coupon')
+	data = _cart_summary(cart, coupon_code)
+	return JsonResponse({'ok': True, **data})
+
+
+@login_required
+def cart_update_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	try:
+		body = json.loads(request.body)
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+	item_id = body.get('item_id')
+	quantity = body.get('quantity', 1)
+	cart = get_object_or_404(Cart, user=request.user)
+	item = get_object_or_404(CartItem, pk=item_id, cart=cart)
+	try:
+		quantity = int(quantity)
+	except (ValueError, TypeError):
+		return JsonResponse({'ok': False, 'error': 'Invalid quantity'}, status=400)
+	if quantity <= 0:
+		item.delete()
+	else:
+		item.quantity = quantity
+		item.save()
+	data = _cart_summary(cart, request.session.get('applied_coupon'))
+	return JsonResponse({'ok': True, **data})
+
+
+@login_required
+def cart_remove_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	try:
+		body = json.loads(request.body)
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+	item_id = body.get('item_id')
+	cart = get_object_or_404(Cart, user=request.user)
+	item = get_object_or_404(CartItem, pk=item_id, cart=cart)
+	item.delete()
+	data = _cart_summary(cart, request.session.get('applied_coupon'))
+	return JsonResponse({'ok': True, **data})
+
+
+@login_required
+def apply_coupon_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	try:
+		body = json.loads(request.body)
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+	coupon_code = body.get('coupon_code', '').strip()
+	if coupon_code:
+		request.session['applied_coupon'] = coupon_code
+	else:
+		request.session.pop('applied_coupon', None)
+	cart, _ = Cart.objects.get_or_create(user=request.user)
+	data = _cart_summary(cart, coupon_code)
+	return JsonResponse({'ok': True, **data})
+
+
+@login_required
+def recommended_products_api(request):
+	cart, _ = Cart.objects.get_or_create(user=request.user)
+	cart_product_ids = list(cart.items.values_list('product_id', flat=True))
+	recs = Product.objects.filter(is_active=True).exclude(id__in=cart_product_ids).order_by('-rating', '-created_at')[:6]
+	data = []
+	for p in recs:
+		data.append({
+			'id': p.id,
+			'name': p.name,
+			'price': float(p.price),
+			'mrp': float(p.mrp) if p.mrp else float(p.price),
+			'image': p.image.url if p.image else '',
+			'rating': float(p.rating) if p.rating else 0,
+		})
+	return JsonResponse({'ok': True, 'products': data})
+
+
+# ─── Address API ──────────────────────────────────────────────────────────────
+
+def _address_to_dict(a):
+	return {
+		'id': a.id, 'full_name': a.full_name,
+		'address_line1': a.address_line1, 'address_line2': a.address_line2,
+		'city': a.city, 'state': a.state, 'postal_code': a.postal_code,
+		'country': a.country, 'mobile': a.mobile, 'is_default': a.is_default,
+	}
+
+
+@login_required
+def addresses_api(request):
+	if request.method == 'GET':
+		addrs = Address.objects.filter(user=request.user)
+		return JsonResponse({'ok': True, 'addresses': [_address_to_dict(a) for a in addrs]})
+	try:
+		data = json.loads(request.body)
+		is_first = not Address.objects.filter(user=request.user).exists()
+		addr = Address.objects.create(
+			user=request.user,
+			full_name=data['full_name'],
+			address_line1=data['address_line1'],
+			address_line2=data.get('address_line2', ''),
+			city=data['city'],
+			state=data['state'],
+			postal_code=data['postal_code'],
+			country=data.get('country', 'India'),
+			mobile=data['mobile'],
+			is_default=data.get('is_default', is_first),
+		)
+		return JsonResponse({'ok': True, 'address': _address_to_dict(addr)})
+	except Exception as e:
+		return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def address_update_api(request, addr_id):
+	addr = get_object_or_404(Address, pk=addr_id, user=request.user)
+	try:
+		data = json.loads(request.body)
+		for field in ('full_name', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country', 'mobile'):
+			if field in data:
+				setattr(addr, field, data[field])
+		if data.get('is_default'):
+			addr.is_default = True
+		addr.save()
+		return JsonResponse({'ok': True, 'address': _address_to_dict(addr)})
+	except Exception as e:
+		return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def address_delete_api(request, addr_id):
+	addr = get_object_or_404(Address, pk=addr_id, user=request.user)
+	was_default = addr.is_default
+	addr.delete()
+	if was_default:
+		first = Address.objects.filter(user=request.user).first()
+		if first:
+			first.is_default = True
+			first.save()
+	return JsonResponse({'ok': True})
+
+
+@login_required
+def address_set_default_api(request, addr_id):
+	addr = get_object_or_404(Address, pk=addr_id, user=request.user)
+	Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+	addr.is_default = True
+	addr.save()
+	return JsonResponse({'ok': True})
+
+
+# ─── Place Order (COD) ────────────────────────────────────────────────────────
+
+def _create_order_from_cart(user, address, payment_method, coupon_code=None,
+                             razorpay_order_id='', razorpay_payment_id=''):
+	from decimal import Decimal
+	cart, _ = Cart.objects.get_or_create(user=user)
+	items = cart.items.select_related('product')
+	if not items.exists():
+		raise ValueError('Cart is empty')
+	settings_obj = SiteSettings.get_settings()
+	price_total = sum(Decimal(str(item.product.price)) * item.quantity for item in items)
+	coupon_discount = Decimal('0')
+	if coupon_code:
+		try:
+			coupon = Coupon.objects.get(code__iexact=coupon_code)
+			valid, _ = coupon.is_valid(price_total)
+			if valid:
+				coupon_discount = coupon.calculate_discount(price_total)
+				coupon.usage_count += 1
+				coupon.save()
+		except Coupon.DoesNotExist:
+			pass
+	subtotal = price_total - coupon_discount
+	free_above = Decimal(str(settings_obj.free_shipping_above))
+	ship = Decimal(str(settings_obj.shipping_charge))
+	shipping = Decimal('0') if (free_above > 0 and subtotal >= free_above) else ship
+	cod_fee = Decimal(str(settings_obj.cod_fee)) if payment_method == 'cod' else Decimal('0')
+	total = subtotal + shipping + cod_fee
+	order = Order.objects.create(
+		user=user,
+		shipping_name=address.full_name,
+		shipping_address=f"{address.address_line1} {address.address_line2}".strip(),
+		shipping_city=address.city,
+		shipping_state=address.state,
+		shipping_postal_code=address.postal_code,
+		shipping_country=address.country,
+		mobile_number=address.mobile,
+		total=total,
+		payment_method=payment_method,
+		payment_status='paid' if payment_method != 'cod' else 'pending',
+		razorpay_order_id=razorpay_order_id,
+		razorpay_payment_id=razorpay_payment_id,
+	)
+	for item in items:
+		OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price=item.product.price)
+		item.product.stock = max(0, item.product.stock - item.quantity)
+		item.product.save()
+	items.delete()
+	return order
+
+
+@login_required
+def place_order_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	try:
+		data = json.loads(request.body)
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+	addr_id = data.get('address_id')
+	payment_method = data.get('payment_method', 'cod')
+	coupon_code = data.get('coupon_code', '') or request.session.get('applied_coupon', '')
+	if payment_method not in ('cod',):
+		return JsonResponse({'ok': False, 'error': 'Use Razorpay endpoint for online payments'}, status=400)
+	if not addr_id:
+		return JsonResponse({'ok': False, 'error': 'Please select a delivery address.'}, status=400)
+	try:
+		address = Address.objects.get(pk=addr_id, user=request.user)
+	except Address.DoesNotExist:
+		return JsonResponse({'ok': False, 'error': 'Selected address not found. Please choose another.'}, status=400)
+	try:
+		order = _create_order_from_cart(request.user, address, 'cod', coupon_code)
+		request.session.pop('applied_coupon', None)
+		return JsonResponse({'ok': True, 'order_id': order.id})
+	except Exception as e:
+		return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+# ─── Razorpay ─────────────────────────────────────────────────────────────────
+
+@login_required
+def create_razorpay_order_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	try:
+		data = json.loads(request.body)
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+	from decimal import Decimal
+	import razorpay
+	settings_obj = SiteSettings.get_settings()
+	if not settings_obj.razorpay_key_id or not settings_obj.razorpay_key_secret:
+		return JsonResponse({'ok': False, 'error': 'Razorpay not configured. Contact admin.'}, status=503)
+	addr_id = data.get('address_id')
+	payment_method = data.get('payment_method', 'upi')
+	coupon_code = data.get('coupon_code', '') or request.session.get('applied_coupon', '')
+	if not addr_id:
+		return JsonResponse({'ok': False, 'error': 'Please select a delivery address.'}, status=400)
+	try:
+		address = Address.objects.get(pk=addr_id, user=request.user)
+	except Address.DoesNotExist:
+		return JsonResponse({'ok': False, 'error': 'Selected address not found.'}, status=400)
+	try:
+		cart = Cart.objects.get_or_create(user=request.user)[0]
+		items = cart.items.select_related('product')
+		price_total = sum(Decimal(str(i.product.price)) * i.quantity for i in items)
+		coupon_discount = Decimal('0')
+		if coupon_code:
+			try:
+				coupon = Coupon.objects.get(code__iexact=coupon_code)
+				valid, _ = coupon.is_valid(price_total)
+				if valid:
+					coupon_discount = coupon.calculate_discount(price_total)
+			except Coupon.DoesNotExist:
+				pass
+		subtotal = price_total - coupon_discount
+		free_above = Decimal(str(settings_obj.free_shipping_above))
+		ship = Decimal(str(settings_obj.shipping_charge))
+		shipping = Decimal('0') if (free_above > 0 and subtotal >= free_above) else ship
+		total_paise = int((subtotal + shipping) * 100)
+		client = razorpay.Client(auth=(settings_obj.razorpay_key_id, settings_obj.razorpay_key_secret))
+		from django.utils import timezone
+		rz_order = client.order.create({
+			'amount': total_paise,
+			'currency': 'INR',
+			'receipt': f'order_{request.user.id}_{int(timezone.now().timestamp())}',
+		})
+		request.session['pending_checkout'] = {
+			'address_id': addr_id,
+			'payment_method': payment_method,
+			'coupon_code': coupon_code,
+			'razorpay_order_id': rz_order['id'],
+		}
+		profile, _ = UserProfile.objects.get_or_create(user=request.user)
+		return JsonResponse({
+			'ok': True,
+			'razorpay_order_id': rz_order['id'],
+			'amount': total_paise,
+			'key': settings_obj.razorpay_key_id,
+			'name': request.user.get_full_name() or request.user.username,
+			'email': profile.email or request.user.email,
+			'mobile': profile.mobile or '',
+		})
+	except Exception as e:
+		return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def verify_payment_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	try:
+		data = json.loads(request.body)
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+	import razorpay
+	settings_obj = SiteSettings.get_settings()
+	client = razorpay.Client(auth=(settings_obj.razorpay_key_id, settings_obj.razorpay_key_secret))
+	try:
+		client.utility.verify_payment_signature({
+			'razorpay_order_id': data['razorpay_order_id'],
+			'razorpay_payment_id': data['razorpay_payment_id'],
+			'razorpay_signature': data['razorpay_signature'],
+		})
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Payment verification failed'}, status=400)
+	pending = request.session.get('pending_checkout', {})
+	try:
+		address = get_object_or_404(Address, pk=pending.get('address_id'), user=request.user)
+		order = _create_order_from_cart(
+			request.user, address,
+			pending.get('payment_method', 'upi'),
+			pending.get('coupon_code', ''),
+			razorpay_order_id=data['razorpay_order_id'],
+			razorpay_payment_id=data['razorpay_payment_id'],
+		)
+		request.session.pop('pending_checkout', None)
+		request.session.pop('applied_coupon', None)
+		return JsonResponse({'ok': True, 'order_id': order.id})
+	except Exception as e:
+		return JsonResponse({'ok': False, 'error': str(e)}, status=400)

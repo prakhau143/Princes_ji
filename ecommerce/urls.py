@@ -86,6 +86,15 @@ from store.admin_api import (
     zoom_carousel_update_api,
     zoom_carousel_delete_api,
     zoom_carousel_toggle_api,
+    hero_slides_api,
+    hero_slide_update_api,
+    hero_slide_delete_api,
+    hero_slide_toggle_api,
+    site_settings_api,
+    coupons_api,
+    coupon_update_api,
+    coupon_delete_api,
+    coupon_toggle_api,
 )
 from store.auth_views import login_view, register_view, logout_view, forgot_password_view, verify_otp_view, reset_password_view, resend_otp
 
@@ -156,6 +165,22 @@ urlpatterns = [
     path('admin-dashboard/api/zoom-carousel/<int:item_id>/update/', zoom_carousel_update_api, name='zoom_carousel_update_api'),
     path('admin-dashboard/api/zoom-carousel/<int:item_id>/delete/', zoom_carousel_delete_api, name='zoom_carousel_delete_api'),
     path('admin-dashboard/api/zoom-carousel/<int:item_id>/toggle/', zoom_carousel_toggle_api, name='zoom_carousel_toggle_api'),
+
+    # Hero Slides CMS
+    path('admin-dashboard/api/hero-slides/', hero_slides_api, name='hero_slides_api'),
+    path('admin-dashboard/api/hero-slides/<int:slide_id>/update/', hero_slide_update_api, name='hero_slide_update_api'),
+    path('admin-dashboard/api/hero-slides/<int:slide_id>/delete/', hero_slide_delete_api, name='hero_slide_delete_api'),
+    path('admin-dashboard/api/hero-slides/<int:slide_id>/toggle/', hero_slide_toggle_api, name='hero_slide_toggle_api'),
+
+    # Site Settings
+    path('admin-dashboard/api/site-settings/', site_settings_api, name='site_settings_api'),
+
+    # Coupons
+    path('admin-dashboard/api/coupons/', coupons_api, name='coupons_api'),
+    path('admin-dashboard/api/coupons/<int:coupon_id>/update/', coupon_update_api, name='coupon_update_api'),
+    path('admin-dashboard/api/coupons/<int:coupon_id>/delete/', coupon_delete_api, name='coupon_delete_api'),
+    path('admin-dashboard/api/coupons/<int:coupon_id>/toggle/', coupon_toggle_api, name='coupon_toggle_api'),
+
     path('admin-dashboard/export/orders/', export_orders, name='export-orders'),
     path('admin-dashboard/export/products/', export_products, name='export-products'),
     path('admin-dashboard/export/customers/', export_customers, name='export-customers'),

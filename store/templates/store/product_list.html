@@ -104,24 +104,14 @@
         </p>
 
         <div class="mt-auto space-y-2">
-          <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-full" onclick="event.stopPropagation();">
-            {% csrf_token %}
-            <button
-              type="submit"
-              class="w-full bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 text-gray-800 font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300"
-            >
-              Add to Cart
-            </button>
-          </form>
-          <form method="post" action="{% url 'add_to_cart' product.id %}?buynow=1" class="w-full" onclick="event.stopPropagation();">
-            {% csrf_token %}
-            <button
-              type="submit"
-              class="w-full bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 text-white font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300"
-            >
-              Buy Now
-            </button>
-          </form>
+          <button type="button" onclick="event.stopPropagation(); addToCart({{ product.id }})"
+            class="w-full bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 text-gray-800 font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300">
+            Add to Cart
+          </button>
+          <button type="button" onclick="event.stopPropagation(); addToCart({{ product.id }}, true)"
+            class="w-full bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 text-white font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300">
+            Buy Now
+          </button>
         </div>
       </div>
     </div>

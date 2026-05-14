@@ -80,6 +80,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'store.context_processors.announcements',
                 'store.context_processors.active_collections',
+                'store.context_processors.site_settings',
             ],
         },
     },

@@ -23,14 +23,51 @@ class CartItem(models.Model):
 from django.contrib.auth.models import User
 
 class UserProfile(models.Model):
+	GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
+
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
-	# Add additional fields as needed, e.g. address, phone, etc.
+	# Legacy fields kept for compatibility
 	address = models.CharField(max_length=255, blank=True)
 	phone = models.CharField(max_length=20, blank=True)
 	mobile = models.CharField(max_length=20, blank=True)
+	# Extended personal info
+	first_name = models.CharField(max_length=100, blank=True)
+	last_name = models.CharField(max_length=100, blank=True)
+	email = models.EmailField(blank=True)
+	birthdate = models.DateField(null=True, blank=True)
+	gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True)
+	anniversary = models.DateField(null=True, blank=True)
+	spouse_birthday = models.DateField(null=True, blank=True)
+	kids_birthday = models.DateField(null=True, blank=True)
+	occupation = models.CharField(max_length=100, blank=True)
 
 	def __str__(self):
 		return self.user.username
+
+
+class Address(models.Model):
+	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
+	full_name = models.CharField(max_length=100)
+	address_line1 = models.CharField(max_length=255)
+	address_line2 = models.CharField(max_length=255, blank=True)
+	city = models.CharField(max_length=100)
+	state = models.CharField(max_length=100)
+	postal_code = models.CharField(max_length=20)
+	country = models.CharField(max_length=100, default='India')
+	mobile = models.CharField(max_length=20)
+	is_default = models.BooleanField(default=False)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['-is_default', '-created_at']
+
+	def __str__(self):
+		return f"{self.full_name} — {self.city}"
+
+	def save(self, *args, **kwargs):
+		if self.is_default:
+			Address.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+		super().save(*args, **kwargs)
 
 
 # Category model
@@ -46,7 +83,15 @@ class Product(models.Model):
 	name = models.CharField(max_length=200)
 	description = models.TextField(blank=True)
 	price = models.DecimalField(max_digits=10, decimal_places=2)
+	mrp = models.DecimalField(max_digits=10, decimal_places=2, default=0.00,
+		help_text="Maximum Retail Price (before discount)")
+	sku = models.CharField(max_length=50, unique=True, blank=True, null=True,
+		help_text="Auto-generated if left blank (e.g. PRD-000001)")
 	cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+	rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0,
+		help_text="Average rating (0.0 – 5.0), set directly by admin")
+	rating_count = models.PositiveIntegerField(default=0,
+		help_text="Total number of ratings shown on storefront")
 	category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
 	image = models.ImageField(upload_to='products/', blank=True, null=True)  # Main image
 	stock = models.PositiveIntegerField(default=0)
@@ -54,16 +99,39 @@ class Product(models.Model):
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 
+	class Meta:
+		ordering = ['-created_at']
+
 	def __str__(self):
 		return self.name
-	
+
+	@property
+	def discount_percent(self):
+		if self.mrp and self.mrp > 0 and self.price < self.mrp:
+			return int(round(((self.mrp - self.price) / self.mrp) * 100))
+		return 0
+
+	def save(self, *args, **kwargs):
+		if not self.sku:
+			import re as _re
+			used = set()
+			for s in Product.objects.values_list('sku', flat=True):
+				if s:
+					m = _re.match(r'^PRD-(\d+)$', s)
+					if m:
+						used.add(int(m.group(1)))
+			n = 1
+			while n in used:
+				n += 1
+			self.sku = f"PRD-{n:06d}"
+		super().save(*args, **kwargs)
+
 	def get_all_images(self):
-		"""Returns list of all product images (main + additional)"""
 		images = []
 		if self.image:
 			images.append(self.image.url)
 		images.extend([img.image.url for img in self.additional_images.all()[:3]])
-		return images[:4]  # Maximum 4 images total
+		return images[:4]
 
 	def hover_image_url(self):
 		first_extra = self.additional_images.first()
@@ -122,11 +190,24 @@ class Order(models.Model):
 		('cancelled', 'Cancelled'),
 	]
 	
+	PAYMENT_METHOD_CHOICES = [
+		('cod', 'Cash on Delivery'),
+		('upi', 'UPI'),
+		('card', 'Card'),
+		('netbanking', 'Netbanking'),
+	]
+	PAYMENT_STATUS_CHOICES = [
+		('pending', 'Pending'),
+		('paid', 'Paid'),
+		('failed', 'Failed'),
+	]
+
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 	total = models.DecimalField(max_digits=10, decimal_places=2)
+	shipping_name = models.CharField(max_length=100, blank=True)
 	shipping_address = models.TextField(default='Address not provided')
 	shipping_city = models.CharField(max_length=100, default='City not provided')
 	shipping_state = models.CharField(max_length=100, default='State not provided')
@@ -134,6 +215,10 @@ class Order(models.Model):
 	shipping_country = models.CharField(max_length=100, default='Country not provided')
 	mobile_number = models.CharField(max_length=20, blank=True)
 	assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_orders')
+	payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
+	payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+	razorpay_order_id = models.CharField(max_length=100, blank=True)
+	razorpay_payment_id = models.CharField(max_length=100, blank=True)
 
 	def __str__(self):
 		return f"Order #{self.id} by {self.user.username}"
@@ -534,6 +619,8 @@ class HeroSlide(models.Model):
 	subheading = models.TextField(blank=True)
 	button_text = models.CharField(max_length=80, blank=True)
 	button_url = models.CharField(max_length=255, blank=True)
+	secondary_button_text = models.CharField(max_length=80, blank=True)
+	secondary_button_url = models.CharField(max_length=255, blank=True)
 	order = models.PositiveIntegerField(default=0)
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
@@ -552,6 +639,26 @@ class SiteSettings(models.Model):
 		default=False,
 		help_text="Enable animated shine/gloss reflection effect on all product images"
 	)
+	shipping_charge = models.DecimalField(
+		max_digits=8, decimal_places=2, default=0,
+		help_text="Default shipping charge in ₹ (set 0 for free shipping)"
+	)
+	free_shipping_above = models.DecimalField(
+		max_digits=8, decimal_places=2, default=0,
+		help_text="Order amount above which shipping is free (0 = always charged)"
+	)
+	cod_fee = models.DecimalField(
+		max_digits=6, decimal_places=2, default=75,
+		help_text="Extra fee charged for Cash on Delivery orders"
+	)
+	razorpay_key_id = models.CharField(
+		max_length=200, blank=True,
+		help_text="Razorpay Key ID from your Razorpay Dashboard"
+	)
+	razorpay_key_secret = models.CharField(
+		max_length=200, blank=True,
+		help_text="Razorpay Key Secret (keep private — never share)"
+	)
 
 	class Meta:
 		verbose_name = "Site Settings"
@@ -564,3 +671,56 @@ class SiteSettings(models.Model):
 	def get_settings(cls):
 		obj, _ = cls.objects.get_or_create(pk=1)
 		return obj
+
+
+class Coupon(models.Model):
+	DISCOUNT_TYPE_CHOICES = [('fixed', 'Fixed Amount (₹)'), ('percent', 'Percentage (%)')]
+
+	code = models.CharField(max_length=50, unique=True)
+	description = models.TextField(blank=True)
+	discount_type = models.CharField(max_length=10, choices=DISCOUNT_TYPE_CHOICES, default='percent')
+	discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+	min_cart_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+		help_text="Minimum cart subtotal required")
+	max_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+		help_text="Cap for percentage-type discounts (leave blank = no cap)")
+	is_active = models.BooleanField(default=True)
+	valid_from = models.DateTimeField(null=True, blank=True)
+	valid_to = models.DateTimeField(null=True, blank=True)
+	usage_limit = models.PositiveIntegerField(null=True, blank=True,
+		help_text="Max total uses (blank = unlimited)")
+	usage_count = models.PositiveIntegerField(default=0)
+
+	class Meta:
+		ordering = ['-id']
+		verbose_name = "Coupon"
+		verbose_name_plural = "🎟️ Coupons"
+
+	def __str__(self):
+		return self.code
+
+	def is_valid(self, cart_total):
+		from django.utils import timezone
+		from decimal import Decimal
+		now = timezone.now()
+		if not self.is_active:
+			return False, "Coupon is inactive"
+		if self.valid_from and now < self.valid_from:
+			return False, "Coupon is not yet valid"
+		if self.valid_to and now > self.valid_to:
+			return False, "Coupon has expired"
+		if Decimal(str(cart_total)) < self.min_cart_amount:
+			return False, f"Minimum cart amount of ₹{self.min_cart_amount:.0f} required"
+		if self.usage_limit and self.usage_count >= self.usage_limit:
+			return False, "Coupon usage limit reached"
+		return True, "Valid"
+
+	def calculate_discount(self, cart_total):
+		from decimal import Decimal
+		cart_total = Decimal(str(cart_total))
+		if self.discount_type == 'fixed':
+			return min(self.discount_value, cart_total)
+		discount = (self.discount_value / 100) * cart_total
+		if self.max_discount:
+			discount = min(discount, self.max_discount)
+		return discount

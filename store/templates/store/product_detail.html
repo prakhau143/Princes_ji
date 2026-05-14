@@ -2,174 +2,362 @@
 {% load static %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="max-w-6xl mx-auto">
-      <div class="bg-white shadow-2xl rounded-2xl overflow-hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6 sm:p-8 lg:p-12">
-          <!-- Product Image -->
-          <div class="flex justify-center lg:justify-start">
-            {% if product.image %}
-            <div class="relative group">
-              <img
-                src="{{ product.image.url }}"
-                alt="{{ product.name }}"
-                class="w-full max-w-md h-80 sm:h-96 object-cover rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-105"
-                id="mainProductImage"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
+<style>
+  /* ── Gallery swiper ── */
+  .gallery-swiper { border-radius: 20px; overflow: hidden; background: #fafafa; }
+  .gallery-swiper .swiper-slide img,
+  .gallery-swiper .swiper-slide video { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
+  .gallery-swiper .swiper-button-prev,
+  .gallery-swiper .swiper-button-next {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.9); color: #ec4899;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+  }
+  .gallery-swiper .swiper-button-prev::after,
+  .gallery-swiper .swiper-button-next::after { font-size: 14px; font-weight: 700; }
+
+  /* Thumb strip */
+  .thumb-strip { display: flex; gap: 8px; margin-top: 10px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .thumb-strip button { flex-shrink: 0; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; border: 2px solid transparent; transition: border-color .2s; padding: 0; }
+  .thumb-strip button.active,
+  .thumb-strip button:hover { border-color: #ec4899; }
+  .thumb-strip button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Star rating */
+  .star-filled { color: #f59e0b; }
+  .star-half   { color: #f59e0b; }
+  .star-empty  { color: #d1d5db; }
+
+  /* Flash animation on main image */
+  .img-flash-wrap { position: relative; overflow: hidden; border-radius: 20px; }
+  .img-flash-wrap::after {
+    content: ''; position: absolute; top: -50%; left: -75%; width: 50%; height: 200%;
+    background: linear-gradient(115deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.5) 45%, rgba(255,255,255,0) 65%);
+    transform: rotate(25deg); animation: imgFlash 4s infinite; pointer-events: none; z-index: 5;
+  }
+  @keyframes imgFlash { 0% { left: -75%; } 60%, 100% { left: 130%; } }
+
+  /* Related products */
+  .related-card { transition: transform .25s, box-shadow .25s; }
+  .related-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,.12); }
+</style>
+
+<!-- Breadcrumb -->
+<div class="bg-gray-50 border-b border-gray-100 py-3">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-sm text-gray-500">
+    <a href="{% url 'home' %}" class="hover:text-pink-600 transition-colors">Home</a>
+    <span>/</span>
+    <a href="{% url 'product_list' %}" class="hover:text-pink-600 transition-colors">Jewellery</a>
+    <span>/</span>
+    <a href="{% url 'product_list' %}?category={{ product.category.id }}" class="hover:text-pink-600 transition-colors">{{ product.category.name }}</a>
+    <span>/</span>
+    <span class="text-gray-800 font-medium truncate">{{ product.name }}</span>
+  </div>
+</div>
+
+<!-- Main product layout -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+  <div class="flex flex-col lg:flex-row gap-10 lg:gap-16">
+
+    <!-- ══ LEFT: Image Gallery ══ -->
+    <div class="lg:w-[46%] flex-shrink-0">
+      <div class="img-flash-wrap">
+        <div class="swiper gallery-swiper" id="mainGallerySwiper">
+          <div class="swiper-wrapper">
+            {% for url in gallery_images %}
+            <div class="swiper-slide">
+              <img src="{{ url }}" alt="{{ product.name }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
             </div>
-            {% else %}
-            <div class="w-full max-w-md h-80 sm:h-96 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl shadow-lg">
-              <div class="text-center text-gray-500">
-                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                <p class="text-lg font-medium">No Image Available</p>
+            {% endfor %}
+            {% for pv in product_videos %}
+            <div class="swiper-slide">
+              <video src="{{ pv.video.url }}" class="w-full aspect-[1/1] object-cover" controls muted playsinline></video>
+            </div>
+            {% endfor %}
+            {% if not gallery_images and not product_videos %}
+            <div class="swiper-slide">
+              <div class="w-full aspect-[1/1] bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                <i class="fas fa-gem text-7xl text-pink-300"></i>
               </div>
             </div>
             {% endif %}
           </div>
-          {% if product_videos %}
-          <div class="lg:col-span-2 -mt-4">
-            <div class="text-sm font-semibold text-gray-600 mb-2">Product Videos</div>
-            <div class="flex flex-wrap gap-3">
-              {% for pv in product_videos %}
-              <button type="button" onclick="swapMainVideo('{{ pv.video.url }}')" class="w-20 h-20 rounded-lg overflow-hidden border border-pink-200 bg-black text-white text-xs px-1">
-                ▶ Video {{ forloop.counter }}
-              </button>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-          {% if product.additional_images.all %}
-          <div class="lg:col-span-2 -mt-4">
-            <div class="flex flex-wrap gap-3">
-              {% if product.image %}
-              <button type="button" onclick="swapMainImage('{{ product.image.url }}')" class="w-16 h-16 rounded-lg overflow-hidden border border-pink-200">
-                <img src="{{ product.image.url }}" class="w-full h-full object-cover" alt="{{ product.name }}">
-              </button>
-              {% endif %}
-              {% for extra in product.additional_images.all %}
-              <button type="button" onclick="swapMainImage('{{ extra.image.url }}')" class="w-16 h-16 rounded-lg overflow-hidden border border-pink-200">
-                <img src="{{ extra.image.url }}" class="w-full h-full object-cover" alt="{{ product.name }} alt image">
-              </button>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-          <!-- Product Details -->
-          <div class="flex flex-col justify-center space-y-6">
-            <div>
-              <div class="flex items-center gap-2 mb-2">
-                <span class="px-3 py-1 bg-pink-100 text-pink-800 text-sm font-medium rounded-full">
-                  {{ product.category.name }}
-                </span>
-                {% if product.stock > 0 %}
-                <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                  In Stock
-                </span>
-                {% else %}
-                <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
-                  Out of Stock
-                </span>
-                {% endif %}
-              </div>
-              
-              <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                {{ product.name }}
-              </h1>
-              
-              <div class="flex items-baseline gap-2 mb-6">
-                <span class="text-4xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
-                <span class="text-lg text-gray-500">INR</span>
-              </div>
-            </div>
-
-            <div class="prose prose-gray max-w-none">
-              <p class="text-lg text-gray-700 leading-relaxed">{{ product.description }}</p>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="space-y-4">
-              {% if product.stock > 0 %}
-              <div class="flex flex-col sm:flex-row gap-4">
-                <form method="post" action="{% url 'add_to_cart' product.id %}" class="flex-1">
-                  {% csrf_token %}
-                  <button
-                    type="submit"
-                    class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-pink-200"
-                  >
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13v6a2 2 0 002 2h6a2 2 0 002-2v-6"></path>
-                    </svg>
-                    Add to Cart
-                  </button>
-                </form>
-                
-                <form method="post" action="{% url 'add_to_cart' product.id %}?buynow=1" class="flex-1">
-                  {% csrf_token %}
-                  <button
-                    type="submit"
-                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-200"
-                  >
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    Buy Now
-                  </button>
-                </form>
-
-                {% if user.is_authenticated %}
-                <button
-                  type="button"
-                  onclick="toggleWishlist({{ product.id }})"
-                  class="sm:w-16 w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-200"
-                  title="Wishlist"
-                  id="wishlistBtn"
-                  data-in-wishlist="{% if in_wishlist %}1{% else %}0{% endif %}"
-                >
-                  <i class="fas fa-heart {% if in_wishlist %}text-pink-600{% else %}text-gray-500{% endif %}" id="wishlistIcon"></i>
-                </button>
-                {% endif %}
-              </div>
-              {% else %}
-              <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-                <p class="text-red-800 font-medium text-center">This item is currently out of stock</p>
-              </div>
-              {% endif %}
-              
-              <div class="pt-4 border-t border-gray-200">
-                <a href="{% url 'product_list' %}" class="inline-flex items-center text-pink-600 hover:text-pink-800 font-medium transition-colors duration-200">
-                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                  </svg>
-                  Back to Products
-                </a>
-              </div>
-            </div>
-          </div>
+          <div class="swiper-button-prev"></div>
+          <div class="swiper-button-next"></div>
         </div>
+      </div>
+
+      <!-- Thumbnail strip -->
+      {% if gallery_images|length > 1 or product_videos %}
+      <div class="thumb-strip" id="thumbStrip">
+        {% for url in gallery_images %}
+        <button type="button" class="{% if forloop.first %}active{% endif %}" onclick="goToSlide({{ forloop.counter0 }}, this)">
+          <img src="{{ url }}" alt="view {{ forloop.counter }}">
+        </button>
+        {% endfor %}
+        {% for pv in product_videos %}
+        <button type="button" onclick="goToSlide({{ gallery_images|length|add:forloop.counter0 }}, this)"
+                class="bg-black flex items-center justify-center">
+          <i class="fas fa-play text-white text-xl"></i>
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ══ RIGHT: Product Details ══ -->
+    <div class="lg:w-[54%]">
+
+      <!-- Category + badges -->
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <span class="px-3 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded-full uppercase tracking-wide">
+          {{ product.category.name }}
+        </span>
+        {% if product.discount_percent > 0 %}
+        <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+          {{ product.discount_percent }}% OFF
+        </span>
+        {% endif %}
+        {% if product.stock == 0 %}
+        <span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full">Out of Stock</span>
+        {% endif %}
+      </div>
+
+      <!-- Product name -->
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-snug mb-3">
+        {{ product.name }}
+      </h1>
+
+      <!-- Star rating row -->
+      <div class="flex items-center gap-3 mb-5">
+        <div class="flex items-center gap-0.5 text-xl">
+          {% for _ in full_stars %}<span class="star-filled">★</span>{% endfor %}
+          {% if half_star %}<span class="star-half">★</span>{% endif %}
+          {% for _ in empty_stars %}<span class="star-empty">☆</span>{% endfor %}
+        </div>
+        {% if total_ratings %}
+        <span class="text-sm text-gray-500 font-medium">{{ average_rating }}/5 &nbsp;·&nbsp; {{ total_ratings }} rating{{ total_ratings|pluralize }}</span>
+        {% else %}
+        <span class="text-sm text-gray-400">No ratings yet</span>
+        {% endif %}
+        {% if product.sku %}
+        <span class="text-xs text-gray-400 border border-gray-200 rounded px-2 py-0.5">{{ product.sku }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Price block -->
+      <div class="bg-pink-50 rounded-2xl px-5 py-4 mb-5">
+        <div class="flex items-baseline flex-wrap gap-3">
+          <span class="text-4xl font-extrabold text-pink-600">₹{{ product.price|floatformat:0 }}</span>
+          {% if product.mrp and product.mrp > product.price %}
+          <span class="text-lg text-gray-400 line-through">MRP ₹{{ product.mrp|floatformat:0 }}</span>
+          <span class="text-sm font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+            Save {{ product.discount_percent }}%
+          </span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Inclusive of all taxes &nbsp;·&nbsp; Free shipping on orders ₹499+</p>
+      </div>
+
+      <!-- Stock status -->
+      {% if product.stock > 0 %}
+      <div class="flex items-center gap-2 mb-5 text-sm">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+        <span class="text-green-700 font-semibold">In stock — ready to ship</span>
+        {% if product.stock <= product.low_stock_threshold %}
+        <span class="text-orange-600 font-medium">· Only {{ product.stock }} left!</span>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="flex items-center gap-2 mb-5 text-sm">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+        <span class="text-red-600 font-semibold">Currently out of stock</span>
+      </div>
+      {% endif %}
+
+      <!-- Action buttons -->
+      <div class="flex flex-wrap gap-3 mb-6">
+        {% if product.stock > 0 %}
+        <button type="button" onclick="addToCart({{ product.id }})"
+                class="flex-1 min-w-[140px] bg-pink-600 hover:bg-pink-700 text-white font-bold py-3.5 px-6 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+          <i class="fas fa-shopping-cart"></i> Add to Cart
+        </button>
+        <button type="button" onclick="addToCart({{ product.id }}, true)"
+                class="flex-1 min-w-[140px] bg-gray-900 hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+          <i class="fas fa-bolt"></i> Buy Now
+        </button>
+        {% else %}
+        <button disabled
+                class="flex-1 min-w-[140px] bg-gray-300 text-gray-500 font-bold py-3.5 px-6 rounded-full cursor-not-allowed text-sm uppercase tracking-wide">
+          Out of Stock
+        </button>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+        <button type="button" id="wishlistBtn"
+                onclick="toggleWishlist({{ product.id }})"
+                class="w-12 h-12 flex items-center justify-center rounded-full border-2 {% if in_wishlist %}border-pink-600 bg-pink-50{% else %}border-gray-300 bg-white{% endif %} hover:border-pink-600 hover:bg-pink-50 transition-all duration-200 shadow-sm"
+                title="{% if in_wishlist %}Remove from wishlist{% else %}Add to wishlist{% endif %}">
+          <i class="{% if in_wishlist %}fas{% else %}far{% endif %} fa-heart text-pink-600 text-lg" id="wishlistIcon"></i>
+        </button>
+        {% else %}
+        <a href="{% url 'login' %}?next={{ request.path }}"
+           class="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-pink-600 transition-all duration-200 shadow-sm"
+           title="Login to wishlist">
+          <i class="far fa-heart text-gray-400 text-lg"></i>
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Shipping / trust strip -->
+      <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+        <div class="bg-gray-50 rounded-xl py-3 px-2">
+          <i class="fas fa-shipping-fast text-pink-500 text-lg mb-1 block"></i>
+          <span class="text-xs text-gray-600 font-medium">Fast Delivery</span>
+        </div>
+        <div class="bg-gray-50 rounded-xl py-3 px-2">
+          <i class="fas fa-undo-alt text-pink-500 text-lg mb-1 block"></i>
+          <span class="text-xs text-gray-600 font-medium">Easy Returns</span>
+        </div>
+        <div class="bg-gray-50 rounded-xl py-3 px-2">
+          <i class="fas fa-lock text-pink-500 text-lg mb-1 block"></i>
+          <span class="text-xs text-gray-600 font-medium">Secure Payment</span>
+        </div>
+      </div>
+
+      <!-- Description accordion -->
+      <details class="border border-gray-200 rounded-xl overflow-hidden mb-3" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer bg-gray-50 font-semibold text-gray-800 select-none">
+          Product Description
+          <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform details-icon"></i>
+        </summary>
+        <div class="px-5 py-4 text-gray-600 text-sm leading-relaxed">
+          {% if product.description %}
+            {{ product.description|linebreaksbr }}
+          {% else %}
+            <span class="text-gray-400 italic">No description available.</span>
+          {% endif %}
+        </div>
+      </details>
+
+      <!-- SKU + category info -->
+      <div class="text-xs text-gray-400 flex flex-wrap gap-x-6 gap-y-1 px-1">
+        {% if product.sku %}<span>SKU: <span class="text-gray-600 font-medium">{{ product.sku }}</span></span>{% endif %}
+        <span>Category: <span class="text-gray-600 font-medium">{{ product.category.name }}</span></span>
       </div>
     </div>
   </div>
+
+  <!-- ══ Reviews Section ══ -->
+  {% if approved_reviews %}
+  <div class="mt-16">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {% for review in approved_reviews %}
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-start gap-3 mb-3">
+          {% if review.reviewer_image %}
+          <img src="{{ review.reviewer_image.url }}" alt="{{ review.reviewer_name }}"
+               class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+          {% else %}
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center flex-shrink-0">
+            <span class="text-pink-700 font-bold text-sm">
+              {% if review.reviewer_name %}{{ review.reviewer_name|slice:":1"|upper }}{% else %}{{ review.user.username|slice:":1"|upper }}{% endif %}
+            </span>
+          </div>
+          {% endif %}
+          <div>
+            <div class="font-semibold text-gray-800 text-sm">{{ review.reviewer_name|default:review.user.username }}</div>
+            <div class="flex text-yellow-400 text-xs">
+              {% for i in "12345" %}
+                {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% if review.title %}<h4 class="font-semibold text-gray-800 text-sm mb-1">{{ review.title }}</h4>{% endif %}
+        <p class="text-gray-600 text-sm line-clamp-4">{{ review.body }}</p>
+        <div class="text-xs text-gray-400 mt-3">{{ review.created_at|date:"d M Y" }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══ Related Products ══ -->
+  {% if related_products %}
+  <div class="mt-16">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6">You May Also Like</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {% for rp in related_products %}
+      <a href="{% url 'product_detail' rp.pk %}"
+         class="related-card bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group block">
+        <div class="relative overflow-hidden">
+          {% if rp.image %}
+          <img src="{{ rp.image.url }}" alt="{{ rp.name }}"
+               class="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-400">
+          {% else %}
+          <div class="w-full h-52 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+            <i class="fas fa-gem text-5xl text-pink-300"></i>
+          </div>
+          {% endif %}
+          {% if rp.discount_percent > 0 %}
+          <span class="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ rp.discount_percent }}% OFF
+          </span>
+          {% endif %}
+        </div>
+        <div class="p-4">
+          <h3 class="text-sm font-semibold text-gray-800 truncate mb-1">{{ rp.name }}</h3>
+          <div class="flex items-baseline gap-2">
+            <span class="text-pink-600 font-bold">₹{{ rp.price|floatformat:0 }}</span>
+            {% if rp.mrp and rp.mrp > rp.price %}
+            <span class="text-xs text-gray-400 line-through">₹{{ rp.mrp|floatformat:0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
+  const gallerySwiper = new Swiper('#mainGallerySwiper', {
+    loop: false,
+    navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+    spaceBetween: 0,
+    on: {
+      slideChange() {
+        updateThumb(this.activeIndex);
       }
     }
-    return cookieValue;
+  });
+
+  function goToSlide(index, btn) {
+    gallerySwiper.slideTo(index);
+    updateThumb(index);
+  }
+
+  function updateThumb(activeIdx) {
+    document.querySelectorAll('#thumbStrip button').forEach((btn, i) => {
+      btn.classList.toggle('active', i === activeIdx);
+    });
+  }
+
+  function getCookie(name) {
+    let value = null;
+    if (document.cookie) {
+      document.cookie.split(';').forEach(c => {
+        const [k, v] = c.trim().split('=');
+        if (k === name) value = decodeURIComponent(v);
+      });
+    }
+    return value;
   }
 
   async function toggleWishlist(productId) {
@@ -180,94 +368,26 @@
     const data = await res.json();
     if (!data.success) return;
     const icon = document.getElementById('wishlistIcon');
+    const btn  = document.getElementById('wishlistBtn');
     if (!icon) return;
+    icon.classList.toggle('fas', data.in_wishlist);
+    icon.classList.toggle('far', !data.in_wishlist);
     if (data.in_wishlist) {
-      icon.classList.add('text-pink-600');
-      icon.classList.remove('text-gray-500');
+      btn.classList.add('border-pink-600', 'bg-pink-50');
+      btn.classList.remove('border-gray-300', 'bg-white');
     } else {
-      icon.classList.remove('text-pink-600');
-      icon.classList.add('text-gray-500');
+      btn.classList.remove('border-pink-600', 'bg-pink-50');
+      btn.classList.add('border-gray-300', 'bg-white');
     }
   }
 
-  function swapMainImage(url) {
-    const img = document.getElementById('mainProductImage');
-    if (img && url) img.src = url;
-  }
-
-  function swapMainVideo(url) {
-    const img = document.getElementById('mainProductImage');
-    if (!img || !url) return;
-    const wrapper = img.parentElement;
-    if (!wrapper) return;
-    wrapper.innerHTML = `<video id="mainProductImage" src="${url}" class="w-full max-w-md h-80 sm:h-96 object-cover rounded-2xl shadow-lg" autoplay muted loop playsinline controls></video>`;
-  }
+  // Rotate details icon on open/close
+  document.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {
+      const icon = d.querySelector('.details-icon');
+      if (icon) icon.style.transform = d.open ? 'rotate(180deg)' : '';
+    });
+  });
 </script>
-  <!-- =================================================================== -->
-  <!-- RELATED PRODUCTS SECTION                                           -->
-  <!-- =================================================================== -->
-  {% if related_products %}
-  <div class="py-16">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4">
-          Related <span class="text-pink-600">Products</span>
-        </h2>
-        <p class="text-lg text-gray-600">
-          You might also like these beautiful pieces
-        </p>
-      </div>
-      
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {% for related_product in related_products %}
-        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-          <div class="relative group">
-            {% if related_product.image %}
-              <img src="{{ related_product.image.url }}" alt="{{ related_product.name }}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300">
-            {% else %}
-              <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                <i class="fas fa-gem text-6xl text-pink-400"></i>
-              </div>
-            {% endif %}
-          </div>
-          
-          <div class="p-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-2 line-clamp-2">{{ related_product.name }}</h3>
-            <p class="text-gray-600 text-sm mb-4 line-clamp-3">{{ related_product.description|truncatewords:15 }}</p>
-            
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-2xl font-bold text-pink-600">₹{{ related_product.price|floatformat:2 }}</span>
-              <div class="flex items-center">
-                {% if related_product.stock > 0 %}
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Available
-                  </span>
-                {% else %}
-                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Out of Stock
-                  </span>
-                {% endif %}
-              </div>
-            </div>
-            
-            <div class="flex space-x-2">
-              <a href="{% url 'product_detail' related_product.pk %}" 
-                 class="flex-1 bg-pink-600 text-white text-center py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors duration-300 font-semibold">
-                View Details
-              </a>
-              {% if related_product.stock > 0 %}
-                <a href="{% url 'add_to_cart' related_product.pk %}" 
-                   class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300">
-                  <i class="fas fa-shopping-cart"></i>
-                </a>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
 
 {% endblock %}

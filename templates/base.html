@@ -49,9 +49,10 @@
           <a href="{% url 'collections_list' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Collections</a>
           <a href="{% url 'profile' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Profile</a>
           <a href="{% url 'order_history' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">My Orders</a>
-          <a href="{% url 'cart' %}" class="text-gray-600 hover:text-pink-600 relative">
+          <button onclick="openCartPanel()" class="text-gray-600 hover:text-pink-600 relative focus:outline-none" aria-label="Open cart">
             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-          </a>
+            <span id="cart-badge" class="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+          </button>
           <form action="{% url 'logout' %}" method="post" class="inline">
             {% csrf_token %}
             <button type="submit" class="bg-pink-500 text-white font-medium py-2 px-4 rounded-md hover:bg-pink-600 transition-all">Logout</button>
@@ -95,7 +96,7 @@
               <a href="{% url 'product_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Jewelry</a>
               <a href="{% url 'profile' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Profile</a>
               <a href="{% url 'order_history' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">My Orders</a>
-              <a href="{% url 'cart' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Cart</a>
+              <button onclick="openCartPanel();document.getElementById('mobile-menu').classList.add('hidden')" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50 w-full text-left">Cart</button>
             {% else %}
               <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Collections</a>
             {% endif %}
@@ -284,7 +285,345 @@
     </div>
   </footer>
 
+  <!-- ═══ SLIDE-IN CART PANEL ═══════════════════════════════════════════════ -->
+  <style>
+    #cart-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 9998; opacity: 0; pointer-events: none;
+      transition: opacity .3s ease;
+    }
+    #cart-overlay.open { opacity: 1; pointer-events: all; }
+
+    #cart-panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(420px, 95vw);
+      background: #fff;
+      z-index: 9999;
+      transform: translateX(100%);
+      transition: transform .35s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column;
+      box-shadow: -4px 0 24px rgba(0,0,0,.12);
+    }
+    #cart-panel.open { transform: translateX(0); }
+
+    #cart-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid #f3e8ee;
+      background: linear-gradient(135deg,#fff5f8,#fff);
+      flex-shrink: 0;
+    }
+    #cart-panel-body {
+      flex: 1; overflow-y: auto; padding: 0;
+    }
+    #cart-panel-footer {
+      border-top: 1px solid #f3e8ee; padding: 16px 20px; flex-shrink: 0;
+      background: #fff;
+    }
+    .cp-item {
+      display: flex; gap: 12px; padding: 14px 20px;
+      border-bottom: 1px solid #fdf2f8;
+    }
+    .cp-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+    .cp-qty-btn {
+      width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e9d5ea;
+      background: #fdf4ff; color: #9333ea; font-size: 16px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: background .15s;
+    }
+    .cp-qty-btn:hover { background: #f3e8ff; }
+    .cp-remove-btn { color: #d1d5db; font-size: 18px; cursor: pointer; transition: color .15s; }
+    .cp-remove-btn:hover { color: #ef4444; }
+
+    #cp-coupon-input {
+      flex: 1; border: 1px solid #e9d5ea; border-radius: 8px 0 0 8px;
+      padding: 9px 12px; font-size: 14px; outline: none;
+    }
+    #cp-coupon-input:focus { border-color: #ec4899; }
+    #cp-coupon-btn {
+      padding: 9px 16px; background: #ec4899; color: #fff; border-radius: 0 8px 8px 0;
+      font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background .15s;
+    }
+    #cp-coupon-btn:hover { background: #db2777; }
+
+    .cp-summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #6b7280; margin-bottom: 6px; }
+    .cp-summary-row.total { font-weight: 700; font-size: 16px; color: #111827; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #f3e8ee; }
+    .cp-summary-row.saving { color: #16a34a; font-weight: 600; }
+
+    .cp-rec-card {
+      flex-shrink: 0; width: 110px; border-radius: 10px; border: 1px solid #fce7f3;
+      overflow: hidden; cursor: pointer; transition: transform .15s, box-shadow .15s;
+    }
+    .cp-rec-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(236,72,153,.18); }
+    .cp-rec-card img { width: 110px; height: 110px; object-fit: cover; }
+
+    .cp-checkout-btn {
+      width: 100%; padding: 13px; background: linear-gradient(135deg,#ec4899,#a855f7);
+      color: #fff; font-weight: 700; font-size: 15px; border-radius: 10px;
+      border: none; cursor: pointer; transition: opacity .15s;
+    }
+    .cp-checkout-btn:hover { opacity: .92; }
+    .cp-checkout-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    #cp-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; padding: 40px 20px; text-align: center;
+    }
+  </style>
+
+  <!-- Overlay -->
+  <div id="cart-overlay" onclick="closeCartPanel()"></div>
+
+  <!-- Panel -->
+  <div id="cart-panel" role="dialog" aria-label="Shopping cart">
+    <!-- Header -->
+    <div id="cart-panel-header">
+      <div class="flex items-center gap-3">
+        <svg class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <span class="font-bold text-gray-900 text-lg">Your Cart</span>
+        <span id="cp-count-badge" class="bg-pink-100 text-pink-600 text-xs font-semibold px-2 py-0.5 rounded-full">0 items</span>
+      </div>
+      <button onclick="closeCartPanel()" class="text-gray-400 hover:text-gray-700 focus:outline-none">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div id="cart-panel-body">
+      <!-- Items list -->
+      <div id="cp-items-list"></div>
+
+      <!-- Coupon -->
+      <div id="cp-coupon-section" class="px-5 py-4 border-b border-pink-50">
+        <p class="text-sm font-semibold text-gray-700 mb-2">Have a coupon?</p>
+        <div class="flex">
+          <input id="cp-coupon-input" type="text" placeholder="Enter coupon code" autocomplete="off">
+          <button id="cp-coupon-btn" onclick="applyCartCoupon()">Apply</button>
+        </div>
+        <p id="cp-coupon-msg" class="text-xs mt-1.5 hidden"></p>
+      </div>
+
+      <!-- Order Summary -->
+      <div id="cp-summary-section" class="px-5 py-4 border-b border-pink-50">
+        <p class="text-sm font-semibold text-gray-700 mb-3">Order Summary</p>
+        <div class="cp-summary-row"><span>MRP Total</span><span id="cp-mrp-total">₹0</span></div>
+        <div class="cp-summary-row saving" id="cp-saving-row" style="display:none"><span>Discount on MRP</span><span id="cp-discount-mrp">-₹0</span></div>
+        <div class="cp-summary-row"><span>Subtotal</span><span id="cp-price-total">₹0</span></div>
+        <div class="cp-summary-row saving" id="cp-coupon-discount-row" style="display:none"><span id="cp-coupon-label">Coupon</span><span id="cp-coupon-discount">-₹0</span></div>
+        <div class="cp-summary-row"><span id="cp-shipping-label">Shipping</span><span id="cp-shipping">₹0</span></div>
+        <div class="cp-summary-row total"><span>Estimated Total</span><span id="cp-total">₹0</span></div>
+      </div>
+
+      <!-- Recommended Products -->
+      <div id="cp-rec-section" class="px-5 py-4">
+        <p class="text-sm font-semibold text-gray-700 mb-3">You might also like</p>
+        <div id="cp-rec-list" class="flex gap-3 overflow-x-auto pb-1"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="cart-panel-footer">
+      <button class="cp-checkout-btn" id="cp-checkout-btn" onclick="closeCartPanel(); openCheckoutModal()">
+        Proceed to Checkout
+      </button>
+      <p class="text-center text-xs text-gray-400 mt-2">Free &amp; easy returns · Secure checkout</p>
+    </div>
+  </div>
+
+  <!-- Razorpay SDK -->
+  {% if razorpay_key_id %}
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  {% endif %}
+
+  <!-- ═══ CHECKOUT MODAL ══════════════════════════════════════════════════════ -->
+  <style>
+    #checkoutModal {
+      position: fixed; inset: 0; z-index: 10001;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(3px);
+      display: none; align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 20px 12px;
+    }
+    #checkoutModal.open { display: flex; }
+    #checkoutModalBox {
+      background: #fff; border-radius: 20px;
+      width: 100%; max-width: 1100px; margin: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.22);
+      position: relative;
+    }
+    .co-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 28px; border-bottom: 1px solid #f3e8ee;
+      background: linear-gradient(135deg,#fff5f8,#fdf4ff);
+      border-radius: 20px 20px 0 0;
+    }
+    .co-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    @media(max-width:768px){ .co-body { grid-template-columns: 1fr; } }
+    .co-left { padding: 24px 28px; border-right: 1px solid #fce7f3; }
+    .co-right { padding: 24px 28px; background: #fafafa; border-radius: 0 0 20px 0; }
+    @media(max-width:768px){ .co-left { border-right: none; border-bottom: 1px solid #fce7f3; } .co-right { border-radius: 0 0 20px 20px; } }
+    .co-section-title { font-size: .82rem; font-weight: 800; color: #9333ea; text-transform: uppercase; letter-spacing: .07em; margin-bottom: .75rem; }
+    .co-addr-box { background: #fdf4ff; border: 1.5px solid #e9d5ea; border-radius: 12px; padding: 12px 16px; }
+    .co-addr-box.selected { border-color: #ec4899; background: #fff5f9; }
+    .co-payment-option {
+      display: flex; align-items: center; gap: 10px;
+      border: 1.5px solid #e9d5ea; border-radius: 12px; padding: 12px 16px;
+      cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .co-payment-option:has(input:checked) { border-color: #ec4899; background: #fff5f9; }
+    .co-payment-option input[type="radio"] { accent-color: #ec4899; width: 16px; height: 16px; }
+    .co-payment-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+    .co-input { width: 100%; padding: .6rem .85rem; border: 1.5px solid #e9d5ea; border-radius: 8px; font-size: .9rem; outline: none; transition: border-color .2s; background: #fff; }
+    .co-input:focus { border-color: #ec4899; }
+    .co-apply-btn { padding: .6rem 1.1rem; background: #ec4899; color: #fff; border-radius: 0 8px 8px 0; font-size: .85rem; font-weight: 600; border: none; cursor: pointer; transition: background .15s; }
+    .co-apply-btn:hover { background: #db2777; }
+    .co-summary-row { display: flex; justify-content: space-between; font-size: .85rem; color: #6b7280; margin-bottom: 5px; }
+    .co-summary-row.saving { color: #16a34a; font-weight: 600; }
+    .co-summary-row.total-row { font-weight: 800; font-size: 1rem; color: #111827; border-top: 1.5px dashed #f3e8ee; padding-top: 8px; margin-top: 8px; }
+    .co-place-btn {
+      width: 100%; padding: 14px; background: linear-gradient(135deg,#1e293b,#374151);
+      color: #fff; font-weight: 800; font-size: 1rem; border-radius: 12px;
+      border: none; cursor: pointer; transition: opacity .15s; letter-spacing: .03em;
+    }
+    .co-place-btn:hover { opacity: .9; }
+    .co-place-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .co-addr-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1.5px solid #e9d5ea; border-radius: 20px; padding: 5px 12px;
+      cursor: pointer; font-size: .8rem; transition: border-color .15s, background .15s;
+    }
+    .co-addr-pill.active { border-color: #ec4899; background: #fff5f9; color: #be185d; font-weight: 600; }
+    #co-prod-list { display: none; }
+    #co-prod-list.visible { display: block; }
+    .co-prod-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f3e8ee; }
+    .co-prod-row img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .co-footer { padding: 18px 28px; border-top: 1px solid #f3e8ee; border-radius: 0 0 20px 20px; background: #fff; }
+  </style>
+
+  <div id="checkoutModal">
+    <div id="checkoutModalBox">
+      <!-- Header -->
+      <div class="co-header">
+        <div class="flex items-center gap-3">
+          <span class="text-xl font-black tracking-tight" style="background:linear-gradient(135deg,#ec4899,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Princess</span>
+          <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">🔒 100% Secure</span>
+        </div>
+        <div class="text-sm text-gray-500 hidden sm:block">Checkout</div>
+        <button onclick="closeCheckoutModal()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none focus:outline-none">✕</button>
+      </div>
+
+      <div class="co-body">
+        <!-- ── LEFT ── -->
+        <div class="co-left space-y-6">
+
+          <!-- Delivery Address -->
+          <div>
+            <p class="co-section-title">📍 Delivery Address</p>
+            <div id="co-addr-display" class="co-addr-box mb-3">
+              <p class="text-sm text-gray-400">Loading addresses…</p>
+            </div>
+            <div id="co-addr-list" class="flex flex-wrap gap-2 mb-2"></div>
+            <button onclick="document.getElementById('co-add-addr-form').classList.toggle('hidden')"
+              class="text-xs text-pink-600 font-semibold hover:underline">+ Add new address</button>
+            <div id="co-add-addr-form" class="hidden mt-3 space-y-2 p-4 bg-pink-50 rounded-xl border border-pink-100">
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="coa_full_name" class="co-input" placeholder="Full Name *">
+                <input type="tel" id="coa_mobile" class="co-input" placeholder="Mobile *">
+              </div>
+              <input type="text" id="coa_line1" class="co-input" placeholder="Address Line 1 *">
+              <input type="text" id="coa_line2" class="co-input" placeholder="Landmark (optional)">
+              <div class="grid grid-cols-3 gap-2">
+                <input type="text" id="coa_city" class="co-input" placeholder="City *">
+                <input type="text" id="coa_state" class="co-input" placeholder="State *">
+                <input type="text" id="coa_pin" class="co-input" placeholder="PIN *">
+              </div>
+              <button onclick="coSaveNewAddress()" class="w-full py-2 bg-pink-500 text-white rounded-lg font-semibold text-sm">Save &amp; Use</button>
+            </div>
+          </div>
+
+          <!-- Coupon -->
+          <div>
+            <p class="co-section-title">🎟️ Offers &amp; Coupons</p>
+            <div class="flex">
+              <input type="text" id="co-coupon-input" class="co-input" style="border-radius:8px 0 0 8px;" placeholder="Enter coupon code">
+              <button class="co-apply-btn" onclick="coApplyCoupon()">Apply</button>
+            </div>
+            <p id="co-coupon-msg" class="text-xs mt-1.5 hidden"></p>
+          </div>
+
+          <!-- Payment Methods -->
+          <div>
+            <p class="co-section-title">💳 Payment Method</p>
+            <div class="space-y-2">
+              <label class="co-payment-option">
+                <input type="radio" name="co_payment" value="upi" checked>
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991177.png" class="co-payment-icon" alt="UPI">
+                <div><div class="font-semibold text-sm">UPI</div><div class="text-xs text-gray-400">PhonePe, GPay, Paytm & more</div></div>
+              </label>
+              <label class="co-payment-option">
+                <input type="radio" name="co_payment" value="card">
+                <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" class="co-payment-icon" alt="Card">
+                <div><div class="font-semibold text-sm">Debit / Credit Card</div><div class="text-xs text-gray-400">Visa, Mastercard, RuPay</div></div>
+              </label>
+              <label class="co-payment-option">
+                <input type="radio" name="co_payment" value="netbanking">
+                <img src="https://cdn-icons-png.flaticon.com/512/2830/2830289.png" class="co-payment-icon" alt="Netbanking">
+                <div><div class="font-semibold text-sm">Net Banking</div><div class="text-xs text-gray-400">All major banks supported</div></div>
+              </label>
+              <label class="co-payment-option">
+                <input type="radio" name="co_payment" value="cod">
+                <img src="https://cdn-icons-png.flaticon.com/512/2331/2331966.png" class="co-payment-icon" alt="COD">
+                <div class="flex-1"><div class="font-semibold text-sm">Cash on Delivery</div><div class="text-xs text-gray-400">Pay when your order arrives</div></div>
+                <span class="text-xs text-red-500 font-semibold" id="co-cod-fee-label">+₹{{ cod_fee|default:"75" }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── RIGHT ── -->
+        <div class="co-right space-y-5">
+          <p class="co-section-title">🛍️ Order Summary</p>
+
+          <!-- Product toggle -->
+          <div class="bg-white rounded-xl border border-pink-100 p-4">
+            <div class="flex justify-between items-center mb-1">
+              <span id="co-item-count" class="text-sm font-semibold text-gray-700">0 items</span>
+              <span id="co-header-price" class="text-sm font-bold text-pink-600">₹0</span>
+            </div>
+            <button onclick="coToggleProducts()" id="co-toggle-btn" class="text-xs text-pink-600 font-semibold hover:underline">▼ Show product details</button>
+            <div id="co-prod-list" class="mt-3">
+              <!-- populated by JS -->
+            </div>
+          </div>
+
+          <!-- Price breakdown -->
+          <div class="bg-white rounded-xl border border-pink-100 p-4 space-y-1">
+            <div class="co-summary-row"><span>MRP Total</span><span id="co-mrp-total">₹0</span></div>
+            <div class="co-summary-row saving" id="co-mrp-disc-row" style="display:none"><span>Discount on MRP</span><span id="co-mrp-disc">-₹0</span></div>
+            <div class="co-summary-row"><span>Subtotal</span><span id="co-subtotal">₹0</span></div>
+            <div class="co-summary-row saving" id="co-coupon-row" style="display:none"><span id="co-coupon-label">Coupon</span><span id="co-coupon-disc">-₹0</span></div>
+            <div class="co-summary-row"><span id="co-ship-label">Shipping</span><span id="co-ship-val">₹0</span></div>
+            <div class="co-summary-row" id="co-cod-row" style="display:none"><span>COD Fee</span><span id="co-cod-val">₹0</span></div>
+            <div class="co-summary-row total-row"><span>To Pay</span><span id="co-to-pay">₹0</span></div>
+          </div>
+
+          <p class="text-xs text-gray-400 text-center">🔒 Payments are 100% secure &amp; encrypted</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="co-footer">
+        <div id="co-error-msg" class="text-red-500 text-sm mb-3 hidden"></div>
+        <button id="co-place-btn" class="co-place-btn" onclick="coPlaceOrder()">Place Order</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JavaScript for Mobile Menu -->
+
   <script>
     const menuButton = document.getElementById('mobile-menu-button');
     const closeButton = document.getElementById('mobile-menu-close');
@@ -297,6 +636,486 @@
     closeButton.addEventListener('click', () => {
       mobileMenu.classList.add('hidden');
     });
+  </script>
+
+  <!-- Cart Panel JS -->
+  <script>
+  (function () {
+    const CSRF = () => document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
+    const fmt = v => '₹' + Number(v).toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+    let _appliedCoupon = '';
+    let _panelOpen = false;
+
+    function openCartPanel() {
+      document.getElementById('cart-panel').classList.add('open');
+      document.getElementById('cart-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      _panelOpen = true;
+      fetchCartAndRender();
+    }
+    function closeCartPanel() {
+      document.getElementById('cart-panel').classList.remove('open');
+      document.getElementById('cart-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+      _panelOpen = false;
+    }
+    // Expose globally
+    window.openCartPanel = openCartPanel;
+    window.closeCartPanel = closeCartPanel;
+
+    function fetchCartAndRender() {
+      const url = '/store/api/cart/' + (_appliedCoupon ? '?coupon=' + encodeURIComponent(_appliedCoupon) : '');
+      fetch(url, {credentials: 'same-origin'})
+        .then(r => r.json())
+        .then(renderCart)
+        .catch(() => {});
+    }
+
+    function renderCart(data) {
+      if (!data.ok) return;
+      const items = data.items || [];
+      const s = data.summary || {};
+
+      // Badge
+      const badge = document.getElementById('cart-badge');
+      const count = data.item_count || 0;
+      if (badge) { badge.textContent = count; badge.classList.toggle('hidden', count === 0); }
+      document.getElementById('cp-count-badge').textContent = count + (count === 1 ? ' item' : ' items');
+
+      // Items
+      const list = document.getElementById('cp-items-list');
+      if (items.length === 0) {
+        list.innerHTML = `<div id="cp-empty">
+          <svg class="w-16 h-16 text-pink-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <p class="text-gray-500 font-medium">Your cart is empty</p>
+          <p class="text-gray-400 text-sm mt-1">Discover our beautiful jewelry</p>
+          <a href="/products/" class="mt-4 inline-block px-5 py-2 bg-pink-500 text-white rounded-full text-sm font-semibold hover:bg-pink-600 transition-all">Shop Now</a>
+        </div>`;
+        document.getElementById('cp-coupon-section').style.display = 'none';
+        document.getElementById('cp-summary-section').style.display = 'none';
+        document.getElementById('cp-checkout-btn').disabled = true;
+        return;
+      }
+      document.getElementById('cp-coupon-section').style.display = '';
+      document.getElementById('cp-summary-section').style.display = '';
+      document.getElementById('cp-checkout-btn').disabled = false;
+
+      list.innerHTML = items.map(item => `
+        <div class="cp-item">
+          <img src="${item.image || '/static/images/placeholder.png'}" alt="${item.name}">
+          <div style="flex:1;min-width:0">
+            <p class="text-sm font-semibold text-gray-800 truncate">${item.name}</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              ${item.mrp > item.price ? `<span class="line-through mr-1">${fmt(item.mrp)}</span>` : ''}
+              <span class="text-pink-600 font-semibold">${fmt(item.price)}</span>
+            </p>
+            <div class="flex items-center gap-2 mt-2">
+              <button class="cp-qty-btn" onclick="changeQty(${item.id}, ${item.quantity - 1})">−</button>
+              <span class="text-sm font-semibold w-6 text-center">${item.quantity}</span>
+              <button class="cp-qty-btn" onclick="changeQty(${item.id}, ${item.quantity + 1})">+</button>
+            </div>
+          </div>
+          <div class="flex flex-col items-end justify-between">
+            <button class="cp-remove-btn" onclick="removeCartItem(${item.id})" title="Remove">✕</button>
+            <p class="text-sm font-bold text-gray-800">${fmt(item.subtotal)}</p>
+          </div>
+        </div>`).join('');
+
+      // Summary
+      document.getElementById('cp-mrp-total').textContent = fmt(s.mrp_total);
+      document.getElementById('cp-price-total').textContent = fmt(s.price_total);
+      document.getElementById('cp-total').textContent = fmt(s.estimated_total);
+
+      const discRow = document.getElementById('cp-saving-row');
+      if (s.discount_on_mrp > 0) {
+        discRow.style.display = '';
+        document.getElementById('cp-discount-mrp').textContent = '-' + fmt(s.discount_on_mrp);
+      } else { discRow.style.display = 'none'; }
+
+      const couponRow = document.getElementById('cp-coupon-discount-row');
+      if (s.coupon_discount > 0 && data.coupon_code) {
+        couponRow.style.display = '';
+        document.getElementById('cp-coupon-label').textContent = 'Coupon (' + data.coupon_code + ')';
+        document.getElementById('cp-coupon-discount').textContent = '-' + fmt(s.coupon_discount);
+      } else { couponRow.style.display = 'none'; }
+
+      const shipLabel = document.getElementById('cp-shipping-label');
+      const shipVal = document.getElementById('cp-shipping');
+      if (s.shipping === 0 && s.free_shipping_above > 0) {
+        shipLabel.textContent = 'Shipping';
+        shipVal.innerHTML = '<span class="text-green-600 font-semibold">FREE</span>';
+      } else if (s.shipping === 0) {
+        shipLabel.textContent = 'Shipping';
+        shipVal.textContent = 'FREE';
+      } else {
+        shipLabel.textContent = 'Shipping';
+        shipVal.textContent = fmt(s.shipping);
+      }
+
+      // Coupon error
+      if (data.coupon_error) {
+        const msg = document.getElementById('cp-coupon-msg');
+        msg.textContent = data.coupon_error;
+        msg.className = 'text-xs mt-1.5 text-red-500';
+        msg.classList.remove('hidden');
+      }
+    }
+
+    function changeQty(itemId, newQty) {
+      fetch('/store/api/cart/update/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF()},
+        body: JSON.stringify({item_id: itemId, quantity: newQty}),
+      }).then(r => r.json()).then(renderCart).catch(() => {});
+    }
+    window.changeQty = changeQty;
+
+    function removeCartItem(itemId) {
+      fetch('/store/api/cart/remove/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF()},
+        body: JSON.stringify({item_id: itemId}),
+      }).then(r => r.json()).then(renderCart).catch(() => {});
+    }
+    window.removeCartItem = removeCartItem;
+
+    function applyCartCoupon() {
+      const code = document.getElementById('cp-coupon-input').value.trim();
+      const msg = document.getElementById('cp-coupon-msg');
+      msg.classList.add('hidden');
+      _appliedCoupon = code;
+      fetch('/store/api/cart/apply-coupon/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF()},
+        body: JSON.stringify({coupon_code: code}),
+      }).then(r => r.json()).then(data => {
+        if (data.coupon_code) {
+          msg.textContent = '✓ Coupon applied!';
+          msg.className = 'text-xs mt-1.5 text-green-600';
+          msg.classList.remove('hidden');
+        } else if (data.coupon_error) {
+          _appliedCoupon = '';
+        }
+        renderCart(data);
+      }).catch(() => {});
+    }
+    window.applyCartCoupon = applyCartCoupon;
+
+    // Load recommended products once when panel opens
+    let _recsLoaded = false;
+    const _origOpen = window.openCartPanel;
+    window.openCartPanel = function () {
+      _origOpen();
+      if (!_recsLoaded) {
+        _recsLoaded = true;
+        fetch('/store/api/cart/recommended/', {credentials: 'same-origin'})
+          .then(r => r.json())
+          .then(data => {
+            if (!data.ok || !data.products.length) {
+              document.getElementById('cp-rec-section').style.display = 'none';
+              return;
+            }
+            document.getElementById('cp-rec-list').innerHTML = data.products.map(p => `
+              <div class="cp-rec-card" onclick="window.location.href='/products/${p.id}/'">
+                <img src="${p.image || '/static/images/placeholder.png'}" alt="${p.name}">
+                <div style="padding:6px 8px">
+                  <p class="text-xs font-semibold text-gray-800 truncate">${p.name}</p>
+                  <p class="text-xs text-pink-600 font-bold mt-0.5">${fmt(p.price)}</p>
+                </div>
+              </div>`).join('');
+          }).catch(() => {});
+      }
+    };
+
+    // Update badge on page load if user is authenticated
+    {% if user.is_authenticated %}
+    fetch('/store/api/cart/', {credentials: 'same-origin'})
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          const badge = document.getElementById('cart-badge');
+          const count = data.item_count || 0;
+          if (badge && count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+        }
+      }).catch(() => {});
+    {% endif %}
+
+    // Keyboard: close on Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && _panelOpen) closeCartPanel(); });
+
+    // Global add-to-cart via AJAX — used by all product templates
+    window.addToCart = function(productId, buynow) {
+      fetch('/store/cart/add/' + productId + '/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'X-CSRFToken': CSRF(), 'X-Requested-With': 'XMLHttpRequest'},
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) { window.location.href = '/store/cart/add/' + productId + '/'; return; }
+        if (buynow) { window.location.href = '/store/checkout/'; return; }
+        // Update badge immediately
+        const badge = document.getElementById('cart-badge');
+        if (badge) { badge.textContent = data.item_count; badge.classList.remove('hidden'); }
+        document.getElementById('cp-count-badge').textContent = data.item_count + (data.item_count === 1 ? ' item' : ' items');
+        _recsLoaded = false; // refresh recommended on next open
+        openCartPanel();
+      })
+      .catch(() => { window.location.href = '/store/cart/add/' + productId + '/'; });
+    };
+  })();
+  </script>
+
+  <!-- Checkout Modal JS -->
+  <script>
+  (function(){
+    const CSRF = () => document.cookie.split('; ').find(r=>r.startsWith('csrftoken='))?.split('=')[1]||'';
+    const fmt = v => '₹' + Number(v).toLocaleString('en-IN',{maximumFractionDigits:0});
+    const GLASS = {{ glass_flash_enabled|yesno:"true,false" }};
+    const COD_FEE = {{ cod_fee|default:"75" }};
+
+    let _coCart = null;
+    let _coAddresses = [];
+    let _coSelectedAddrId = null;
+    let _coCoupon = '';
+    let _coProductsVisible = false;
+
+    window.openCheckoutModal = async function() {
+      document.getElementById('checkoutModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      await Promise.all([coLoadCart(), coLoadAddresses()]);
+      coRenderSummary();
+    };
+    window.closeCheckoutModal = function() {
+      document.getElementById('checkoutModal').classList.remove('open');
+      document.body.style.overflow = '';
+    };
+    document.getElementById('checkoutModal').addEventListener('click', function(e){
+      if (e.target === this) closeCheckoutModal();
+    });
+    document.addEventListener('keydown', e => { if (e.key==='Escape') closeCheckoutModal(); });
+
+    async function coLoadCart() {
+      const url = '/store/api/cart/' + (_coCoupon ? '?coupon='+encodeURIComponent(_coCoupon) : '');
+      const r = await fetch(url, {credentials:'same-origin'});
+      _coCart = await r.json();
+    }
+
+    async function coLoadAddresses() {
+      const r = await fetch('/store/api/addresses/', {credentials:'same-origin'});
+      const d = await r.json();
+      if (!d.ok) return;
+      _coAddresses = d.addresses;
+      const def = _coAddresses.find(a=>a.is_default) || _coAddresses[0];
+      _coSelectedAddrId = def ? def.id : null;
+      coRenderAddresses();
+    }
+
+    function coRenderAddresses() {
+      const pills = document.getElementById('co-addr-list');
+      const display = document.getElementById('co-addr-display');
+      if (!_coAddresses.length) {
+        display.innerHTML = '<p class="text-sm text-gray-500">No saved addresses. Add one below.</p>';
+        pills.innerHTML = '';
+        return;
+      }
+      pills.innerHTML = _coAddresses.map(a => `
+        <button class="co-addr-pill ${a.id===_coSelectedAddrId?'active':''}" onclick="coSelectAddr(${a.id})">
+          ${a.city}${a.is_default?' ✓':''}
+        </button>`).join('');
+      const sel = _coAddresses.find(a=>a.id===_coSelectedAddrId) || _coAddresses[0];
+      if (sel) {
+        display.innerHTML = `
+          <p class="font-semibold text-sm text-gray-800">${sel.full_name}</p>
+          <p class="text-xs text-gray-500 mt-0.5">${sel.address_line1}${sel.address_line2?', '+sel.address_line2:''}</p>
+          <p class="text-xs text-gray-500">${sel.city}, ${sel.state} – ${sel.postal_code}</p>
+          <p class="text-xs text-gray-500">📞 ${sel.mobile}</p>`;
+      }
+    }
+
+    window.coSelectAddr = function(id) {
+      _coSelectedAddrId = id;
+      coRenderAddresses();
+      coRenderSummary();
+    };
+
+    function coRenderSummary() {
+      if (!_coCart || !_coCart.ok) return;
+      const s = _coCart.summary;
+      const items = _coCart.items || [];
+      const payMethod = document.querySelector('input[name="co_payment"]:checked')?.value || 'upi';
+      const codFee = payMethod === 'cod' ? COD_FEE : 0;
+      const toPay = s.estimated_total + codFee;
+
+      document.getElementById('co-item-count').textContent = items.length + (items.length===1?' item':' items');
+      document.getElementById('co-header-price').textContent = fmt(toPay);
+      document.getElementById('co-mrp-total').textContent = fmt(s.mrp_total);
+      document.getElementById('co-subtotal').textContent = fmt(s.price_total);
+      document.getElementById('co-to-pay').textContent = fmt(toPay);
+
+      const mrpDiscRow = document.getElementById('co-mrp-disc-row');
+      if (s.discount_on_mrp > 0) {
+        mrpDiscRow.style.display=''; document.getElementById('co-mrp-disc').textContent='-'+fmt(s.discount_on_mrp);
+      } else mrpDiscRow.style.display='none';
+
+      const couponRow = document.getElementById('co-coupon-row');
+      if (s.coupon_discount > 0 && _coCart.coupon_code) {
+        couponRow.style.display='';
+        document.getElementById('co-coupon-label').textContent='Coupon ('+_coCart.coupon_code+')';
+        document.getElementById('co-coupon-disc').textContent='-'+fmt(s.coupon_discount);
+      } else couponRow.style.display='none';
+
+      const shipEl = document.getElementById('co-ship-val');
+      const shipLabel = document.getElementById('co-ship-label');
+      if (s.shipping===0 && s.free_shipping_above>0) {
+        shipLabel.textContent='Shipping'; shipEl.innerHTML='<span class="text-green-600 font-semibold">FREE</span>';
+      } else {
+        shipLabel.textContent='Shipping'; shipEl.textContent=s.shipping>0?fmt(s.shipping):'FREE';
+      }
+
+      const codRow = document.getElementById('co-cod-row');
+      if (codFee > 0) {
+        codRow.style.display=''; document.getElementById('co-cod-val').textContent=fmt(codFee);
+      } else codRow.style.display='none';
+
+      // Render products if visible
+      if (_coProductsVisible) coRenderProductList(items);
+    }
+
+    function coRenderProductList(items) {
+      document.getElementById('co-prod-list').innerHTML = items.map(item => `
+        <div class="co-prod-row">
+          <img src="${item.image||'/static/images/placeholder.png'}" alt="${item.name}" class="${GLASS?'glass-flash':''}">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-gray-800 truncate">${item.name}</p>
+            <p class="text-xs text-gray-500">Qty: ${item.quantity}</p>
+            <p class="text-xs text-pink-600 font-bold">${fmt(item.price)} ${item.mrp>item.price?'<span class="text-gray-400 line-through text-[10px]">'+fmt(item.mrp)+'</span>':''}</p>
+          </div>
+          <p class="text-xs font-bold text-gray-700 flex-shrink-0">${fmt(item.subtotal)}</p>
+        </div>`).join('');
+    }
+
+    window.coToggleProducts = function() {
+      _coProductsVisible = !_coProductsVisible;
+      const el = document.getElementById('co-prod-list');
+      const btn = document.getElementById('co-toggle-btn');
+      el.classList.toggle('visible', _coProductsVisible);
+      btn.textContent = (_coProductsVisible ? '▲ Hide' : '▼ Show') + ' product details';
+      if (_coProductsVisible && _coCart) coRenderProductList(_coCart.items||[]);
+    };
+
+    // Re-render on payment method change
+    document.querySelectorAll('input[name="co_payment"]').forEach(r =>
+      r.addEventListener('change', coRenderSummary));
+
+    window.coApplyCoupon = async function() {
+      const code = document.getElementById('co-coupon-input').value.trim();
+      const msg = document.getElementById('co-coupon-msg');
+      msg.classList.add('hidden');
+      _coCoupon = code;
+      await coLoadCart();
+      coRenderSummary();
+      if (_coCart.coupon_code) {
+        msg.textContent='✓ Coupon applied!'; msg.className='text-xs mt-1.5 text-green-600'; msg.classList.remove('hidden');
+      } else if (_coCart.coupon_error) {
+        msg.textContent=_coCart.coupon_error; msg.className='text-xs mt-1.5 text-red-500'; msg.classList.remove('hidden');
+        _coCoupon='';
+      }
+    };
+
+    window.coSaveNewAddress = async function() {
+      const payload = {
+        full_name: document.getElementById('coa_full_name').value.trim(),
+        mobile: document.getElementById('coa_mobile').value.trim(),
+        address_line1: document.getElementById('coa_line1').value.trim(),
+        address_line2: document.getElementById('coa_line2').value.trim(),
+        city: document.getElementById('coa_city').value.trim(),
+        state: document.getElementById('coa_state').value.trim(),
+        postal_code: document.getElementById('coa_pin').value.trim(),
+        country: 'India', is_default: false,
+      };
+      if (!payload.full_name||!payload.address_line1||!payload.city||!payload.postal_code||!payload.mobile) {
+        alert('Please fill all required fields.'); return;
+      }
+      const r = await fetch('/store/api/addresses/', {
+        method:'POST', credentials:'same-origin',
+        headers:{'Content-Type':'application/json','X-CSRFToken':CSRF()},
+        body:JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        _coAddresses.push(d.address);
+        _coSelectedAddrId = d.address.id;
+        document.getElementById('co-add-addr-form').classList.add('hidden');
+        coRenderAddresses();
+      }
+    };
+
+    window.coPlaceOrder = async function() {
+      const errEl = document.getElementById('co-error-msg');
+      errEl.classList.add('hidden');
+      if (!_coSelectedAddrId) { errEl.textContent='Please select a delivery address.'; errEl.classList.remove('hidden'); return; }
+      if (!_coCart?.items?.length) { errEl.textContent='Your cart is empty.'; errEl.classList.remove('hidden'); return; }
+      const payMethod = document.querySelector('input[name="co_payment"]:checked')?.value || 'upi';
+      const btn = document.getElementById('co-place-btn');
+      btn.disabled = true; btn.textContent = 'Processing…';
+
+      try {
+        if (payMethod === 'cod') {
+          const r = await fetch('/store/api/place-order/', {
+            method:'POST', credentials:'same-origin',
+            headers:{'Content-Type':'application/json','X-CSRFToken':CSRF()},
+            body:JSON.stringify({address_id:_coSelectedAddrId, payment_method:'cod', coupon_code:_coCoupon}),
+          });
+          const d = await r.json();
+          if (d.ok) { window.location.href='/store/checkout/success/'+d.order_id+'/'; }
+          else { errEl.textContent=d.error||'Order failed.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.textContent='Place Order'; }
+        } else {
+          // Online payment via Razorpay
+          const r = await fetch('/store/api/create-razorpay-order/', {
+            method:'POST', credentials:'same-origin',
+            headers:{'Content-Type':'application/json','X-CSRFToken':CSRF()},
+            body:JSON.stringify({address_id:_coSelectedAddrId, payment_method:payMethod, coupon_code:_coCoupon}),
+          });
+          const d = await r.json();
+          if (!d.ok) { errEl.textContent=d.error||'Payment init failed.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.textContent='Place Order'; return; }
+          const options = {
+            key: d.key,
+            amount: d.amount,
+            currency: 'INR',
+            name: 'Princess Jewelry',
+            description: 'Order Payment',
+            order_id: d.razorpay_order_id,
+            prefill: { name: d.name, email: d.email, contact: d.mobile },
+            theme: { color: '#ec4899' },
+            handler: async function(response) {
+              const vr = await fetch('/store/api/verify-payment/', {
+                method:'POST', credentials:'same-origin',
+                headers:{'Content-Type':'application/json','X-CSRFToken':CSRF()},
+                body:JSON.stringify(response),
+              });
+              const vd = await vr.json();
+              if (vd.ok) { window.location.href='/store/checkout/success/'+vd.order_id+'/'; }
+              else { errEl.textContent=vd.error||'Payment verification failed.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.textContent='Place Order'; }
+            },
+            modal: { ondismiss: function(){ btn.disabled=false; btn.textContent='Place Order'; } }
+          };
+          const rzp = new Razorpay(options);
+          rzp.open();
+        }
+      } catch(e) {
+        errEl.textContent='Something went wrong. Please try again.'; errEl.classList.remove('hidden');
+        btn.disabled=false; btn.textContent='Place Order';
+      }
+    };
+  })();
   </script>
 
 </body>

@@ -6,86 +6,60 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
 
 <style>
-  /* ── Glass flash — applied to the whole .product-card ── */
-  .product-card {
-    position: relative;
-    overflow: hidden;
-  }
+  /* ── Glass flash — whole .product-card ── */
+  .product-card { position: relative; overflow: hidden; }
   .product-card.glass-flash::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -75%;
-    width: 50%;
-    height: 200%;
-    background: linear-gradient(
-      115deg,
-      rgba(255,255,255,0) 10%,
-      rgba(255,255,255,0.48) 45%,
-      rgba(255,255,255,0) 65%
-    );
-    transform: rotate(25deg);
-    animation: glassFlash 3.6s infinite;
-    pointer-events: none;
-    z-index: 10;
+    content: ''; position: absolute; top: -50%; left: -75%;
+    width: 50%; height: 200%;
+    background: linear-gradient(115deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.48) 45%, rgba(255,255,255,0) 65%);
+    transform: rotate(25deg); animation: glassFlash 3.6s infinite;
+    pointer-events: none; z-index: 10;
   }
-  @keyframes glassFlash {
-    0%   { left: -75%; }
-    55%, 100% { left: 130%; }
+  @keyframes glassFlash { 0% { left: -75%; } 55%, 100% { left: 130%; } }
+
+  /* ── Product carousel (no side-padding — nav lives in header) ── */
+  .product-carousel-wrapper { position: relative; }
+
+  /* Nav pills in section headers */
+  .pc-nav-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #fff; border: 1.5px solid #f3f4f6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10); color: #ec4899;
+    cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+    flex-shrink: 0; outline: none;
+  }
+  .pc-nav-btn:hover, .pc-nav-btn:not(.swiper-button-disabled):active {
+    background: #ec4899; color: #fff; border-color: #ec4899;
+  }
+  .pc-nav-btn.swiper-button-disabled { opacity: .35; pointer-events: none; }
+  /* Variant for dark/overlay backgrounds */
+  .pc-nav-btn-dark {
+    background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.35); color: #fff;
+  }
+  .pc-nav-btn-dark:hover { background: #ec4899; border-color: #ec4899; }
+
+  /* Product card image: always square */
+  .pc-img-wrap { aspect-ratio: 1 / 1; overflow: hidden; }
+  .pc-img-wrap img,
+  .pc-img-wrap > div { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Hide description + "View Details" on mobile */
+  @media (max-width: 639px) {
+    .product-desc { display: none !important; }
+    .pc-view-btn  { display: none !important; }
   }
 
-  /* ── Product carousel nav buttons ── */
-  .product-carousel-wrapper {
-    position: relative;
-    padding: 0 44px;
-  }
-  .product-carousel-wrapper .swiper-button-prev,
-  .product-carousel-wrapper .swiper-button-next {
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.13);
-    color: #ec4899;
-    transition: background 0.2s, color 0.2s, transform 0.2s;
-  }
-  .product-carousel-wrapper .swiper-button-prev:hover,
-  .product-carousel-wrapper .swiper-button-next:hover {
-    background: #ec4899;
-    color: #fff;
-    transform: translateY(-50%) scale(1.08);
-  }
-  .product-carousel-wrapper .swiper-button-prev::after,
-  .product-carousel-wrapper .swiper-button-next::after {
-    font-size: 16px;
-    font-weight: 700;
-  }
-  .product-carousel-wrapper .swiper-button-prev { left: 2px; }
-  .product-carousel-wrapper .swiper-button-next { right: 2px; }
-  @media (max-width: 640px) {
-    .product-carousel-wrapper { padding: 0 32px; }
-    .product-carousel-wrapper .swiper-button-prev,
-    .product-carousel-wrapper .swiper-button-next {
-      width: 30px;
-      height: 30px;
-    }
-    .product-carousel-wrapper .swiper-button-prev::after,
-    .product-carousel-wrapper .swiper-button-next::after { font-size: 13px; }
-  }
+  /* Swiper grid equal-height slides */
+  .product-grid-swiper .swiper-wrapper { align-items: stretch; }
+  .product-grid-swiper .swiper-slide  { height: auto !important; }
 
   @keyframes reelsMarquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
-  .reels-track {
-    animation: reelsMarquee 32s linear infinite;
-    width: max-content;
-  }
-  .reels-track:hover {
-    animation-play-state: paused;
-  }
+  .reels-track { animation: reelsMarquee 32s linear infinite; width: max-content; }
+  .reels-track:hover { animation-play-state: paused; }
 </style>
 <div>
 
@@ -189,77 +163,82 @@
       <!-- Most Selling Products Section -->
       {% if most_selling %}
       <div class="mb-16" data-aos="fade-up">
-        <div class="flex justify-between items-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-800">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800">
             <span class="text-pink-600">Most Selling</span> Products
           </h2>
-          {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="text-pink-600 font-semibold hover:underline">View All →</a>
-          {% endif %}
+          <div class="flex items-center gap-2 sm:gap-3">
+            <a href="{% url 'product_list' %}" class="hidden sm:block text-pink-600 font-semibold hover:underline text-sm">View All →</a>
+            <button class="pc-nav-btn most-selling-prev" aria-label="Previous"><i class="fas fa-chevron-left text-xs"></i></button>
+            <button class="pc-nav-btn most-selling-next" aria-label="Next"><i class="fas fa-chevron-right text-xs"></i></button>
+          </div>
         </div>
         <div class="product-carousel-wrapper">
-          <div class="swiper most-selling-swiper pb-10">
+          <div class="swiper most-selling-swiper product-grid-swiper">
             <div class="swiper-wrapper">
               {% for product in most_selling %}
-              <div class="swiper-slide h-auto">
-                <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
+              <div class="swiper-slide">
+                <div class="product-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
                      onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-                  <div class="relative overflow-hidden flex-shrink-0">
+                  <!-- Square image -->
+                  <div class="pc-img-wrap relative flex-shrink-0">
                     {% if product.image %}
                       <img src="{{ product.image.url }}" alt="{{ product.name }}"
-                           class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                           class="w-full h-full object-cover hover:scale-105 transition-transform duration-500 product-hover-image"
                            data-main-src="{{ product.image.url }}"
                            data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
                            data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
                     {% else %}
-                      <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                        <i class="fas fa-gem text-6xl text-pink-400"></i>
+                      <div class="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                        <i class="fas fa-gem text-4xl sm:text-6xl text-pink-400"></i>
                       </div>
                     {% endif %}
-                    <div class="absolute top-4 right-4">
-                      <span class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Best Seller</span>
-                    </div>
+                    {% if product.discount_percent > 0 %}
+                    <span class="absolute top-2 left-2 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full z-10">-{{ product.discount_percent }}%</span>
+                    {% endif %}
+                    <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold z-10">Best Seller</span>
                     {% if user.is_authenticated %}
                     <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
-                            class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                      <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                            class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                      <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600 text-sm"></i>
                     </button>
                     {% else %}
-                    <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                      <i class="far fa-heart text-pink-600"></i>
+                    <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                      <i class="far fa-heart text-pink-600 text-sm"></i>
                     </a>
                     {% endif %}
                   </div>
-                  <div class="p-5 flex-grow flex flex-col">
-                    <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
-                    <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description|truncatewords:10 }}</p>
-                    <div class="mt-auto">
-                      <div class="mb-3">
-                        <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
-                      </div>
-                      <div class="flex space-x-2">
-                        <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
-                           class="flex-1 bg-pink-600 text-white text-center py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors font-semibold text-sm">
-                          View Details
-                        </a>
-                        {% if product.stock > 0 and user.is_authenticated %}
-                          <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
-                             class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
-                            <i class="fas fa-shopping-cart"></i>
-                          </a>
+                  <!-- Card body -->
+                  <div class="p-2 sm:p-4 flex flex-col flex-grow">
+                    <h3 class="font-bold text-xs sm:text-base text-gray-800 truncate leading-snug">{{ product.name }}</h3>
+                    <p class="product-desc text-gray-500 text-xs mt-1 line-clamp-2">{{ product.description|truncatewords:10 }}</p>
+                    {% if product.rating > 0 %}
+                    <div class="flex items-center gap-0.5 mt-1">
+                      <i class="fas fa-star text-amber-400 text-[10px]"></i>
+                      <span class="text-[10px] sm:text-xs text-gray-500">{{ product.rating }}{% if product.rating_count %} ({{ product.rating_count }}){% endif %}</span>
+                    </div>
+                    {% endif %}
+                    <div class="mt-auto pt-1.5">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-extrabold text-pink-600 text-sm sm:text-xl">₹{{ product.price|floatformat:0 }}</span>
+                        {% if product.mrp and product.mrp > product.price %}
+                        <span class="text-gray-400 line-through text-[10px] sm:text-xs">₹{{ product.mrp|floatformat:0 }}</span>
                         {% endif %}
                       </div>
+                      <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                         class="pc-view-btn mt-2 block text-center bg-pink-600 text-white py-1.5 text-xs sm:text-sm rounded-lg hover:bg-pink-700 transition-colors font-semibold">
+                        View Details
+                      </a>
                     </div>
                   </div>
                 </div>
               </div>
               {% endfor %}
             </div>
-            <div class="swiper-pagination"></div>
+            <div class="swiper-pagination mt-4"></div>
           </div>
-          <div class="swiper-button-prev most-selling-prev"></div>
-          <div class="swiper-button-next most-selling-next"></div>
         </div>
+        <a href="{% url 'product_list' %}" class="sm:hidden block text-center text-pink-600 font-semibold text-sm mt-4">View All →</a>
       </div>
       {% endif %}
 
@@ -352,153 +331,159 @@
         <div class="space-y-14 md:space-y-16">
           {% if new_launch %}
           <section>
-            <div class="flex justify-between items-center mb-8">
-              <h2 class="text-3xl md:text-4xl font-bold text-white">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                 <span class="text-pink-200">New Launch</span> Products
               </h2>
-              {% if user.is_authenticated %}
-              <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
-              {% endif %}
+              <div class="flex items-center gap-2 sm:gap-3">
+                <a href="{% url 'product_list' %}" class="hidden sm:block text-white/80 font-semibold hover:text-white text-sm">View All →</a>
+                <button class="pc-nav-btn pc-nav-btn-dark new-launch-prev" aria-label="Previous"><i class="fas fa-chevron-left text-xs"></i></button>
+                <button class="pc-nav-btn pc-nav-btn-dark new-launch-next" aria-label="Next"><i class="fas fa-chevron-right text-xs"></i></button>
+              </div>
             </div>
             <div class="product-carousel-wrapper">
-              <div class="swiper new-launch-swiper pb-10">
+              <div class="swiper new-launch-swiper product-grid-swiper">
                 <div class="swiper-wrapper">
                   {% for product in new_launch %}
-                  <div class="swiper-slide h-auto">
-                    <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
+                  <div class="swiper-slide">
+                    <div class="product-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
                          onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-                      <div class="relative overflow-hidden flex-shrink-0">
+                      <div class="pc-img-wrap relative flex-shrink-0">
                         {% if product.image %}
                           <img src="{{ product.image.url }}" alt="{{ product.name }}"
-                               class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                               class="w-full h-full object-cover hover:scale-105 transition-transform duration-500 product-hover-image"
                                data-main-src="{{ product.image.url }}"
                                data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
                                data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
                         {% else %}
-                          <div class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                            <i class="fas fa-gem text-6xl text-purple-400"></i>
+                          <div class="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                            <i class="fas fa-gem text-4xl sm:text-6xl text-purple-400"></i>
                           </div>
                         {% endif %}
-                        <div class="absolute top-4 right-4">
-                          <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">New</span>
-                        </div>
+                        {% if product.discount_percent > 0 %}
+                        <span class="absolute top-2 left-2 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full z-10">-{{ product.discount_percent }}%</span>
+                        {% endif %}
+                        <span class="absolute top-2 right-2 bg-purple-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold z-10">New</span>
                         {% if user.is_authenticated %}
                         <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
-                                class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                          <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                                class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                          <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600 text-sm"></i>
                         </button>
                         {% else %}
-                        <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                          <i class="far fa-heart text-pink-600"></i>
+                        <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                          <i class="far fa-heart text-pink-600 text-sm"></i>
                         </a>
                         {% endif %}
                       </div>
-                      <div class="p-5 flex-grow flex flex-col">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
-                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description|truncatewords:10 }}</p>
-                        <div class="mt-auto">
-                          <div class="mb-3">
-                            <span class="text-2xl font-bold text-purple-600">₹{{ product.price|floatformat:2 }}</span>
-                          </div>
-                          <div class="flex space-x-2">
-                            <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
-                               class="flex-1 bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm">
-                              View Details
-                            </a>
-                            {% if product.stock > 0 and user.is_authenticated %}
-                              <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
-                                 class="bg-pink-600 text-white py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors">
-                                <i class="fas fa-shopping-cart"></i>
-                              </a>
+                      <div class="p-2 sm:p-4 flex flex-col flex-grow">
+                        <h3 class="font-bold text-xs sm:text-base text-gray-800 truncate leading-snug">{{ product.name }}</h3>
+                        <p class="product-desc text-gray-500 text-xs mt-1 line-clamp-2">{{ product.description|truncatewords:10 }}</p>
+                        {% if product.rating > 0 %}
+                        <div class="flex items-center gap-0.5 mt-1">
+                          <i class="fas fa-star text-amber-400 text-[10px]"></i>
+                          <span class="text-[10px] sm:text-xs text-gray-500">{{ product.rating }}{% if product.rating_count %} ({{ product.rating_count }}){% endif %}</span>
+                        </div>
+                        {% endif %}
+                        <div class="mt-auto pt-1.5">
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-extrabold text-purple-600 text-sm sm:text-xl">₹{{ product.price|floatformat:0 }}</span>
+                            {% if product.mrp and product.mrp > product.price %}
+                            <span class="text-gray-400 line-through text-[10px] sm:text-xs">₹{{ product.mrp|floatformat:0 }}</span>
                             {% endif %}
                           </div>
+                          <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                             class="pc-view-btn mt-2 block text-center bg-purple-600 text-white py-1.5 text-xs sm:text-sm rounded-lg hover:bg-purple-700 transition-colors font-semibold">
+                            View Details
+                          </a>
                         </div>
                       </div>
                     </div>
                   </div>
                   {% endfor %}
                 </div>
-                <div class="swiper-pagination"></div>
+                <div class="swiper-pagination mt-4"></div>
               </div>
-              <div class="swiper-button-prev new-launch-prev"></div>
-              <div class="swiper-button-next new-launch-next"></div>
             </div>
+            <a href="{% url 'product_list' %}" class="sm:hidden block text-center text-white/80 font-semibold text-sm mt-4">View All →</a>
           </section>
           {% endif %}
 
           {% if featured_products %}
           <section>
-            <div class="flex justify-between items-center mb-8">
-              <h2 class="text-3xl md:text-4xl font-bold text-white">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                 <span class="text-yellow-200">Featured</span> Products
               </h2>
-              {% if user.is_authenticated %}
-              <a href="{% url 'product_list' %}" class="text-white font-semibold hover:underline">View All →</a>
-              {% endif %}
+              <div class="flex items-center gap-2 sm:gap-3">
+                <a href="{% url 'product_list' %}" class="hidden sm:block text-white/80 font-semibold hover:text-white text-sm">View All →</a>
+                <button class="pc-nav-btn pc-nav-btn-dark featured-prev" aria-label="Previous"><i class="fas fa-chevron-left text-xs"></i></button>
+                <button class="pc-nav-btn pc-nav-btn-dark featured-next" aria-label="Next"><i class="fas fa-chevron-right text-xs"></i></button>
+              </div>
             </div>
             <div class="product-carousel-wrapper">
-              <div class="swiper featured-swiper pb-10">
+              <div class="swiper featured-swiper product-grid-swiper">
                 <div class="swiper-wrapper">
                   {% for product in featured_products %}
-                  <div class="swiper-slide h-auto">
-                    <div class="product-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
+                  <div class="swiper-slide">
+                    <div class="product-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
                          onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-                      <div class="relative overflow-hidden flex-shrink-0">
+                      <div class="pc-img-wrap relative flex-shrink-0">
                         {% if product.image %}
                           <img src="{{ product.image.url }}" alt="{{ product.name }}"
-                               class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 product-hover-image"
+                               class="w-full h-full object-cover hover:scale-105 transition-transform duration-500 product-hover-image"
                                data-main-src="{{ product.image.url }}"
                                data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
                                data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
                         {% else %}
-                          <div class="w-full h-64 bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
-                            <i class="fas fa-gem text-6xl text-yellow-400"></i>
+                          <div class="w-full h-full bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
+                            <i class="fas fa-gem text-4xl sm:text-6xl text-yellow-400"></i>
                           </div>
                         {% endif %}
-                        <div class="absolute top-4 right-4">
-                          <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Featured</span>
-                        </div>
+                        {% if product.discount_percent > 0 %}
+                        <span class="absolute top-2 left-2 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full z-10">-{{ product.discount_percent }}%</span>
+                        {% endif %}
+                        <span class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold z-10">Featured</span>
                         {% if user.is_authenticated %}
                         <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
-                                class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                          <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                                class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                          <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600 text-sm"></i>
                         </button>
                         {% else %}
-                        <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                          <i class="far fa-heart text-pink-600"></i>
+                        <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                          <i class="far fa-heart text-pink-600 text-sm"></i>
                         </a>
                         {% endif %}
                       </div>
-                      <div class="p-5 flex-grow flex flex-col">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2 truncate">{{ product.name }}</h3>
-                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description|truncatewords:10 }}</p>
-                        <div class="mt-auto">
-                          <div class="mb-3">
-                            <span class="text-2xl font-bold text-yellow-600">₹{{ product.price|floatformat:2 }}</span>
-                          </div>
-                          <div class="flex space-x-2">
-                            <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
-                               class="flex-1 bg-yellow-600 text-white text-center py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold text-sm">
-                              View Details
-                            </a>
-                            {% if product.stock > 0 and user.is_authenticated %}
-                              <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
-                                 class="bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
-                                <i class="fas fa-shopping-cart"></i>
-                              </a>
+                      <div class="p-2 sm:p-4 flex flex-col flex-grow">
+                        <h3 class="font-bold text-xs sm:text-base text-gray-800 truncate leading-snug">{{ product.name }}</h3>
+                        <p class="product-desc text-gray-500 text-xs mt-1 line-clamp-2">{{ product.description|truncatewords:10 }}</p>
+                        {% if product.rating > 0 %}
+                        <div class="flex items-center gap-0.5 mt-1">
+                          <i class="fas fa-star text-amber-400 text-[10px]"></i>
+                          <span class="text-[10px] sm:text-xs text-gray-500">{{ product.rating }}{% if product.rating_count %} ({{ product.rating_count }}){% endif %}</span>
+                        </div>
+                        {% endif %}
+                        <div class="mt-auto pt-1.5">
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-extrabold text-yellow-600 text-sm sm:text-xl">₹{{ product.price|floatformat:0 }}</span>
+                            {% if product.mrp and product.mrp > product.price %}
+                            <span class="text-gray-400 line-through text-[10px] sm:text-xs">₹{{ product.mrp|floatformat:0 }}</span>
                             {% endif %}
                           </div>
+                          <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                             class="pc-view-btn mt-2 block text-center bg-yellow-600 text-white py-1.5 text-xs sm:text-sm rounded-lg hover:bg-yellow-700 transition-colors font-semibold">
+                            View Details
+                          </a>
                         </div>
                       </div>
                     </div>
                   </div>
                   {% endfor %}
                 </div>
-                <div class="swiper-pagination"></div>
+                <div class="swiper-pagination mt-4"></div>
               </div>
-              <div class="swiper-button-prev featured-prev"></div>
-              <div class="swiper-button-next featured-next"></div>
             </div>
+            <a href="{% url 'product_list' %}" class="sm:hidden block text-center text-white/80 font-semibold text-sm mt-4">View All →</a>
           </section>
           {% endif %}
         </div>
@@ -1120,7 +1105,7 @@
               </div>
             </div>
           </a>
-          <a href="{% url 'cart' %}" class="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+          <button onclick="openCartPanel()" class="group block h-full w-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-left">
             <div class="bg-white/90 backdrop-blur-sm h-full min-h-[152px] rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-row items-stretch gap-4 p-6 border border-white/70">
               <div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white flex items-center justify-center border border-gray-100 p-1">
                 <img src="https://cdn-icons-png.flaticon.com/512/263/263142.png" class="w-full h-full object-contain" alt="Cart">
@@ -1131,7 +1116,7 @@
                 <p class="text-blue-600 font-bold text-base mt-2">{{ cart_items|length }} Items</p>
               </div>
             </div>
-          </a>
+          </button>
           <a href="{% url 'profile' %}" class="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
             <div class="bg-white/90 backdrop-blur-sm h-full min-h-[152px] rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-row items-stretch gap-4 p-6 border border-white/70">
               <div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white flex items-center justify-center border border-gray-100 p-1">
@@ -1166,72 +1151,80 @@
   <!-- =================================================================== -->
   <div class="py-16" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
     <div class="w-full px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4">
-          Trending <span class="text-pink-600">Products</span>
-        </h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-          Discover our most popular jewelry pieces that everyone is talking about
-        </p>
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800">
+            Trending <span class="text-pink-600">Products</span>
+          </h2>
+          <p class="text-sm text-gray-500 mt-1 hidden sm:block">Our most popular jewellery everyone is talking about</p>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href="{% url 'product_list' %}" class="hidden sm:block text-pink-600 font-semibold hover:underline text-sm">View All →</a>
+          <button class="pc-nav-btn trending-prev" aria-label="Previous"><i class="fas fa-chevron-left text-xs"></i></button>
+          <button class="pc-nav-btn trending-next" aria-label="Next"><i class="fas fa-chevron-right text-xs"></i></button>
+        </div>
       </div>
-      
+
       <div class="product-carousel-wrapper">
-        <div class="swiper trending-swiper pb-10">
+        <div class="swiper trending-swiper product-grid-swiper">
           <div class="swiper-wrapper">
             {% for product in trending_products %}
-            <div class="swiper-slide h-auto">
-              <div class="product-card bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
+            <div class="swiper-slide">
+              <div class="product-card bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col{% if glass_flash_enabled %} glass-flash{% endif %}"
                    onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-                <div class="relative group overflow-hidden flex-shrink-0">
+                <div class="pc-img-wrap relative flex-shrink-0">
                   {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 product-hover-image"
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                         class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 product-hover-image"
                          data-main-src="{{ product.image.url }}"
                          data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
                          data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}">
                   {% else %}
-                    <div class="w-full h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                      <i class="fas fa-gem text-6xl text-pink-400"></i>
+                    <div class="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                      <i class="fas fa-gem text-4xl sm:text-6xl text-pink-400"></i>
                     </div>
                   {% endif %}
-                  <div class="absolute top-4 right-4">
-                    <span class="bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold">Trending</span>
-                  </div>
+                  {% if product.discount_percent > 0 %}
+                  <span class="absolute top-2 left-2 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full z-10">-{{ product.discount_percent }}%</span>
+                  {% endif %}
+                  <span class="absolute top-2 right-2 bg-pink-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold z-10">Trending</span>
                   {% if user.is_authenticated %}
                   <button type="button" onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
-                          class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                    <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+                          class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                    <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600 text-sm"></i>
                   </button>
                   {% else %}
-                  <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-                    <i class="far fa-heart text-pink-600"></i>
+                  <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute bottom-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 shadow">
+                    <i class="far fa-heart text-pink-600 text-sm"></i>
                   </a>
                   {% endif %}
                 </div>
-                <div class="p-6 flex-grow flex flex-col">
-                  <h3 class="text-xl font-bold text-gray-800 mb-2 line-clamp-2">{{ product.name }}</h3>
-                  <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ product.description|truncatewords:12 }}</p>
-                  <div class="mt-auto">
-                    <div class="mb-3">
-                      <span class="text-2xl font-bold text-pink-600">₹{{ product.price|floatformat:2 }}</span>
-                    </div>
-                    <div class="flex space-x-2">
-                      <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
-                         class="flex-1 bg-pink-600 text-white text-center py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors duration-300 font-semibold">
-                        View Details
-                      </a>
-                      {% if product.stock > 0 and user.is_authenticated %}
-                        <a href="{% url 'add_to_cart' product.pk %}" onclick="event.stopPropagation();"
-                           class="bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300">
-                          <i class="fas fa-shopping-cart"></i>
-                        </a>
+                <div class="p-2 sm:p-4 flex flex-col flex-grow">
+                  <h3 class="font-bold text-xs sm:text-base text-gray-800 truncate leading-snug">{{ product.name }}</h3>
+                  <p class="product-desc text-gray-500 text-xs mt-1 line-clamp-2">{{ product.description|truncatewords:12 }}</p>
+                  {% if product.rating > 0 %}
+                  <div class="flex items-center gap-0.5 mt-1">
+                    <i class="fas fa-star text-amber-400 text-[10px]"></i>
+                    <span class="text-[10px] sm:text-xs text-gray-500">{{ product.rating }}{% if product.rating_count %} ({{ product.rating_count }}){% endif %}</span>
+                  </div>
+                  {% endif %}
+                  <div class="mt-auto pt-1.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="font-extrabold text-pink-600 text-sm sm:text-xl">₹{{ product.price|floatformat:0 }}</span>
+                      {% if product.mrp and product.mrp > product.price %}
+                      <span class="text-gray-400 line-through text-[10px] sm:text-xs">₹{{ product.mrp|floatformat:0 }}</span>
                       {% endif %}
                     </div>
+                    <a href="{% url 'product_detail' product.pk %}" onclick="event.stopPropagation();"
+                       class="pc-view-btn mt-2 block text-center bg-pink-600 text-white py-1.5 text-xs sm:text-sm rounded-lg hover:bg-pink-700 transition-colors font-semibold">
+                      View Details
+                    </a>
                   </div>
                 </div>
               </div>
             </div>
             {% empty %}
-            <div class="swiper-slide">
+            <div class="swiper-slide col-span-4">
               <div class="text-center py-12">
                 <i class="fas fa-gem text-6xl text-gray-300 mb-4"></i>
                 <p class="text-xl text-gray-500">No trending products available at the moment.</p>
@@ -1239,11 +1232,10 @@
             </div>
             {% endfor %}
           </div>
-          <div class="swiper-pagination"></div>
+          <div class="swiper-pagination mt-4"></div>
         </div>
-        <div class="swiper-button-prev trending-prev"></div>
-        <div class="swiper-button-next trending-next"></div>
       </div>
+      <a href="{% url 'product_list' %}" class="sm:hidden block text-center text-pink-600 font-semibold text-sm mt-4">View All →</a>
 
       <div class="text-center mt-12">
         <a href="{% url 'product_list' %}" 
@@ -1496,61 +1488,57 @@
       });
     }
 
-    // Most Selling
-    if (document.querySelector('.most-selling-swiper')) {
-      new Swiper('.most-selling-swiper', {
+    // Shared config factory for all 4 product carousels
+    // Mobile (< 640px): 2-col × 2-row grid, nav slides 4 products at a time
+    // Tablet (640-1023px): 3-col single row
+    // Desktop (≥ 1024px): 4-col single row
+    function makeProductSwiper(selector, prevEl, nextEl, paginationEl) {
+      if (!document.querySelector(selector)) return;
+      return new Swiper(selector, {
+        // Default (mobile): 2 columns × 2 rows = 4 products visible
         slidesPerView: 2,
-        spaceBetween: 12,
+        slidesPerGroup: 2,
+        spaceBetween: 10,
+        grid: { rows: 2, fill: 'row' },
         breakpoints: {
-          640:  { slidesPerView: 2, spaceBetween: 16 },
-          1024: { slidesPerView: 4, spaceBetween: 24 },
+          640: {
+            slidesPerView: 3,
+            slidesPerGroup: 3,
+            spaceBetween: 16,
+            grid: { rows: 1, fill: 'row' },
+          },
+          1024: {
+            slidesPerView: 4,
+            slidesPerGroup: 4,
+            spaceBetween: 20,
+            grid: { rows: 1, fill: 'row' },
+          },
         },
-        navigation: { prevEl: '.most-selling-prev', nextEl: '.most-selling-next' },
-        pagination: { el: '.most-selling-swiper .swiper-pagination', clickable: true, dynamicBullets: true },
+        navigation: { prevEl, nextEl },
+        pagination: { el: paginationEl, clickable: true, dynamicBullets: true },
       });
     }
 
-    // New Launch
-    if (document.querySelector('.new-launch-swiper')) {
-      new Swiper('.new-launch-swiper', {
-        slidesPerView: 2,
-        spaceBetween: 12,
-        breakpoints: {
-          640:  { slidesPerView: 2, spaceBetween: 16 },
-          1024: { slidesPerView: 4, spaceBetween: 24 },
-        },
-        navigation: { prevEl: '.new-launch-prev', nextEl: '.new-launch-next' },
-        pagination: { el: '.new-launch-swiper .swiper-pagination', clickable: true, dynamicBullets: true },
-      });
-    }
-
-    // Featured
-    if (document.querySelector('.featured-swiper')) {
-      new Swiper('.featured-swiper', {
-        slidesPerView: 2,
-        spaceBetween: 12,
-        breakpoints: {
-          640:  { slidesPerView: 2, spaceBetween: 16 },
-          1024: { slidesPerView: 4, spaceBetween: 24 },
-        },
-        navigation: { prevEl: '.featured-prev', nextEl: '.featured-next' },
-        pagination: { el: '.featured-swiper .swiper-pagination', clickable: true, dynamicBullets: true },
-      });
-    }
-
-    // Trending
-    if (document.querySelector('.trending-swiper')) {
-      new Swiper('.trending-swiper', {
-        slidesPerView: 2,
-        spaceBetween: 12,
-        breakpoints: {
-          640:  { slidesPerView: 2, spaceBetween: 16 },
-          1024: { slidesPerView: 4, spaceBetween: 24 },
-        },
-        navigation: { prevEl: '.trending-prev', nextEl: '.trending-next' },
-        pagination: { el: '.trending-swiper .swiper-pagination', clickable: true, dynamicBullets: true },
-      });
-    }
+    makeProductSwiper(
+      '.most-selling-swiper',
+      '.most-selling-prev', '.most-selling-next',
+      '.most-selling-swiper .swiper-pagination'
+    );
+    makeProductSwiper(
+      '.new-launch-swiper',
+      '.new-launch-prev', '.new-launch-next',
+      '.new-launch-swiper .swiper-pagination'
+    );
+    makeProductSwiper(
+      '.featured-swiper',
+      '.featured-prev', '.featured-next',
+      '.featured-swiper .swiper-pagination'
+    );
+    makeProductSwiper(
+      '.trending-swiper',
+      '.trending-prev', '.trending-next',
+      '.trending-swiper .swiper-pagination'
+    );
   });
 </script>
 

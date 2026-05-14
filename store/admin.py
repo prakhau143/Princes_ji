@@ -54,17 +54,39 @@ class ProductImageInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'price', 'stock', 'is_active', 'created_at')
+	list_display = ('name', 'category', 'sku', 'price', 'mrp', 'discount_display', 'stock', 'is_active', 'created_at')
 	list_filter = ('category', 'is_active', 'created_at')
-	search_fields = ('name', 'description')
+	search_fields = ('name', 'description', 'sku')
 	list_editable = ('is_active',)
+	readonly_fields = ('sku', 'discount_display', 'created_at')
 	inlines = [ProductImageInline]
 	actions = ['activate_products', 'deactivate_products']
-	
+	fieldsets = (
+		('Basic Info', {
+			'fields': ('name', 'category', 'description', 'image', 'is_active')
+		}),
+		('Pricing', {
+			'fields': ('price', 'mrp', 'discount_display', 'cost_price'),
+			'description': 'Set MRP ≥ Price to show a discount badge on the product page.'
+		}),
+		('Inventory', {
+			'fields': ('sku', 'stock', 'low_stock_threshold')
+		}),
+		('Timestamps', {
+			'fields': ('created_at',),
+			'classes': ('collapse',)
+		}),
+	)
+
+	def discount_display(self, obj):
+		d = obj.discount_percent
+		return f"{d}% off" if d > 0 else "—"
+	discount_display.short_description = "Discount"
+
 	def activate_products(self, request, queryset):
 		queryset.update(is_active=True)
 	activate_products.short_description = "Activate selected products"
-	
+
 	def deactivate_products(self, request, queryset):
 		queryset.update(is_active=False)
 	deactivate_products.short_description = "Deactivate selected products"

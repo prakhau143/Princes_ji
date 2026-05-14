@@ -30,6 +30,9 @@ from .models import (
 	Collection,
 	CollectionRow,
 	ZoomCarouselItem,
+	HeroSlide,
+	SiteSettings,
+	Coupon,
 )
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -248,13 +251,20 @@ def add_product(request):
             if not all([name, price, category_id, stock]):
                 return JsonResponse({'success': False, 'error': 'Missing required fields'})
             
+            mrp = request.POST.get('mrp', '0')
+            rating = request.POST.get('rating', '0')
+            rating_count = request.POST.get('rating_count', '0')
+
             category = Category.objects.get(id=category_id, is_active=True)
-            
+
             product = Product.objects.create(
                 name=name,
                 description=description,
                 price=float(price),
+                mrp=float(mrp or 0),
                 cost_price=float(cost_price or 0),
+                rating=float(rating or 0),
+                rating_count=int(rating_count or 0),
                 category=category,
                 stock=int(stock),
                 low_stock_threshold=int(low_stock_threshold or 5),
@@ -342,12 +352,15 @@ def edit_product_api(request, product_id):
             stock = request.POST.get('stock')
             cost_price = request.POST.get('cost_price')
             low_stock_threshold = request.POST.get('low_stock_threshold')
-            
+            mrp = request.POST.get('mrp')
+            rating = request.POST.get('rating')
+            rating_count = request.POST.get('rating_count')
+
             if not all([name, description, price, category_id, stock]):
                 return JsonResponse({'success': False, 'error': 'All fields are required'})
-            
+
             category = get_object_or_404(Category, id=category_id)
-            
+
             # Update product fields
             product.name = name
             product.description = description
@@ -358,6 +371,12 @@ def edit_product_api(request, product_id):
                 product.cost_price = float(cost_price)
             if low_stock_threshold is not None and low_stock_threshold != '':
                 product.low_stock_threshold = int(low_stock_threshold)
+            if mrp is not None and mrp != '':
+                product.mrp = float(mrp)
+            if rating is not None and rating != '':
+                product.rating = float(rating)
+            if rating_count is not None and rating_count != '':
+                product.rating_count = int(rating_count)
             if request.POST.get('is_active') is not None:
                 product.is_active = request.POST.get('is_active') in ['1', 'true', 'on', 'yes']
             
@@ -419,6 +438,11 @@ def get_product_api(request, product_id):
             'name': product.name,
             'description': product.description,
             'price': float(product.price),
+            'mrp': float(product.mrp),
+            'sku': product.sku or '',
+            'discount_percent': product.discount_percent,
+            'rating': float(product.rating),
+            'rating_count': product.rating_count,
             'category_id': product.category.id,
             'category_name': product.category.name,
             'stock': product.stock,
@@ -2068,3 +2092,222 @@ def zoom_carousel_toggle_api(request, item_id):
 	item.is_active = not item.is_active
 	item.save(update_fields=["is_active"])
 	return JsonResponse({"success": True, "is_active": item.is_active})
+
+
+# ─── Hero Slides API ────────────────────────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def hero_slides_api(request):
+	if request.method == "GET":
+		slides = HeroSlide.objects.all()
+		return JsonResponse({
+			"success": True,
+			"slides": [
+				{
+					"id": s.id,
+					"heading": s.heading,
+					"subheading": s.subheading,
+					"button_text": s.button_text,
+					"button_url": s.button_url,
+					"secondary_button_text": s.secondary_button_text,
+					"secondary_button_url": s.secondary_button_url,
+					"order": s.order,
+					"is_active": s.is_active,
+					"image_url": s.background_image.url if s.background_image else "",
+					"video_url": s.background_video.url if s.background_video else "",
+				}
+				for s in slides
+			],
+		})
+
+	try:
+		heading = (request.POST.get("heading") or "").strip()
+		subheading = (request.POST.get("subheading") or "").strip()
+		button_text = (request.POST.get("button_text") or "").strip()
+		button_url = (request.POST.get("button_url") or "").strip()
+		secondary_button_text = (request.POST.get("secondary_button_text") or "").strip()
+		secondary_button_url = (request.POST.get("secondary_button_url") or "").strip()
+		try:
+			order = int(request.POST.get("order") or 0)
+		except ValueError:
+			order = 0
+		is_active = (request.POST.get("is_active") or "on") in ["1", "true", "on", "yes"]
+		slide = HeroSlide.objects.create(
+			heading=heading,
+			subheading=subheading,
+			button_text=button_text,
+			button_url=button_url,
+			secondary_button_text=secondary_button_text,
+			secondary_button_url=secondary_button_url,
+			order=order,
+			is_active=is_active,
+		)
+		if "background_image" in request.FILES:
+			slide.background_image = request.FILES["background_image"]
+		if "background_video" in request.FILES:
+			slide.background_video = request.FILES["background_video"]
+		slide.save()
+		return JsonResponse({"success": True, "id": slide.id})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def hero_slide_update_api(request, slide_id):
+	slide = get_object_or_404(HeroSlide, id=slide_id)
+	try:
+		for field in ("heading", "subheading", "button_text", "button_url",
+					  "secondary_button_text", "secondary_button_url"):
+			val = request.POST.get(field)
+			if val is not None:
+				setattr(slide, field, val)
+		try:
+			slide.order = int(request.POST.get("order") or slide.order)
+		except ValueError:
+			pass
+		is_active = request.POST.get("is_active")
+		if is_active is not None:
+			slide.is_active = is_active in ["1", "true", "on", "yes"]
+		if "background_image" in request.FILES:
+			slide.background_image = request.FILES["background_image"]
+		if "background_video" in request.FILES:
+			slide.background_video = request.FILES["background_video"]
+		slide.save()
+		return JsonResponse({"success": True})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def hero_slide_delete_api(request, slide_id):
+	slide = get_object_or_404(HeroSlide, id=slide_id)
+	if slide.background_image:
+		slide.background_image.delete(save=False)
+	if slide.background_video:
+		slide.background_video.delete(save=False)
+	slide.delete()
+	return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def hero_slide_toggle_api(request, slide_id):
+	slide = get_object_or_404(HeroSlide, id=slide_id)
+	slide.is_active = not slide.is_active
+	slide.save(update_fields=["is_active"])
+	return JsonResponse({"success": True, "is_active": slide.is_active})
+
+
+# ─── Site Settings API ───────────────────────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def site_settings_api(request):
+	settings_obj = SiteSettings.get_settings()
+	if request.method == "GET":
+		return JsonResponse({
+			"success": True,
+			"glass_flash_enabled": settings_obj.glass_flash_enabled,
+			"shipping_charge": float(settings_obj.shipping_charge),
+			"free_shipping_above": float(settings_obj.free_shipping_above),
+			"cod_fee": float(settings_obj.cod_fee),
+			"razorpay_key_id": settings_obj.razorpay_key_id,
+			# Never expose the secret to the frontend
+		})
+	try:
+		data = json.loads(request.body)
+		if "glass_flash_enabled" in data:
+			settings_obj.glass_flash_enabled = bool(data["glass_flash_enabled"])
+		if "shipping_charge" in data:
+			settings_obj.shipping_charge = data["shipping_charge"]
+		if "free_shipping_above" in data:
+			settings_obj.free_shipping_above = data["free_shipping_above"]
+		if "cod_fee" in data:
+			settings_obj.cod_fee = data["cod_fee"]
+		if "razorpay_key_id" in data:
+			settings_obj.razorpay_key_id = data["razorpay_key_id"]
+		if "razorpay_key_secret" in data and data["razorpay_key_secret"]:
+			settings_obj.razorpay_key_secret = data["razorpay_key_secret"]
+		settings_obj.save()
+		return JsonResponse({"success": True})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+# ─── Coupon CRUD ──────────────────────────────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def coupons_api(request):
+	if request.method == "GET":
+		coupons = list(Coupon.objects.all().order_by('-id').values(
+			'id', 'code', 'description', 'discount_type', 'discount_value',
+			'min_cart_amount', 'max_discount', 'is_active',
+			'valid_from', 'valid_to', 'usage_limit', 'usage_count',
+		))
+		for c in coupons:
+			c['valid_from'] = c['valid_from'].strftime('%Y-%m-%dT%H:%M') if c['valid_from'] else ''
+			c['valid_to'] = c['valid_to'].strftime('%Y-%m-%dT%H:%M') if c['valid_to'] else ''
+			c['discount_value'] = float(c['discount_value'])
+			c['min_cart_amount'] = float(c['min_cart_amount'])
+			c['max_discount'] = float(c['max_discount']) if c['max_discount'] is not None else None
+		return JsonResponse({"success": True, "coupons": coupons})
+	try:
+		data = json.loads(request.body)
+		coupon = Coupon.objects.create(
+			code=data['code'].strip().upper(),
+			description=data.get('description', ''),
+			discount_type=data.get('discount_type', 'percent'),
+			discount_value=data['discount_value'],
+			min_cart_amount=data.get('min_cart_amount', 0),
+			max_discount=data.get('max_discount') or None,
+			is_active=data.get('is_active', True),
+			valid_from=data.get('valid_from') or None,
+			valid_to=data.get('valid_to') or None,
+			usage_limit=data.get('usage_limit') or None,
+		)
+		return JsonResponse({"success": True, "id": coupon.id})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def coupon_update_api(request, coupon_id):
+	coupon = get_object_or_404(Coupon, pk=coupon_id)
+	try:
+		data = json.loads(request.body)
+		for field in ('code', 'description', 'discount_type', 'discount_value',
+		              'min_cart_amount', 'is_active'):
+			if field in data:
+				setattr(coupon, field, data[field])
+		if 'code' in data:
+			coupon.code = data['code'].strip().upper()
+		coupon.max_discount = data.get('max_discount') or None
+		coupon.valid_from = data.get('valid_from') or None
+		coupon.valid_to = data.get('valid_to') or None
+		coupon.usage_limit = data.get('usage_limit') or None
+		coupon.save()
+		return JsonResponse({"success": True})
+	except Exception as e:
+		return JsonResponse({"success": False, "error": str(e)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def coupon_delete_api(request, coupon_id):
+	coupon = get_object_or_404(Coupon, pk=coupon_id)
+	coupon.delete()
+	return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def coupon_toggle_api(request, coupon_id):
+	coupon = get_object_or_404(Coupon, pk=coupon_id)
+	coupon.is_active = not coupon.is_active
+	coupon.save()
+	return JsonResponse({"success": True, "is_active": coupon.is_active})
