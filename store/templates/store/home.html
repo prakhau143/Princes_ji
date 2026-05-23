@@ -492,100 +492,181 @@
       {% endif %}
 
       {% if collection_rows %}
-      <section class="py-14 bg-white" data-aos="fade-up">
-        <div class="w-full px-4 sm:px-6 lg:px-8">
+      <section class="py-14" style="background:linear-gradient(135deg,#fdf2f8 0%,#f3e8ff 40%,#fce7f3 100%);position:relative;">
+        <!-- Decorative blobs for glassmorphism depth -->
+        <div style="position:absolute;top:-60px;left:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(236,72,153,0.15),transparent 70%);pointer-events:none;border-radius:50%;"></div>
+        <div style="position:absolute;bottom:-40px;right:-60px;width:350px;height:350px;background:radial-gradient(circle,rgba(168,85,247,0.12),transparent 70%);pointer-events:none;border-radius:50%;"></div>
+
+        <div class="w-full px-4 sm:px-6 lg:px-8" style="position:relative;z-index:1;">
           <div class="flex justify-between items-center mb-10">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-900">
-              <span class="text-pink-600">Collections</span>
+            <h2 style="font-family:'Cinzel',serif;color:#7c3aed;letter-spacing:3px;font-size:clamp(1.5rem,3vw,2.4rem);text-transform:uppercase;">
+              Collections
             </h2>
-            <a href="{% url 'collections_list' %}" class="text-pink-600 font-semibold hover:underline">View All →</a>
+            <a href="{% url 'collections_list' %}" style="font-family:'Poppins',sans-serif;color:#ec4899;font-weight:600;font-size:.9rem;">View All →</a>
           </div>
 
           <style>
             .collection-scroll { scroll-snap-type: x mandatory; }
             .collection-card { scroll-snap-align: start; }
+            /* Glass collection image overlay */
+            .coll-img-overlay {
+              position: absolute;
+              left: 0; bottom: 0;
+              right: 0;
+              padding: 1rem 1.25rem;
+              background: rgba(255,255,255,0.22);
+              backdrop-filter: blur(14px);
+              -webkit-backdrop-filter: blur(14px);
+              border-top: 1px solid rgba(255,255,255,0.4);
+              border-radius: 0 0 16px 16px;
+            }
+            .coll-img-overlay span {
+              font-family: 'Cinzel', serif;
+              color: #fff;
+              font-size: 1rem;
+              font-weight: 700;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            }
+            /* Glass product card in collection row */
+            .collection-card {
+              background: rgba(255,255,255,0.62) !important;
+              backdrop-filter: blur(14px) !important;
+              -webkit-backdrop-filter: blur(14px) !important;
+              border: 1px solid rgba(255,255,255,0.8) !important;
+              box-shadow: 0 4px 20px rgba(236,72,153,0.08) !important;
+              border-radius: 18px !important;
+              transition: transform .3s ease, box-shadow .3s ease !important;
+            }
+            .collection-card:hover {
+              transform: translateY(-5px) !important;
+              box-shadow: 0 16px 48px rgba(236,72,153,0.14) !important;
+            }
+            .coll-prod-name {
+              font-family: 'Cinzel', serif;
+              color: #7c3aed;
+              font-size: .78rem;
+              font-weight: 600;
+              letter-spacing: 1px;
+              text-transform: uppercase;
+            }
+            .coll-prod-price {
+              font-family: 'Poppins', sans-serif;
+              color: #ec4899;
+              font-weight: 700;
+              font-size: .9rem;
+            }
+            /* Glass scroll nav buttons */
+            .coll-nav-btn {
+              width: 38px; height: 38px;
+              border-radius: 50%;
+              background: rgba(255,255,255,0.7);
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+              border: 1px solid rgba(236,72,153,0.2);
+              color: #ec4899;
+              display: flex; align-items: center; justify-content: center;
+              cursor: pointer;
+              transition: all .22s;
+              box-shadow: 0 2px 10px rgba(236,72,153,0.1);
+            }
+            .coll-nav-btn:hover { background: #ec4899; color: #fff; border-color: #ec4899; }
+            /* Section title label */
+            .coll-section-label {
+              font-family: 'Cinzel', serif;
+              color: #7c3aed;
+              font-size: .78rem;
+              font-weight: 600;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+            }
           </style>
 
           {% for row in collection_rows %}
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-16">
             {% if row.image_position == 'left' %}
+              <!-- Collection image with glass overlay -->
               <a href="{% url 'collection_detail' row.collection.slug %}" class="group rounded-2xl overflow-hidden shadow-lg relative block">
                 <img src="{{ row.image.url }}" alt="{{ row.title|default:row.collection.title }}" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105">
-                <div class="absolute left-5 bottom-5 bg-black/55 text-white px-4 py-2 rounded-xl font-bold text-xl">
-                  {{ row.title|default:row.collection.title }}
+                <div class="coll-img-overlay">
+                  <span>{{ row.title|default:row.collection.title }}</span>
                 </div>
               </a>
 
+              <!-- Glass product cards -->
               <div class="relative">
                 <div class="flex items-center justify-between mb-4">
-                  <div class="font-bold text-gray-900 text-lg">Shop this collection</div>
+                  <span class="coll-section-label">Shop this collection</span>
                   <div class="flex gap-2">
-                    <button type="button" class="w-10 h-10 rounded-full bg-white shadow border flex items-center justify-center" onclick="scrollCollectionRow('{{ row.id }}', -1)">
-                      <i class="fas fa-chevron-left"></i>
+                    <button type="button" class="coll-nav-btn" onclick="scrollCollectionRow('{{ row.id }}', -1)">
+                      <i class="fas fa-chevron-left text-sm"></i>
                     </button>
-                    <button type="button" class="w-10 h-10 rounded-full bg-white shadow border flex items-center justify-center" onclick="scrollCollectionRow('{{ row.id }}', 1)">
-                      <i class="fas fa-chevron-right"></i>
+                    <button type="button" class="coll-nav-btn" onclick="scrollCollectionRow('{{ row.id }}', 1)">
+                      <i class="fas fa-chevron-right text-sm"></i>
                     </button>
                   </div>
                 </div>
-                <div id="collectionRow{{ row.id }}" class="collection-scroll flex gap-4 overflow-x-auto pb-2">
+                <div id="collectionRow{{ row.id }}" class="collection-scroll flex gap-4 overflow-x-auto pb-2" style="scrollbar-width:none;">
                   {% for product in row.products.all %}
-                  <a href="{% url 'product_detail' product.pk %}" class="collection-card min-w-[220px] sm:min-w-[240px] lg:min-w-[260px] bg-white rounded-2xl shadow border overflow-hidden group">
-                    <div class="relative">
+                  <a href="{% url 'product_detail' product.pk %}" class="collection-card min-w-[220px] sm:min-w-[240px] lg:min-w-[260px] overflow-hidden group" style="flex-shrink:0;">
+                    <div class="relative overflow-hidden" style="border-radius:18px 18px 0 0;">
                       {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-105">
                       {% else %}
-                        <div class="w-full h-56 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                          <i class="fas fa-gem text-5xl text-pink-400"></i>
+                        <div class="w-full h-52 flex items-center justify-center" style="background:linear-gradient(135deg,#fce7f3,#f3e8ff);">
+                          <i class="fas fa-gem text-5xl text-pink-300"></i>
                         </div>
                       {% endif %}
                     </div>
                     <div class="p-4">
-                      <div class="font-bold text-gray-900 truncate">{{ product.name }}</div>
-                      <div class="text-pink-600 font-extrabold mt-1">₹{{ product.price|floatformat:2 }}</div>
+                      <div class="coll-prod-name truncate">{{ product.name }}</div>
+                      <div class="coll-prod-price mt-1">₹{{ product.price|floatformat:0 }}</div>
                     </div>
                   </a>
                   {% endfor %}
                 </div>
               </div>
             {% else %}
+              <!-- Right layout — glass cards left, image right -->
               <div class="relative order-2 lg:order-1">
                 <div class="flex items-center justify-between mb-4">
-                  <div class="font-bold text-gray-900 text-lg">Shop this collection</div>
+                  <span class="coll-section-label">Shop this collection</span>
                   <div class="flex gap-2">
-                    <button type="button" class="w-10 h-10 rounded-full bg-white shadow border flex items-center justify-center" onclick="scrollCollectionRow('{{ row.id }}', -1)">
-                      <i class="fas fa-chevron-left"></i>
+                    <button type="button" class="coll-nav-btn" onclick="scrollCollectionRow('{{ row.id }}', -1)">
+                      <i class="fas fa-chevron-left text-sm"></i>
                     </button>
-                    <button type="button" class="w-10 h-10 rounded-full bg-white shadow border flex items-center justify-center" onclick="scrollCollectionRow('{{ row.id }}', 1)">
-                      <i class="fas fa-chevron-right"></i>
+                    <button type="button" class="coll-nav-btn" onclick="scrollCollectionRow('{{ row.id }}', 1)">
+                      <i class="fas fa-chevron-right text-sm"></i>
                     </button>
                   </div>
                 </div>
-                <div id="collectionRow{{ row.id }}" class="collection-scroll flex gap-4 overflow-x-auto pb-2">
+                <div id="collectionRow{{ row.id }}" class="collection-scroll flex gap-4 overflow-x-auto pb-2" style="scrollbar-width:none;">
                   {% for product in row.products.all %}
-                  <a href="{% url 'product_detail' product.pk %}" class="collection-card min-w-[220px] sm:min-w-[240px] lg:min-w-[260px] bg-white rounded-2xl shadow border overflow-hidden group">
-                    <div class="relative">
+                  <a href="{% url 'product_detail' product.pk %}" class="collection-card min-w-[220px] sm:min-w-[240px] lg:min-w-[260px] overflow-hidden group" style="flex-shrink:0;">
+                    <div class="relative overflow-hidden" style="border-radius:18px 18px 0 0;">
                       {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-105">
                       {% else %}
-                        <div class="w-full h-56 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                          <i class="fas fa-gem text-5xl text-pink-400"></i>
+                        <div class="w-full h-52 flex items-center justify-center" style="background:linear-gradient(135deg,#fce7f3,#f3e8ff);">
+                          <i class="fas fa-gem text-5xl text-pink-300"></i>
                         </div>
                       {% endif %}
                     </div>
                     <div class="p-4">
-                      <div class="font-bold text-gray-900 truncate">{{ product.name }}</div>
-                      <div class="text-pink-600 font-extrabold mt-1">₹{{ product.price|floatformat:2 }}</div>
+                      <div class="coll-prod-name truncate">{{ product.name }}</div>
+                      <div class="coll-prod-price mt-1">₹{{ product.price|floatformat:0 }}</div>
                     </div>
                   </a>
                   {% endfor %}
                 </div>
               </div>
 
+              <!-- Collection image with glass overlay (right side) -->
               <a href="{% url 'collection_detail' row.collection.slug %}" class="group rounded-2xl overflow-hidden shadow-lg relative block order-1 lg:order-2">
                 <img src="{{ row.image.url }}" alt="{{ row.title|default:row.collection.title }}" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105">
-                <div class="absolute left-5 bottom-5 bg-black/55 text-white px-4 py-2 rounded-xl font-bold text-xl">
-                  {{ row.title|default:row.collection.title }}
+                <div class="coll-img-overlay">
+                  <span>{{ row.title|default:row.collection.title }}</span>
                 </div>
               </a>
             {% endif %}

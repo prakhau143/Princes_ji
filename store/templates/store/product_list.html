@@ -1,57 +1,185 @@
-{% extends 'base.html' %} 
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<style>
+/* ── Product List — site palette (pink / purple / white) ── */
+.pl-filter-bar {
+  background: rgba(255,255,255,0.65);
+  border: 1.5px solid rgba(236,72,153,0.12);
+  border-radius: 20px;
+  padding: 1.5rem 2rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 24px rgba(236,72,153,0.06);
+}
+.pl-cat-btn {
+  padding: 7px 18px;
+  border-radius: 40px;
+  font-size: .8rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: .04em;
+  border: 1.5px solid rgba(236,72,153,0.2);
+  color: #6b7280;
+  background: transparent;
+  text-decoration: none;
+  transition: all .22s;
+  display: inline-block;
+}
+.pl-cat-btn:hover, .pl-cat-btn.active {
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  border-color: #ec4899;
+  color: #fff !important;
+}
+.pl-search-input {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid rgba(236,72,153,0.18);
+  border-radius: 40px;
+  padding: 10px 20px;
+  color: #1e293b;
+  font-family: 'Poppins', sans-serif;
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .2s;
+}
+.pl-search-input::placeholder { color: #94a3b8; }
+.pl-search-input:focus { border-color: #ec4899; box-shadow: 0 0 0 3px rgba(236,72,153,0.08); }
+.pl-search-btn {
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  color: #fff;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 10px 28px;
+  border-radius: 40px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: .04em;
+  transition: opacity .2s, transform .2s;
+  white-space: nowrap;
+}
+.pl-search-btn:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(236,72,153,0.28); }
+/* ── Product card — white shimmer ── */
+.pl-card {
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1.5px solid rgba(236,72,153,0.1);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color .35s, transform .35s, box-shadow .35s;
+  position: relative;
+  box-shadow: 0 2px 12px rgba(236,72,153,0.05);
+}
+.pl-card::before {
+  content: '';
+  position: absolute;
+  top: -100%; left: -100%;
+  width: 200%; height: 200%;
+  background: linear-gradient(120deg, transparent 30%, rgba(236,72,153,0.07) 50%, transparent 70%);
+  transform: rotate(25deg);
+  transition: top .9s ease, left .9s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+.pl-card:hover::before { top: 100%; left: 100%; }
+.pl-card:hover {
+  border-color: rgba(236,72,153,0.4);
+  transform: translateY(-7px);
+  box-shadow: 0 24px 60px rgba(236,72,153,0.12), 0 6px 20px rgba(168,85,247,0.07);
+}
+.pl-card img { transition: transform 1.1s ease; }
+.pl-card:hover img { transform: scale(1.08); }
+.pl-card-body { padding: 1rem 1.1rem 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
+.pl-card-name {
+  font-family: 'Cinzel', serif;
+  color: #7c3aed;
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: .2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pl-card-cat  { font-size: .72rem; color: #9ca3af; margin-bottom: .5rem; font-family: 'Poppins', sans-serif; }
+.pl-card-price { font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 700; color: #ec4899; margin-bottom: .85rem; }
+.pl-btn-cart {
+  width: 100%;
+  background: transparent;
+  border: 1.5px solid rgba(236,72,153,0.3);
+  color: #ec4899;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: .8rem;
+  letter-spacing: .04em;
+  padding: 9px;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all .22s;
+  margin-bottom: .5rem;
+}
+.pl-btn-cart:hover { background: rgba(236,72,153,0.07); border-color: #ec4899; }
+.pl-btn-buy {
+  width: 100%;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: .8rem;
+  letter-spacing: .04em;
+  padding: 9px;
+  border-radius: 40px;
+  border: none;
+  cursor: pointer;
+  transition: opacity .22s, transform .22s;
+}
+.pl-btn-buy:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(236,72,153,0.28); }
+.pl-wishlist-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(236,72,153,0.2);
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+  box-shadow: 0 2px 8px rgba(236,72,153,0.1);
+}
+.pl-wishlist-btn:hover { background: #fff5f9; border-color: #ec4899; }
+</style>
+
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-12">
   <div class="text-center mb-10">
-    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">
-      Explore Our Products
+    <h2 style="font-family:'Cinzel',serif;color:#7c3aed;letter-spacing:4px;font-size:clamp(1.8rem,4vw,3rem);text-transform:uppercase;margin-bottom:.6rem;">
+      Our Collection
     </h2>
-    <p class="text-lg text-gray-500">
-      Browse our extensive catalog and find your next favorite item.
+    <p style="color:#6b7280;font-family:'Poppins',sans-serif;font-size:.95rem;max-width:540px;margin:0 auto;">
+      Discover exquisite jewellery crafted with precision and elegance.
     </p>
   </div>
 
   <!-- Filters and Search Bar -->
-  <div class="mb-12 p-6 bg-white rounded-lg shadow-md">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="pl-filter-bar">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <!-- Category Filters -->
       <div>
-        <h3 class="text-lg font-semibold text-gray-700 mb-3">
-          Filter by Category
-        </h3>
+        <p style="font-family:'Cinzel',serif;color:#7c3aed;font-size:.72rem;letter-spacing:3px;text-transform:uppercase;margin-bottom:.75rem;">Filter by Category</p>
         <div class="flex flex-wrap gap-2">
-          <a
-            href="{% url 'product_list' %}"
-            class="px-4 py-2 rounded-full font-semibold transition-colors duration-300 {% if not selected_category %}bg-blue-600 text-white shadow-md{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}"
-          >
-            All
-          </a>
+          <a href="{% url 'product_list' %}" class="pl-cat-btn {% if not selected_category %}active{% endif %}">All</a>
           {% for cat in categories %}
-          <a
-            href="{% url 'category_products' cat.id %}"
-            class="px-4 py-2 rounded-full font-semibold transition-colors duration-300 {% if cat.id|stringformat:'s' == selected_category %}bg-blue-600 text-white shadow-md{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}"
-          >
-            {{ cat.name }}
-          </a>
+          <a href="{% url 'category_products' cat.id %}" class="pl-cat-btn {% if cat.id|stringformat:'s' == selected_category %}active{% endif %}">{{ cat.name }}</a>
           {% endfor %}
         </div>
       </div>
-
       <!-- Search Form -->
-      <form method="get" class="flex flex-col sm:flex-row items-center gap-4">
-        <input
-          type="text"
-          name="q"
-          placeholder="Search products..."
-          value="{{ search_query }}"
-          class="border border-gray-300 rounded-full px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow duration-300"
-        />
-        <button
-          type="submit"
-          class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition-colors duration-300"
-        >
-          Search
-        </button>
+      <form method="get" class="flex items-center gap-3">
+        <input type="text" name="q" placeholder="Search jewellery…" value="{{ search_query }}" class="pl-search-input">
+        <button type="submit" class="pl-search-btn">Search</button>
       </form>
     </div>
   </div>
@@ -59,66 +187,55 @@
   <!-- Product Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
     {% for product in products %}
-    <div class="relative bg-white rounded-lg shadow-lg overflow-hidden flex flex-col group transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer"
-         onclick="window.location.href='{% url 'product_detail' product.pk %}'">
-      <a href="{% url 'product_detail' product.pk %}" class="block overflow-hidden">
-        {% if product.image %}
-        <img
-          src="{{ product.image.url }}"
-          alt="{{ product.name }}"
-          class="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110 product-hover-image"
-          data-main-src="{{ product.image.url }}"
-          data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
-          data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}"
-        />
-        {% else %}
-        <div class="h-48 flex items-center justify-center bg-gray-100 text-gray-500">
-          No Image Available
-        </div>
-        {% endif %}
-      </a>
+    <div class="pl-card" onclick="window.location.href='{% url 'product_detail' product.pk %}'">
+
+      <!-- Wishlist -->
       {% if user.is_authenticated %}
       <button type="button"
               onclick="event.stopPropagation(); toggleWishlistCard({{ product.id }}, this)"
-              class="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-        <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart text-pink-600"></i>
+              class="pl-wishlist-btn">
+        <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart" style="color:#ec4899;font-size:.9rem;"></i>
       </button>
       {% else %}
-      <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow">
-        <i class="far fa-heart text-pink-600"></i>
+      <a href="{% url 'login' %}" onclick="event.stopPropagation()" class="pl-wishlist-btn">
+        <i class="far fa-heart" style="color:#ec4899;font-size:.9rem;"></i>
       </a>
       {% endif %}
 
-      <div class="p-4 flex flex-col flex-grow">
-        <h3 class="font-semibold text-lg text-gray-800 mb-1 truncate">
-          <a href="{% url 'product_detail' product.pk %}" class="hover:text-blue-600">{{ product.name }}</a>
-        </h3>
-        <p class="text-sm text-gray-500 mb-3">{{ product.category.name }}</p>
+      <!-- Image -->
+      <a href="{% url 'product_detail' product.pk %}" class="block overflow-hidden" style="height:220px;">
+        {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}"
+             class="w-full h-full object-cover product-hover-image"
+             data-main-src="{{ product.image.url }}"
+             data-hover-src="{% with hover_img=product.hover_image_url %}{% if hover_img and hover_img != product.image.url %}{{ hover_img }}{% endif %}{% endwith %}"
+             data-hover-video="{% with hv=product.first_video_url %}{% if hv %}{{ hv }}{% endif %}{% endwith %}" />
+        {% else %}
+        <div class="w-full h-full flex items-center justify-content-center" style="background:linear-gradient(135deg,#fce7f3,#f3e8ff);display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:3rem;opacity:.5;">💍</span>
+        </div>
+        {% endif %}
+      </a>
 
-        <p class="text-2xl text-gray-900 font-bold mb-4">
-          ₹{{ product.price|floatformat:2 }}
-        </p>
-
-        <p class="text-gray-600 text-sm mb-4 flex-grow line-clamp-2">
-          {{ product.description|truncatechars:80 }}
-        </p>
-
+      <!-- Body -->
+      <div class="pl-card-body">
+        <div class="pl-card-name">{{ product.name }}</div>
+        <div class="pl-card-cat">{{ product.category.name }}</div>
+        <div class="pl-card-price">₹{{ product.price|floatformat:0 }}</div>
         <div class="mt-auto space-y-2">
           <button type="button" onclick="event.stopPropagation(); addToCart({{ product.id }})"
-            class="w-full bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 text-gray-800 font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300">
-            Add to Cart
-          </button>
+                  class="pl-btn-cart">✦ Add to Cart</button>
           <button type="button" onclick="event.stopPropagation(); addToCart({{ product.id }}, true)"
-            class="w-full bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 text-white font-semibold py-2.5 rounded-full shadow-md transition-colors duration-300">
-            Buy Now
-          </button>
+                  class="pl-btn-buy">Buy Now →</button>
         </div>
       </div>
     </div>
     {% empty %}
-    <p class="col-span-full text-center text-gray-500 text-xl py-12">
-      No products found matching your criteria. Try a different search!
-    </p>
+    <div class="col-span-full text-center py-16">
+      <div style="font-size:3rem;margin-bottom:1rem;opacity:.3;">💎</div>
+      <p style="font-family:'Cinzel',serif;color:#7c3aed;font-size:1.1rem;letter-spacing:2px;">No products found</p>
+      <p style="color:#666;font-size:.85rem;margin-top:.4rem;">Try a different category or search term.</p>
+    </div>
     {% endfor %}
   </div>
 

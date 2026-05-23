@@ -7,30 +7,308 @@
     <title>{% block title %}Princess Jewelry Store{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- ── Royal Luxury Fonts ── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
     <style>
-        /* Smooth transitions for a better user experience */
-        .transition-all {
-            transition: all 0.3s ease-in-out;
-        }
-        /* Ensure the mobile menu has a high z-index */
-        #mobile-menu {
-            z-index: 40;
-        }
-        .dropdown:hover .dropdown-menu {
-            display: block;
-        }
-        body {
-            background: linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 50%, #fce7f3 100%);
-            min-height: 100vh;
-        }
+/* ═══════════════════════════════════════════════════════════════
+   PRINCESS JEWELRY — Royal Typography + Effects
+   Palette: pink #ec4899 | purple #a855f7 | white | Cinzel + Poppins
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Utility resets ── */
+.transition-all { transition: all 0.3s ease-in-out; }
+#mobile-menu { z-index: 40; }
+.dropdown:hover .dropdown-menu { display: block; }
+
+/* ════════════════════════════════
+   GLOBAL — Poppins body + Cinzel headings
+════════════════════════════════ */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 50%, #fce7f3 100%);
+    color: #1e293b;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Every heading on every page → Cinzel */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', serif !important;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1.2; }
+h2 { font-size: clamp(1.5rem, 3.5vw, 2.8rem); }
+h3 { font-size: clamp(1.15rem, 2.5vw, 1.9rem); }
+
+/* Body text */
+p { font-family: 'Poppins', sans-serif; line-height: 1.8; font-weight: 300; color: #374151; }
+
+/* Inputs, labels, buttons inherit Poppins */
+input, textarea, select, button, label {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Links */
+a { text-decoration: none; transition: color 0.25s ease; }
+
+/* ════════════════════════════════
+   LUXURY NAVBAR — white glass
+════════════════════════════════ */
+#lux-navbar {
+    background: rgba(255,255,255,0.92) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-bottom: 1px solid rgba(236,72,153,0.12) !important;
+    box-shadow: 0 4px 32px rgba(236,72,153,0.08), 0 1px 0 rgba(236,72,153,0.08) !important;
+    transition: background 0.4s, box-shadow 0.4s !important;
+}
+#lux-navbar a { color: #374151 !important; letter-spacing: 0.03em; transition: color 0.22s; }
+#lux-navbar a:hover { color: #ec4899 !important; }
+#lux-navbar button { color: #374151 !important; }
+
+/* Logo — Cinzel + pink-purple gradient */
+.lux-logo-text {
+    font-family: 'Cinzel', serif !important;
+    font-weight: 700;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #ec4899, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Nav action button — pink/purple */
+.lux-nav-btn {
+    background: linear-gradient(135deg, #ec4899, #a855f7) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em;
+    border-radius: 40px !important;
+    border: none !important;
+    padding: 8px 22px !important;
+    transition: all 0.3s !important;
+}
+.lux-nav-btn:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 22px rgba(236,72,153,0.32) !important;
+}
+
+/* Cart icon */
+.lux-cart-icon { color: #ec4899 !important; transition: color 0.22s, transform 0.22s !important; }
+.lux-cart-icon:hover { color: #a855f7 !important; transform: scale(1.1) !important; }
+#cart-badge { background: #ec4899 !important; color: #fff !important; font-weight: 800 !important; }
+
+/* Mobile menu — white glass */
+#mobile-menu > div {
+    background: rgba(255,255,255,0.97) !important;
+    border: 1px solid rgba(236,72,153,0.14) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 48px rgba(236,72,153,0.14) !important;
+}
+#mobile-menu a { color: #374151 !important; }
+#mobile-menu a:hover { color: #ec4899 !important; background: rgba(236,72,153,0.05) !important; }
+#mobile-menu .lux-mobile-close { color: #ec4899 !important; }
+#mobile-menu .lux-mobile-btn {
+    background: linear-gradient(135deg, #ec4899, #a855f7) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    font-weight: 700 !important;
+    border-radius: 40px !important;
+    border: none !important;
+}
+#mobile-menu .lux-mobile-login {
+    background: transparent !important;
+    border: 1.5px solid rgba(236,72,153,0.45) !important;
+    color: #ec4899 !important;
+    -webkit-text-fill-color: #ec4899 !important;
+    border-radius: 40px !important;
+    font-weight: 700 !important;
+}
+
+/* ════════════════════════════════
+   SECTION LAYOUT
+════════════════════════════════ */
+.section-title { text-align: center; margin-bottom: 60px; }
+.section-title h2 { margin-bottom: 16px; }
+.section-title p { max-width: 700px; margin: 0 auto; }
+
+/* ════════════════════════════════
+   HERO GRADIENT TEXT
+════════════════════════════════ */
+.hero-title, .gradient-text {
+    background: linear-gradient(135deg, #ec4899, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 4px;
+}
+
+/* ════════════════════════════════
+   GLASSMORPHISM — light bg version
+════════════════════════════════ */
+.glass {
+    background: rgba(255,255,255,0.55) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border: 1px solid rgba(255,255,255,0.75) !important;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(236,72,153,0.07);
+}
+/* Dark overlay glass (for hero/dark sections) */
+.glass-dark {
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+}
+
+/* ════════════════════════════════
+   SHIMMER CARD — white + pink
+════════════════════════════════ */
+.shimmer-card {
+    position: relative;
+    overflow: hidden;
+    background: #fff !important;
+    border: 1.5px solid rgba(236,72,153,0.12) !important;
+    border-radius: 18px;
+    transition: border-color 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
+}
+.shimmer-card::before {
+    content: '';
+    position: absolute;
+    top: -100%; left: -100%;
+    width: 200%; height: 200%;
+    background: linear-gradient(
+        120deg,
+        transparent 30%,
+        rgba(236,72,153,0.08) 50%,
+        transparent 70%
+    );
+    transform: rotate(25deg);
+    transition: top 0.9s ease, left 0.9s ease;
+    z-index: 1;
+    pointer-events: none;
+}
+.shimmer-card:hover::before { top: 100%; left: 100%; }
+.shimmer-card:hover {
+    border-color: rgba(236,72,153,0.42) !important;
+    transform: translateY(-6px) !important;
+    box-shadow: 0 20px 60px rgba(236,72,153,0.12), 0 6px 20px rgba(168,85,247,0.08) !important;
+}
+.shimmer-card img { transition: transform 1s ease; }
+.shimmer-card:hover img { transform: scale(1.07); }
+
+/* ════════════════════════════════
+   LUXURY BUTTON (global)
+════════════════════════════════ */
+.lux-btn {
+    font-family: 'Poppins', sans-serif;
+    padding: 12px 32px;
+    border: none;
+    background: linear-gradient(135deg, #ec4899, #a855f7);
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s;
+}
+.lux-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(236,72,153,0.32);
+    opacity: 0.92;
+}
+
+/* ════════════════════════════════
+   CURSOR GLOW — soft pink
+════════════════════════════════ */
+#lux-cursor-glow {
+    width: 340px;
+    height: 340px;
+    background: radial-gradient(circle, rgba(236,72,153,0.10) 0%, transparent 68%);
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    mix-blend-mode: multiply;
+    will-change: left, top;
+    opacity: 0;
+    transition: left 0.06s linear, top 0.06s linear, opacity 0.4s;
+}
+
+/* ════════════════════════════════
+   PARTICLES CANVAS
+════════════════════════════════ */
+#lux-particles-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ════════════════════════════════
+   FOOTER
+════════════════════════════════ */
+footer {
+    background: #1f2937 !important;
+    border-top: 1px solid rgba(236,72,153,0.15) !important;
+}
+footer h4 {
+    font-family: 'Cinzel', serif !important;
+    color: #f9fafb !important;
+    letter-spacing: 2px;
+    font-size: .9rem !important;
+}
+footer a.text-gray-400:hover { color: #f472b6 !important; }
+.lux-logo-footer {
+    font-family: 'Cinzel', serif;
+    background: linear-gradient(135deg, #ec4899, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 3px;
+    font-weight: 700;
+}
+footer .border-t { border-color: rgba(236,72,153,0.12) !important; }
+footer .text-pink-400 { color: #f472b6 !important; }
+
+/* ════════════════════════════════
+   ANNOUNCEMENT BAR
+════════════════════════════════ */
+@keyframes scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+#announcement-track { animation: scroll 30s linear infinite; }
+#announcement-track:hover { animation-play-state: paused; }
+
+/* ════════════════════════════════
+   GSAP — opt-in reveal class
+════════════════════════════════ */
+.lux-reveal { opacity: 0; transform: translateY(40px); }
     </style>
 </head>
-<body class="text-gray-900 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
+<!-- ── Gold Particles Canvas ── -->
+<canvas id="lux-particles-canvas" aria-hidden="true"></canvas>
+<!-- ── Gold Cursor Glow ── -->
+<div id="lux-cursor-glow" aria-hidden="true"></div>
 
   <!-- =================================================================== -->
   <!-- RESPONSIVE HEADER                                                 -->
   <!-- =================================================================== -->
- <header class="bg-white shadow-md sticky top-0 z-50">
+ <header id="lux-navbar" class="sticky top-0 z-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-20">
       
@@ -38,28 +316,28 @@
       <div class="flex-shrink-0">
         <a href="/" class="flex items-center space-x-3">
           <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-12 w-auto rounded-full"/>
-          <span class="text-2xl font-bold text-gray-800">Princess</span>
+          <span class="lux-logo-text text-2xl font-bold">Princess</span>
         </a>
       </div>
 
       <!-- Desktop Navigation -->
       <nav class="hidden md:flex items-center space-x-8">
         {% if user.is_authenticated %}
-          <a href="{% url 'product_list' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Jewelry</a>
-          <a href="{% url 'collections_list' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Collections</a>
-          <a href="{% url 'profile' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Profile</a>
-          <a href="{% url 'order_history' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">My Orders</a>
-          <button onclick="openCartPanel()" class="text-gray-600 hover:text-pink-600 relative focus:outline-none" aria-label="Open cart">
+          <a href="{% url 'product_list' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">Jewelry</a>
+          <a href="{% url 'collections_list' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">Collections</a>
+          <a href="{% url 'profile' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">Profile</a>
+          <a href="{% url 'order_history' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">My Orders</a>
+          <button onclick="openCartPanel()" class="lux-cart-icon relative focus:outline-none" aria-label="Open cart">
             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            <span id="cart-badge" class="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+            <span id="cart-badge" class="absolute -top-1 -right-1 text-xs rounded-full w-4 h-4 flex items-center justify-center hidden" style="font-size:.6rem;">0</span>
           </button>
           <form action="{% url 'logout' %}" method="post" class="inline">
             {% csrf_token %}
-            <button type="submit" class="bg-pink-500 text-white font-medium py-2 px-4 rounded-md hover:bg-pink-600 transition-all">Logout</button>
+            <button type="submit" class="lux-nav-btn">Logout</button>
           </form>
         {% else %}
-          <a href="{% url 'login' %}" class="text-gray-600 hover:text-pink-600 font-medium transition-all">Login</a>
-          <a href="{% url 'register' %}" class="bg-pink-500 text-white font-medium py-2 px-4 rounded-md hover:bg-pink-600 transition-all">Register</a>
+          <a href="{% url 'login' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">Login</a>
+          <a href="{% url 'register' %}" class="lux-nav-btn">Register</a>
         {% endif %}
       </nav>
 
@@ -77,42 +355,41 @@
 
   <!-- Mobile Menu (Hidden by default) -->
   <div id="mobile-menu" class="hidden md:hidden absolute top-0 inset-x-0 p-2 transition transform origin-top-right">
-    <div class="rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 bg-white divide-y-2 divide-gray-50">
+    <div class="rounded-2xl shadow-2xl divide-y" style="background:rgba(255,255,255,0.97);border:1px solid rgba(236,72,153,0.14);">
       <div class="pt-5 pb-6 px-5">
         <div class="flex items-center justify-between">
           <a href="/" class="flex items-center space-x-3">
             <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-10 w-auto rounded-full"/>
-            <a href="/" class="text-2xl font-bold text-gray-800">Princess</a>
+            <span class="lux-logo-text text-2xl font-bold">Princess</span>
           </a>
-          <button id="mobile-menu-close" class="text-gray-500 hover:text-gray-800">
+          <button id="mobile-menu-close" class="lux-mobile-close" style="color:#ec4899;">
             <svg class="h-7 w-7" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
         <div class="mt-6">
-          <nav class="grid gap-y-8">
+          <nav class="grid gap-y-2">
             {% if user.is_authenticated %}
-              <!-- Products link is now visible in the mobile menu for logged-in users -->
-              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Collections</a>
-              <a href="{% url 'product_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Jewelry</a>
-              <a href="{% url 'profile' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Profile</a>
-              <a href="{% url 'order_history' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">My Orders</a>
-              <button onclick="openCartPanel();document.getElementById('mobile-menu').classList.add('hidden')" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50 w-full text-left">Cart</button>
+              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">✦ Collections</a>
+              <a href="{% url 'product_list' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">💍 Jewelry</a>
+              <a href="{% url 'profile' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">👤 Profile</a>
+              <a href="{% url 'order_history' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">📦 My Orders</a>
+              <button onclick="openCartPanel();document.getElementById('mobile-menu').classList.add('hidden')" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all w-full text-left" style="color:#ec4899;font-family:'Poppins',sans-serif;background:none;border:none;cursor:pointer;">🛒 Cart</button>
             {% else %}
-              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium text-gray-900 rounded-md hover:bg-gray-50">Collections</a>
+              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">✦ Collections</a>
             {% endif %}
           </nav>
         </div>
       </div>
-      <div class="py-6 px-5 space-y-6">
+      <div class="py-6 px-5 space-y-4" style="border-color:rgba(236,72,153,0.1);">
         {% if user.is_authenticated %}
           <form action="{% url 'logout' %}" method="post" class="w-full">
             {% csrf_token %}
-            <button type="submit" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-red-600 hover:bg-red-700">Logout</button>
+            <button type="submit" class="w-full flex items-center justify-center px-4 py-3 text-base font-bold lux-mobile-btn" style="border-radius:40px;">Logout</button>
           </form>
         {% else %}
-          <a href="{% url 'register' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-pink-600 hover:bg-pink-700">Register</a>
-          <p class="mt-6 text-center text-base font-medium text-gray-500">
-            Existing customer? <a href="{% url 'login' %}" class="text-pink-600 hover:text-pink-500">Login</a>
+          <a href="{% url 'register' %}" class="w-full flex items-center justify-center px-4 py-3 text-base font-bold lux-mobile-btn" style="border-radius:40px;display:flex;">Register</a>
+          <p class="text-center text-sm" style="color:#888;">
+            Existing customer? <a href="{% url 'login' %}" class="lux-mobile-login" style="padding:6px 18px;display:inline-block;">Login</a>
           </p>
         {% endif %}
       </div>
@@ -150,24 +427,6 @@
     </div>
   </div>
   
-  <style>
-    @keyframes scroll {
-      0% {
-        transform: translateX(0);
-      }
-      100% {
-        transform: translateX(-50%);
-      }
-    }
-    
-    #announcement-track {
-      animation: scroll 30s linear infinite;
-    }
-    
-    #announcement-track:hover {
-      animation-play-state: paused;
-    }
-  </style>
   {% endif %}
 
   <!-- =================================================================== -->
@@ -189,7 +448,7 @@
           <div class="flex-shrink-0">
             <a href="/" class="flex items-center space-x-3">
               <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-12 w-auto rounded-full"/>
-              <span class="text-2xl font-bold text-gray-800">Princess</span>
+              <span class="lux-logo-footer text-2xl font-bold">Princess</span>
             </a>
           </div>
           <p class="text-gray-400 text-sm leading-relaxed mb-4">
@@ -1075,7 +1334,7 @@
             body:JSON.stringify({address_id:_coSelectedAddrId, payment_method:'cod', coupon_code:_coCoupon}),
           });
           const d = await r.json();
-          if (d.ok) { window.location.href='/store/checkout/success/'+d.order_id+'/'; }
+          if (d.ok) { window.location.href='/store/order-confirmation/'+d.order_id+'/'; }
           else { errEl.textContent=d.error||'Order failed.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.textContent='Place Order'; }
         } else {
           // Online payment via Razorpay
@@ -1102,7 +1361,7 @@
                 body:JSON.stringify(response),
               });
               const vd = await vr.json();
-              if (vd.ok) { window.location.href='/store/checkout/success/'+vd.order_id+'/'; }
+              if (vd.ok) { window.location.href='/store/order-confirmation/'+vd.order_id+'/'; }
               else { errEl.textContent=vd.error||'Payment verification failed.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.textContent='Place Order'; }
             },
             modal: { ondismiss: function(){ btn.disabled=false; btn.textContent='Place Order'; } }
@@ -1115,6 +1374,203 @@
         btn.disabled=false; btn.textContent='Place Order';
       }
     };
+  })();
+  </script>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ROYAL LUXURY SCRIPTS — Lenis · GSAP · Gold Particles
+  ═══════════════════════════════════════════════════════════ -->
+  <!-- Lenis smooth scroll -->
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    /* ════════════════════════════════════════
+       1.  LENIS — BUTTERY SMOOTH SCROLL
+    ════════════════════════════════════════ */
+    if (typeof Lenis !== 'undefined') {
+      const lenis = new Lenis({
+        duration: 1.25,
+        smoothWheel: true,
+        easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      });
+      function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+      requestAnimationFrame(raf);
+      window._lenis = lenis;
+      // Sync GSAP ScrollTrigger with Lenis
+      if (typeof ScrollTrigger !== 'undefined') {
+        lenis.on('scroll', ScrollTrigger.update);
+      }
+    }
+
+    /* ════════════════════════════════════════
+       2.  GOLD CURSOR GLOW
+    ════════════════════════════════════════ */
+    const glow = document.getElementById('lux-cursor-glow');
+    if (glow && !('ontouchstart' in window)) {
+      let mx = -999, my = -999;
+      document.addEventListener('mouseenter', () => { glow.style.opacity = '1'; });
+      document.addEventListener('mouseleave', () => { glow.style.opacity = '0'; });
+      window.addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        glow.style.left = mx + 'px';
+        glow.style.top  = my + 'px';
+        glow.style.opacity = '1';
+      });
+    }
+
+    /* ════════════════════════════════════════
+       3.  FLOATING GOLD PARTICLES (canvas)
+    ════════════════════════════════════════ */
+    const canvas = document.getElementById('lux-particles-canvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let W, H, particles = [];
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Site-palette: pink / rose / purple / lilac sparkles
+      const GOLDS = ['#ec4899','#f472b6','#a855f7','#c084fc','#f9a8d4','#d8b4fe'];
+
+      function mkParticle(scatterY) {
+        const r = Math.random() * 2 + 0.4;
+        return {
+          x : Math.random() * W,
+          y : scatterY ? Math.random() * H : H + 20,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: -(Math.random() * 0.55 + 0.18),
+          r : r,
+          op: Math.random() * 0.75 + 0.2,
+          tw: Math.random() * Math.PI * 2,
+          ts: Math.random() * 0.035 + 0.008,
+          col: GOLDS[Math.floor(Math.random() * GOLDS.length)],
+          sparkle: r > 1.6,
+        };
+      }
+
+      for (let i = 0; i < 90; i++) particles.push(mkParticle(true));
+
+      function drawP(p) {
+        p.tw += p.ts;
+        const alpha = p.op * (0.55 + 0.45 * Math.sin(p.tw));
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.col;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (p.sparkle) {
+          ctx.globalAlpha = alpha * 0.45;
+          ctx.strokeStyle = p.col;
+          ctx.lineWidth   = 0.6;
+          const l = p.r * 3;
+          ctx.beginPath();
+          ctx.moveTo(p.x - l, p.y); ctx.lineTo(p.x + l, p.y);
+          ctx.moveTo(p.x, p.y - l); ctx.lineTo(p.x, p.y + l);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      let raf2;
+      function animate() {
+        ctx.clearRect(0, 0, W, H);
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.x += p.vx; p.y += p.vy;
+          if (p.y < -12 || p.x < -12 || p.x > W + 12) {
+            particles[i] = mkParticle(false);
+          }
+          drawP(p);
+        }
+        raf2 = requestAnimationFrame(animate);
+      }
+      animate();
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) cancelAnimationFrame(raf2);
+        else animate();
+      });
+    }
+
+    /* ════════════════════════════════════════
+       4.  GSAP  REVEAL ANIMATIONS
+    ════════════════════════════════════════ */
+    if (typeof gsap !== 'undefined') {
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Navbar entrance
+      gsap.from('#lux-navbar', {
+        y: -80, opacity: 0, duration: 1.1, ease: 'power3.out', delay: 0.05,
+      });
+
+      // Shimmer cards reveal on scroll
+      gsap.utils.toArray('.shimmer-card').forEach((card, i) => {
+        gsap.from(card, {
+          scrollTrigger: { trigger: card, start: 'top 88%', once: true },
+          y: 55, opacity: 0,
+          duration: 0.85,
+          delay: Math.min(i % 4, 3) * 0.08,
+          ease: 'power3.out',
+        });
+      });
+
+      // Section headings reveal
+      gsap.utils.toArray('h1, h2').forEach(el => {
+        if (el.closest('#lux-navbar') || el.closest('footer')) return;
+        gsap.from(el, {
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+          y: 35, opacity: 0, duration: 1, ease: 'power4.out',
+        });
+      });
+
+      // .lux-reveal class (for pages that opt-in)
+      gsap.utils.toArray('.lux-reveal').forEach((el, i) => {
+        gsap.to(el, {
+          scrollTrigger: { trigger: el, start: 'top 90%', once: true },
+          y: 0, opacity: 1, duration: 0.9,
+          delay: i * 0.06,
+          ease: 'power3.out',
+        });
+      });
+    }
+
+    /* ════════════════════════════════════════
+       5.  NAVBAR SCROLL DEPTH EFFECT
+    ════════════════════════════════════════ */
+    const navbar = document.getElementById('lux-navbar');
+    if (navbar) {
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            if (window.scrollY > 70) {
+              navbar.style.background    = 'rgba(255,255,255,0.97)';
+              navbar.style.borderBottomColor = 'rgba(236,72,153,0.2)';
+              navbar.style.boxShadow = '0 4px 40px rgba(236,72,153,0.12), 0 1px 0 rgba(236,72,153,0.1)';
+            } else {
+              navbar.style.background    = 'rgba(255,255,255,0.92)';
+              navbar.style.borderBottomColor = 'rgba(236,72,153,0.12)';
+              navbar.style.boxShadow = '0 4px 32px rgba(236,72,153,0.08)';
+            }
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+    }
+
   })();
   </script>
 

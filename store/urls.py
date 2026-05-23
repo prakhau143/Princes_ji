@@ -27,14 +27,20 @@ urlpatterns = [
     path('api/cart/apply-coupon/', views.apply_coupon_api, name='apply_coupon_api'),
     path('api/cart/recommended/', views.recommended_products_api, name='recommended_products_api'),
 
-    # Checkout
-    path('checkout/success/<int:order_id>/', views.order_success_view, name='order_success'),
+    # Order confirmation (new) + legacy success redirect
+    path('order-confirmation/<int:order_id>/', views.order_confirmation_view, name='order_confirmation'),
+    path('checkout/success/<int:order_id>/', views.order_confirmation_view, name='order_success'),
 
     # Address API
     path('api/addresses/', views.addresses_api, name='addresses_api'),
     path('api/addresses/<int:addr_id>/update/', views.address_update_api, name='address_update_api'),
     path('api/addresses/<int:addr_id>/delete/', views.address_delete_api, name='address_delete_api'),
     path('api/addresses/<int:addr_id>/set-default/', views.address_set_default_api, name='address_set_default_api'),
+
+    # Order actions
+    path('api/orders/<int:order_id>/timeline/', views.order_timeline_api, name='order_timeline_api'),
+    path('api/orders/<int:order_id>/cancel/', views.cancel_order_api, name='cancel_order_api'),
+    path('api/orders/<int:order_id>/buy-again/', views.buy_again_api, name='buy_again_api'),
 
     # Order placement + Razorpay
     path('api/place-order/', views.place_order_api, name='place_order_api'),

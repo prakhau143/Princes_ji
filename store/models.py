@@ -181,7 +181,9 @@ class Order(models.Model):
 	STATUS_CHOICES = [
 		('pending', 'Pending'),
 		('processing', 'Processing'),
+		('packed', 'Packed'),
 		('shipped', 'Shipped'),
+		('out_for_delivery', 'Out for Delivery'),
 		('delivered', 'Delivered'),
 		('rto', 'RTO / Returned to Origin'),
 		('returned', 'Returned by Customer'),
@@ -219,6 +221,15 @@ class Order(models.Model):
 	payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
 	razorpay_order_id = models.CharField(max_length=100, blank=True)
 	razorpay_payment_id = models.CharField(max_length=100, blank=True)
+	# Payment breakdown (stored at order time so they don't change if rates change later)
+	coupon_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+	shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+	cod_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+	# Fulfillment timestamps
+	packed_at = models.DateTimeField(null=True, blank=True)
+	shipped_at = models.DateTimeField(null=True, blank=True)
+	out_for_delivery_at = models.DateTimeField(null=True, blank=True)
+	delivered_at = models.DateTimeField(null=True, blank=True)
 
 	def __str__(self):
 		return f"Order #{self.id} by {self.user.username}"

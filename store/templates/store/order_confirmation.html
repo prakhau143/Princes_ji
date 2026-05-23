@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+/* ── Page shell ── */
+.oc-page { background: linear-gradient(160deg,#fff5fb 0%,#f3f0ff 100%); min-height: 100vh; padding: 2rem 1rem 4rem; }
+
+/* ── Header ── */
+.oc-hero { text-align:center; padding: 2rem 0 1.5rem; }
+.oc-hero-badge { display:inline-flex; align-items:center; gap:.5rem; background:#fff; border:2px solid #fbcfe8; border-radius:50px; padding:.5rem 1.5rem; font-size:.85rem; font-weight:700; color:#be185d; margin-bottom:1.2rem; box-shadow:0 2px 12px rgba(236,72,153,.1); }
+.oc-hero h1 { font-size:clamp(1.6rem,4vw,2.6rem); font-weight:800; color:#1e293b; margin:.4rem 0 .5rem; }
+.oc-hero p { color:#64748b; font-size:1rem; }
+.oc-order-ref { display:inline-block; background:#fdf4ff; border:1.5px solid #e9d5ea; border-radius:10px; padding:.4rem 1rem; font-size:.82rem; color:#7c3aed; font-weight:700; margin-top:.6rem; letter-spacing:.04em; }
+
+/* ── Timeline ── */
+.oc-timeline-wrap { max-width: 820px; margin: 2.2rem auto 2.5rem; overflow-x: auto; padding: 0 .5rem; }
+.oc-timeline { display:flex; align-items:flex-start; justify-content:space-between; min-width: 480px; position:relative; }
+.oc-timeline::before { content:''; position:absolute; top:22px; left:22px; right:22px; height:3px; background:#e2e8f0; z-index:0; border-radius:2px; }
+.oc-progress-line { position:absolute; top:22px; left:22px; height:3px; background:linear-gradient(90deg,#ec4899,#a855f7); z-index:1; border-radius:2px; transition: width .6s ease; }
+.oc-step { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; z-index:2; gap:.5rem; }
+.oc-step-dot { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; border:3px solid #e2e8f0; background:#fff; transition:all .3s; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.oc-step.done .oc-step-dot { background:linear-gradient(135deg,#ec4899,#a855f7); border-color:#ec4899; box-shadow:0 4px 16px rgba(236,72,153,.35); }
+.oc-step.active .oc-step-dot { background:#fff; border-color:#ec4899; box-shadow:0 0 0 5px rgba(236,72,153,.15),0 4px 16px rgba(236,72,153,.2); }
+.oc-step-label { font-size:.72rem; font-weight:700; color:#94a3b8; text-align:center; line-height:1.3; }
+.oc-step.done .oc-step-label, .oc-step.active .oc-step-label { color:#be185d; }
+.oc-step-date { font-size:.65rem; color:#94a3b8; text-align:center; }
+.oc-step.done .oc-step-date { color:#7c3aed; font-weight:600; }
+.oc-step-est { font-size:.62rem; color:#c084fc; font-style:italic; text-align:center; }
+
+/* ── Cards layout ── */
+.oc-grid { max-width:1000px; margin:0 auto; display:grid; grid-template-columns:1fr; gap:1.5rem; }
+@media(min-width:768px){ .oc-grid { grid-template-columns:1fr; } }
+
+/* ── White card ── */
+.oc-card { background:#fff; border-radius:20px; box-shadow:0 4px 24px rgba(236,72,153,.07); overflow:hidden; }
+.oc-card-head { padding:1.25rem 1.5rem; border-bottom:1px solid #fce7f3; display:flex; align-items:center; gap:.7rem; }
+.oc-card-head h2 { font-size:1.05rem; font-weight:800; color:#1e293b; margin:0; }
+.oc-card-head span { font-size:.8rem; color:#94a3b8; }
+.oc-card-body { padding:1.5rem; }
+
+/* ── Order items ── */
+.oc-item { display:flex; gap:1rem; padding:.9rem 0; border-bottom:1px solid #f8f0ff; align-items:center; }
+.oc-item:last-child { border-bottom:none; padding-bottom:0; }
+.oc-item-img { width:72px; height:72px; border-radius:14px; object-fit:cover; flex-shrink:0; background:#f3f4f6; }
+.oc-item-info { flex:1; min-width:0; }
+.oc-item-name { font-size:.9rem; font-weight:700; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.oc-item-qty { font-size:.78rem; color:#94a3b8; margin-top:.15rem; }
+.oc-item-price { font-size:.9rem; font-weight:800; color:#ec4899; flex-shrink:0; }
+.oc-item-mrp { font-size:.7rem; color:#94a3b8; text-decoration:line-through; display:block; text-align:right; }
+
+/* ── 2-col lower ── */
+.oc-lower { display:grid; grid-template-columns:1fr; gap:1.5rem; max-width:1000px; margin:0 auto; }
+@media(min-width:640px){ .oc-lower { grid-template-columns:1fr 1fr; } }
+
+/* ── Address card ── */
+.oc-addr-label { font-size:.7rem; font-weight:700; color:#a855f7; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.6rem; }
+.oc-addr-name { font-size:.95rem; font-weight:700; color:#1e293b; }
+.oc-addr-line { font-size:.82rem; color:#64748b; line-height:1.7; }
+
+/* ── Payment summary ── */
+.oc-pay-row { display:flex; justify-content:space-between; font-size:.83rem; color:#475569; padding:.22rem 0; }
+.oc-pay-row.disc { color:#16a34a; }
+.oc-pay-row.total { font-size:1rem; font-weight:800; color:#1e293b; padding-top:.7rem; border-top:2px solid #fce7f3; margin-top:.4rem; }
+.oc-pay-method-tag { display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:700; padding:.3rem .8rem; border-radius:20px; margin-top:.7rem; }
+.oc-pay-method-tag.cod { background:#fff7ed; color:#c2410c; border:1.5px solid #fed7aa; }
+.oc-pay-method-tag.online { background:#f0fdf4; color:#15803d; border:1.5px solid #bbf7d0; }
+.oc-txn-id { font-size:.7rem; color:#94a3b8; margin-top:.5rem; font-family:monospace; }
+
+/* ── Action row ── */
+.oc-actions { display:flex; gap:.8rem; justify-content:center; flex-wrap:wrap; margin:2rem 0 1rem; }
+.oc-btn-primary { background:linear-gradient(135deg,#ec4899,#a855f7); color:#fff; border:none; padding:.7rem 2rem; border-radius:50px; font-weight:700; font-size:.9rem; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:.4rem; box-shadow:0 4px 16px rgba(236,72,153,.3); transition:opacity .15s; }
+.oc-btn-primary:hover { opacity:.9; }
+.oc-btn-outline { background:#fff; color:#7c3aed; border:2px solid #e9d5ea; padding:.68rem 1.6rem; border-radius:50px; font-weight:700; font-size:.9rem; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:.4rem; transition:border-color .15s; }
+.oc-btn-outline:hover { border-color:#a855f7; }
+
+/* ── Footer message ── */
+.oc-footer-msg { text-align:center; color:#94a3b8; font-size:.78rem; margin-top:2rem; }
+
+/* ── Confetti canvas ── */
+#oc-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+</style>
+
+<!-- Confetti canvas -->
+<canvas id="oc-canvas"></canvas>
+
+<div class="oc-page">
+
+  <!-- ── Hero header ── -->
+  <div class="oc-hero">
+    <div class="oc-hero-badge">🎉 Order Confirmed!</div>
+    <h1>Thank you{% if order.shipping_name %}, {{ order.shipping_name|truncatewords:2 }}!{% else %}!{% endif %}</h1>
+    <p>We've received your order and will start processing it right away.</p>
+    <div class="oc-order-ref">Order #{{ order.id }}</div>
+  </div>
+
+  <!-- ── Timeline ── -->
+  <div class="oc-timeline-wrap">
+    <div class="oc-timeline" id="oc-timeline">
+      <!-- progress fill line set by JS -->
+      <div class="oc-progress-line" id="oc-prog"></div>
+
+      {% for step in timeline %}
+      <div class="oc-step {% if step.completed %}done{% elif step.is_active %}active{% endif %}">
+        <div class="oc-step-dot">
+          {% if step.completed %}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white"><path d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0z"/></svg>
+          {% else %}
+            {{ step.icon }}
+          {% endif %}
+        </div>
+        <div class="oc-step-label">{{ step.label }}</div>
+        {% if step.completed and step.date %}
+          <div class="oc-step-date">{{ step.date|date:"M d, g A" }}</div>
+        {% elif not step.completed and step.estimated %}
+          <div class="oc-step-est">~{{ step.estimated|date:"M d" }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── Actions ── -->
+  <div class="oc-actions">
+    <a href="{% url 'order_history' %}" class="oc-btn-primary">📦 View All Orders</a>
+    <a href="{% url 'home' %}" class="oc-btn-outline">🛍️ Continue Shopping</a>
+  </div>
+
+  <!-- ── Order items ── -->
+  <div class="oc-grid">
+    <div class="oc-card">
+      <div class="oc-card-head">
+        <h2>Order Summary</h2>
+        <span>{{ items|length }} item{{ items|length|pluralize }}</span>
+      </div>
+      <div class="oc-card-body">
+        {% for item in items %}
+        <div class="oc-item">
+          {% if item.product.image %}
+            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="oc-item-img">
+          {% else %}
+            <div class="oc-item-img" style="display:flex;align-items:center;justify-content:center;color:#cbd5e1;">🛍️</div>
+          {% endif %}
+          <div class="oc-item-info">
+            <div class="oc-item-name">{{ item.product.name }}</div>
+            <div class="oc-item-qty">Qty: {{ item.quantity }}</div>
+            {% if order.payment_method != 'cod' and order.razorpay_payment_id %}
+              <div style="font-size:.68rem;color:#94a3b8;margin-top:.15rem;">TXN: {{ order.razorpay_payment_id }}</div>
+            {% endif %}
+          </div>
+          <div style="text-align:right; flex-shrink:0;">
+            <div class="oc-item-price">₹{{ item.price|floatformat:0 }}</div>
+            {% if item.product.mrp and item.product.mrp > item.price %}
+              <div class="oc-item-mrp">₹{{ item.product.mrp|floatformat:0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Shipping + Payment ── -->
+  <div class="oc-lower" style="margin-top:1.5rem;">
+
+    <!-- Shipping address -->
+    <div class="oc-card">
+      <div class="oc-card-head">
+        <h2>📍 Shipping Address</h2>
+      </div>
+      <div class="oc-card-body">
+        <div class="oc-addr-label">Delivering to</div>
+        <div class="oc-addr-name">{{ order.shipping_name }}</div>
+        <div class="oc-addr-line">
+          {{ order.shipping_address }}<br>
+          {{ order.shipping_city }}, {{ order.shipping_state }} – {{ order.shipping_postal_code }}<br>
+          {{ order.shipping_country }}<br>
+          {% if order.mobile_number %}📞 {{ order.mobile_number }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment summary -->
+    <div class="oc-card">
+      <div class="oc-card-head">
+        <h2>
+          {% if is_online %}💳 Amount Paid{% else %}💵 Amount to Pay{% endif %}
+        </h2>
+      </div>
+      <div class="oc-card-body">
+        <div class="oc-pay-row">
+          <span>Subtotal</span>
+          <span>₹{{ price_total|floatformat:2 }}</span>
+        </div>
+        {% if order.coupon_discount > 0 %}
+        <div class="oc-pay-row disc">
+          <span>🎟️ Coupon Discount</span>
+          <span>–₹{{ order.coupon_discount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="oc-pay-row">
+          <span>Shipping</span>
+          {% if order.shipping_amount == 0 %}
+            <span style="color:#16a34a;font-weight:700;">FREE</span>
+          {% else %}
+            <span>₹{{ order.shipping_amount|floatformat:2 }}</span>
+          {% endif %}
+        </div>
+        {% if order.cod_fee_amount > 0 %}
+        <div class="oc-pay-row" style="color:#c2410c;">
+          <span>COD Fee</span>
+          <span>₹{{ order.cod_fee_amount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="oc-pay-row total">
+          <span>Total</span>
+          <span>₹{{ order.total|floatformat:2 }}</span>
+        </div>
+
+        <!-- Payment method badge -->
+        {% if order.payment_method == 'cod' %}
+          <div class="oc-pay-method-tag cod">🏠 Cash on Delivery — pay when it arrives</div>
+        {% else %}
+          <div class="oc-pay-method-tag online">✅ Paid via {{ order.get_payment_method_display }}</div>
+          {% if order.razorpay_payment_id %}
+            <div class="oc-txn-id">Payment ID: {{ order.razorpay_payment_id }}</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+  </div><!-- /.oc-lower -->
+
+  <div class="oc-footer-msg">
+    🌸 Thank you for shopping with Princess Jewelry &nbsp;·&nbsp; 100% Secure &nbsp;·&nbsp; Hassle-free Returns
+  </div>
+
+</div><!-- /.oc-page -->
+
+<script>
+(function(){
+  /* ── Confetti animation ── */
+  const canvas = document.getElementById('oc-canvas');
+  const ctx = canvas.getContext('2d');
+  let W = canvas.width = window.innerWidth;
+  let H = canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; });
+
+  const COLORS = ['#ec4899','#a855f7','#f59e0b','#10b981','#3b82f6','#f43f5e','#8b5cf6','#fbbf24'];
+  const SHAPES = ['rect','circle','tri'];
+
+  class Piece {
+    constructor(delay) {
+      this.reset(true, delay);
+    }
+    reset(init, delay) {
+      this.x = Math.random() * W;
+      this.y = init ? (Math.random() * -H) : -20;
+      this.delay = delay || 0;
+      this.size = Math.random() * 8 + 4;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+      this.vx = (Math.random() - 0.5) * 2.5;
+      this.vy = Math.random() * 3 + 2;
+      this.rot = Math.random() * Math.PI * 2;
+      this.vrot = (Math.random() - 0.5) * 0.15;
+      this.alpha = 1;
+    }
+    update() {
+      if (this.delay > 0) { this.delay--; return; }
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += 0.04;
+      this.rot += this.vrot;
+      if (this.y > H + 20) this.reset(false);
+    }
+    draw() {
+      if (this.delay > 0) return;
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rot);
+      ctx.fillStyle = this.color;
+      if (this.shape === 'rect') {
+        ctx.fillRect(-this.size/2, -this.size/4, this.size, this.size/2);
+      } else if (this.shape === 'circle') {
+        ctx.beginPath(); ctx.arc(0, 0, this.size/2, 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.moveTo(0,-this.size/2); ctx.lineTo(this.size/2,this.size/2); ctx.lineTo(-this.size/2,this.size/2); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  const pieces = Array.from({length: 180}, (_, i) => new Piece(i * 3));
+  let raf;
+
+  function animate() {
+    ctx.clearRect(0, 0, W, H);
+    pieces.forEach(p => { p.update(); p.draw(); });
+    raf = requestAnimationFrame(animate);
+  }
+  animate();
+
+  // Fade out after 8s, stop at 10s
+  setTimeout(() => {
+    let alpha = 1;
+    const fadeInt = setInterval(() => {
+      alpha -= 0.05;
+      canvas.style.opacity = Math.max(0, alpha);
+      if (alpha <= 0) {
+        clearInterval(fadeInt);
+        cancelAnimationFrame(raf);
+        canvas.remove();
+      }
+    }, 100);
+  }, 8000);
+
+  /* ── Progress line ── */
+  const steps = document.querySelectorAll('.oc-step');
+  const prog = document.getElementById('oc-prog');
+  let doneCount = 0;
+  steps.forEach(s => { if(s.classList.contains('done')) doneCount++; });
+  if (steps.length > 1 && prog) {
+    const pct = doneCount > 0 ? Math.min(((doneCount - 1) / (steps.length - 1)) * 100, 100) : 0;
+    const tl = document.querySelector('.oc-timeline');
+    const tlWidth = tl ? tl.offsetWidth : 0;
+    const stepW = tlWidth / steps.length;
+    // width covers from first dot centre to last-done dot centre
+    const lineWidth = doneCount > 1 ? ((doneCount - 1) * stepW / steps.length * steps.length) : (doneCount === 1 ? 0 : 0);
+    prog.style.width = (pct / 100 * (tlWidth - 44)) + 'px';
+  }
+})();
+</script>
+{% endblock %}

@@ -1410,7 +1410,20 @@ def order_lifecycle_update_api(request, order_id):
             return JsonResponse({"success": False, "error": "Invalid status"})
         prev = order.status
         order.status = new_status
-        order.save(update_fields=["status", "updated_at"])
+        update_fields = ["status", "updated_at"]
+        # Auto-stamp the corresponding timestamp the first time each status is set
+        ts_map = {
+            "packed": "packed_at",
+            "shipped": "shipped_at",
+            "out_for_delivery": "out_for_delivery_at",
+            "delivered": "delivered_at",
+        }
+        if new_status in ts_map:
+            field = ts_map[new_status]
+            if not getattr(order, field):
+                setattr(order, field, timezone.now())
+                update_fields.append(field)
+        order.save(update_fields=update_fields)
         OrderLifecycleLog.objects.create(
             order=order,
             event_type="status_change",

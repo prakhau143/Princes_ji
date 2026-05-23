@@ -76,6 +76,7 @@ from django.db.models import Q
 from django import forms
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.utils import timezone
 
 # Cart views
 
@@ -436,17 +437,144 @@ def profile_view(request):
 
 @login_required
 def order_history_view(request):
-	orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_by('-created_at')
-	reviewable_item_ids = set()
-	for order in orders:
+	from datetime import timedelta, date as _date
+	status_filter = request.GET.get('tab', 'all')
+	qs = Order.objects.filter(user=request.user).prefetch_related('items__product', 'items__review').order_by('-created_at')
+	if status_filter == 'active':
+		qs = qs.filter(status__in=['pending', 'processing', 'packed', 'shipped', 'out_for_delivery'])
+	elif status_filter == 'delivered':
+		qs = qs.filter(status='delivered')
+	elif status_filter == 'cancelled':
+		qs = qs.filter(status__in=['cancelled', 'returned', 'rto'])
+
+	DELIVERY_DAYS = {'pending': 7, 'processing': 5, 'packed': 4, 'shipped': 3, 'out_for_delivery': 1}
+	orders_data = []
+	for order in qs:
+		conf = f"AJ{order.created_at.year}{order.id:05d}"
+		if order.status == 'delivered' and order.delivered_at:
+			exp_delivery = order.delivered_at
+		else:
+			days = DELIVERY_DAYS.get(order.status, 7)
+			exp_delivery = order.created_at + timedelta(days=days)
+		can_cancel = order.status in ('pending', 'processing', 'packed')
+		can_return = (order.status == 'delivered' and order.delivered_at and
+		              (timezone.now() - order.delivered_at).days <= 7)
+		reviewable_ids = set()
 		if order.status == 'delivered':
 			for item in order.items.all():
 				if not hasattr(item, 'review'):
-					reviewable_item_ids.add(item.id)
+					reviewable_ids.add(item.id)
+		orders_data.append({
+			'order': order,
+			'conf': conf,
+			'exp_delivery': exp_delivery,
+			'can_cancel': can_cancel,
+			'can_return': can_return,
+			'reviewable_ids': reviewable_ids,
+		})
+
 	return render(request, 'store/order_history.html', {
-		'orders': orders,
-		'reviewable_item_ids': reviewable_item_ids,
+		'orders_data': orders_data,
+		'tab': status_filter,
 	})
+
+
+@login_required
+def order_timeline_api(request, order_id):
+	order = get_object_or_404(Order, pk=order_id, user=request.user)
+	from datetime import timedelta
+	# STATUS_RANK lets us mark earlier steps as "done" even when admin jumped
+	# (e.g. set "shipped" without first setting "packed")
+	STATUS_RANK = {
+		'pending': 0, 'processing': 0,
+		'packed': 1, 'shipped': 2, 'out_for_delivery': 3, 'delivered': 4,
+	}
+	cur_rank = STATUS_RANK.get(order.status, 0)
+
+	def _is_done(key, ts, key_rank):
+		# Done if timestamp is set OR current status is at/past this step
+		return bool(ts) or (cur_rank >= key_rank)
+
+	steps = [
+		{'key': 'ordered',          'label': 'Order Placed',     'icon': '🛍️',
+		 'date': order.created_at,
+		 'done': True,                                                          'rank': 0},
+		{'key': 'packed',           'label': 'Packed',           'icon': '📦',
+		 'date': order.packed_at,
+		 'done': _is_done('packed', order.packed_at, 1),                        'rank': 1},
+		{'key': 'shipped',          'label': 'Shipped',          'icon': '🚚',
+		 'date': order.shipped_at,
+		 'done': _is_done('shipped', order.shipped_at, 2),                      'rank': 2},
+		{'key': 'out_for_delivery', 'label': 'Out for Delivery', 'icon': '📬',
+		 'date': order.out_for_delivery_at,
+		 'done': _is_done('out_for_delivery', order.out_for_delivery_at, 3),    'rank': 3},
+		{'key': 'delivered',        'label': 'Delivered',        'icon': '✅',
+		 'date': order.delivered_at,
+		 'done': _is_done('delivered', order.delivered_at, 4),                  'rank': 4},
+	]
+	OFFSETS = {'packed': 1, 'shipped': 3, 'out_for_delivery': 5, 'delivered': 7}
+	for s in steps:
+		raw_date = s.get('date')
+		if s['done'] and raw_date:
+			s['date_fmt'] = raw_date.strftime('%b %d, %Y')
+		elif s['done']:
+			s['date_fmt'] = 'Completed'
+		else:
+			s['est'] = (order.created_at + timedelta(days=OFFSETS.get(s['key'], 1))).strftime('%b %d')
+	done_count = sum(1 for s in steps if s['done'])
+	# progress bar: 0% at step0, 25% each additional done step → 0/25/50/75/100
+	progress_pct = max(0, done_count - 1) * 25
+	items = [{'name': i.product.name,
+	          'image': i.product.image.url if i.product.image else '',
+	          'qty': i.quantity,
+	          'price': float(i.price)} for i in order.items.select_related('product')]
+	return JsonResponse({
+		'ok': True,
+		'order_id': order.id,
+		'conf': f"AJ{order.created_at.year}{order.id:05d}",
+		'status': order.get_status_display(),
+		'status_key': order.status,
+		'steps': steps,
+		'progress_pct': progress_pct,
+		'items': items,
+	})
+
+
+@login_required
+def cancel_order_api(request, order_id):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	order = get_object_or_404(Order, pk=order_id, user=request.user)
+	if order.status not in ('pending', 'processing', 'packed'):
+		return JsonResponse({'ok': False, 'error': 'Order cannot be cancelled at this stage.'}, status=400)
+	order.status = 'cancelled'
+	order.save(update_fields=['status', 'updated_at'])
+	# Restore stock
+	for item in order.items.select_related('product'):
+		item.product.stock += item.quantity
+		item.product.save(update_fields=['stock'])
+	return JsonResponse({'ok': True})
+
+
+@login_required
+def buy_again_api(request, order_id):
+	if request.method != 'POST':
+		return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+	order = get_object_or_404(Order, pk=order_id, user=request.user)
+	cart, _ = Cart.objects.get_or_create(user=request.user)
+	added = 0
+	for item in order.items.select_related('product'):
+		if item.product.is_active and item.product.stock > 0:
+			cart_item, created = CartItem.objects.get_or_create(cart=cart, product=item.product)
+			if not created:
+				cart_item.quantity += item.quantity
+			else:
+				cart_item.quantity = item.quantity
+			cart_item.save()
+			added += 1
+	if added == 0:
+		return JsonResponse({'ok': False, 'error': 'No items available to add to cart.'}, status=400)
+	return JsonResponse({'ok': True, 'added': added})
 
 @login_required
 def order_detail_view(request, order_id):
@@ -801,6 +929,9 @@ def _create_order_from_cart(user, address, payment_method, coupon_code=None,
 		payment_status='paid' if payment_method != 'cod' else 'pending',
 		razorpay_order_id=razorpay_order_id,
 		razorpay_payment_id=razorpay_payment_id,
+		coupon_discount=coupon_discount,
+		shipping_amount=shipping,
+		cod_fee_amount=cod_fee,
 	)
 	for item in items:
 		OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price=item.product.price)
@@ -808,6 +939,43 @@ def _create_order_from_cart(user, address, payment_method, coupon_code=None,
 		item.product.save()
 	items.delete()
 	return order
+
+
+@login_required
+def order_confirmation_view(request, order_id):
+	from datetime import timedelta
+	order = get_object_or_404(Order, pk=order_id, user=request.user)
+	# Build the 5-step fulfillment timeline
+	timeline = [
+		{'key': 'ordered',          'label': 'Ordered',          'icon': '🛍️', 'date': order.created_at,          'completed': True},
+		{'key': 'packed',           'label': 'Packed',           'icon': '📦', 'date': order.packed_at,            'completed': bool(order.packed_at)},
+		{'key': 'shipped',          'label': 'Shipped',          'icon': '🚚', 'date': order.shipped_at,           'completed': bool(order.shipped_at)},
+		{'key': 'out_for_delivery', 'label': 'Out for Delivery', 'icon': '📬', 'date': order.out_for_delivery_at,  'completed': bool(order.out_for_delivery_at)},
+		{'key': 'delivered',        'label': 'Delivered',        'icon': '✅', 'date': order.delivered_at,         'completed': bool(order.delivered_at)},
+	]
+	# Add estimated dates for future steps (relative to order placement)
+	offsets = {'packed': 1, 'shipped': 3, 'out_for_delivery': 5, 'delivered': 7}
+	for step in timeline:
+		if not step['completed']:
+			step['estimated'] = order.created_at + timedelta(days=offsets.get(step['key'], 1))
+	# Determine which step is currently "active" (latest completed)
+	active_idx = 0
+	for i, step in enumerate(timeline):
+		if step['completed']:
+			active_idx = i
+	for i, step in enumerate(timeline):
+		step['is_active'] = (i == active_idx)
+	# Payment breakdown
+	items = order.items.select_related('product')
+	price_total = sum(item.price * item.quantity for item in items)
+	is_online = order.payment_method != 'cod'
+	return render(request, 'store/order_confirmation.html', {
+		'order': order,
+		'timeline': timeline,
+		'items': items,
+		'price_total': price_total,
+		'is_online': is_online,
+	})
 
 
 @login_required
@@ -848,7 +1016,10 @@ def create_razorpay_order_api(request):
 	except Exception:
 		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
 	from decimal import Decimal
-	import razorpay
+	try:
+		import razorpay
+	except ImportError:
+		return JsonResponse({'ok': False, 'error': 'Online payments not available right now. Please use Cash on Delivery.'}, status=503)
 	settings_obj = SiteSettings.get_settings()
 	if not settings_obj.razorpay_key_id or not settings_obj.razorpay_key_secret:
 		return JsonResponse({'ok': False, 'error': 'Razorpay not configured. Contact admin.'}, status=503)
@@ -914,7 +1085,10 @@ def verify_payment_api(request):
 		data = json.loads(request.body)
 	except Exception:
 		return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
-	import razorpay
+	try:
+		import razorpay
+	except ImportError:
+		return JsonResponse({'ok': False, 'error': 'Payment module not available.'}, status=503)
 	settings_obj = SiteSettings.get_settings()
 	client = razorpay.Client(auth=(settings_obj.razorpay_key_id, settings_obj.razorpay_key_secret))
 	try:
