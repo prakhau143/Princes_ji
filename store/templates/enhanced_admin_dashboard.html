@@ -285,15 +285,9 @@
 
         .status-pending { background: #fef3c7; color: #92400e; }
         .status-processing { background: #dbeafe; color: #1e40af; }
-        .status-packed { background: #ede9fe; color: #6d28d9; }
         .status-shipped { background: #dcfce7; color: #166534; }
-        .status-out_for_delivery { background: #ffedd5; color: #c2410c; }
         .status-delivered { background: #d1fae5; color: #065f46; }
         .status-cancelled { background: #fee2e2; color: #991b1b; }
-        .status-rto { background: #fce7f3; color: #9d174d; }
-        .status-returned { background: #fce7f3; color: #9d174d; }
-        .status-refund_pending { background: #fef9c3; color: #854d0e; }
-        .status-refund_completed { background: #dcfce7; color: #166534; }
 
         .btn {
             padding: 0.5rem 1rem;
@@ -386,6 +380,46 @@
         .notification-time {
             font-size: 0.75rem;
             color: var(--subtext);
+        }
+
+        /* Sidebar Dropdown */
+        .sidebar-dropdown {
+            position: relative;
+        }
+        .sidebar-dropdown .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .dropdown-arrow {
+            transition: transform 0.2s;
+        }
+        .sidebar-dropdown.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        .dropdown-content {
+            padding-left: 1.5rem;
+            background: rgba(202, 97, 128, 0.04);
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem 0.6rem 2.2rem;
+            color: var(--text);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-size: 0.9rem;
+        }
+        .dropdown-item:hover,
+        .dropdown-item.active {
+            background: var(--primary-50);
+            border-left-color: var(--primary);
+            color: var(--primary);
+        }
+        .dropdown-item i {
+            width: 20px;
+            margin-right: 0.75rem;
         }
 
         /* Modal Styles */
@@ -518,80 +552,88 @@
     <!-- Sidebar -->
     <div class="sidebar">
                 <div class="logo" style="padding: 1rem; text-align: center;">
-                    {% load static %}
-                    <img src="{% static 'images/logo1.png' %}" alt="Princess Jewelry" style="max-height: 64px; width: auto; display: inline-block;">
+                    <i class="fas fa-gem" style="font-size: 2rem; color: var(--primary);"></i>
+                    <h2 style="margin: 0.5rem 0 0 0; font-size: 1.1rem; color: var(--primary); font-weight: 700;">Princess
+                    </h2>
           </div>
+
         <nav class="sidebar-nav">
-            <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
-                <i class="fas fa-tachometer-alt"></i> Dashboard
-            </a>
-            <a href="#orders" class="nav-item" onclick="showSection('orders')">
-                <i class="fas fa-shopping-cart"></i> Orders
-            </a>
-            <a href="#lifecycle" class="nav-item" onclick="showSection('lifecycle')">
-                <i class="fas fa-route"></i> Order Lifecycle
-            </a>
-            <a href="#products" class="nav-item" onclick="showSection('products')">
-                <i class="fas fa-box"></i> Products
-            </a>
-            <a href="#homepage" class="nav-item" onclick="showSection('homepage')">
-                <i class="fas fa-home"></i> Homepage CMS
-            </a>
-            <a href="#announcements" class="nav-item" onclick="showSection('announcements')">
-                <i class="fas fa-bullhorn"></i> Announcements
-            </a>
-            <a href="#categories" class="nav-item" onclick="showSection('categories')">
-                <i class="fas fa-tags"></i> Categories
-            </a>
-            <a href="#reels" class="nav-item" onclick="showSection('reels')">
-                <i class="fas fa-film"></i> Instagram Reels
-            </a>
-            <a href="#reviews" class="nav-item" onclick="showSection('reviews')">
-                <i class="fas fa-star"></i> Reviews
-            </a>
-            <a href="#trust" class="nav-item" onclick="showSection('trust')">
-                <i class="fas fa-shield-alt"></i> Trust Badges
-            </a>
-            <a href="#finance" class="nav-item" onclick="showSection('finance')">
-                <i class="fas fa-chart-line"></i> Marketing & Finance
-            </a>
-            <a href="#customers" class="nav-item" onclick="showSection('customers')">
-                <i class="fas fa-users"></i> Customers
-            </a>
-            <a href="#subscribers" class="nav-item" onclick="showSection('subscribers')">
-                <i class="fas fa-user-plus"></i> Subscribers
-            </a>
-            <a href="#messages" class="nav-item" onclick="showSection('messages')">
-                <i class="fas fa-envelope"></i> Messages
-            </a>
-    
-            <a href="#analytics" class="nav-item" onclick="showSection('analytics')">
-                <i class="fas fa-chart-bar"></i> Analytics
-            </a>
-            <a href="#india-map" class="nav-item" onclick="showSection('india-map')">
-                <i class="fas fa-map-marked-alt"></i> India Order Map
-            </a>
-            <a href="#editorial" class="nav-item" onclick="showSection('editorial')">
-                <i class="fas fa-newspaper"></i> Editorial Gallery
-            </a>
-            <a href="#collections" class="nav-item" onclick="showSection('collections')">
-                <i class="fas fa-layer-group"></i> Collections
-            </a>
-            <a href="#collection-rows" class="nav-item" onclick="showSection('collection-rows')">
-                <i class="fas fa-th-large"></i> Collection Rows
-            </a>
-            <a href="#zoom-carousel" class="nav-item" onclick="showSection('zoom-carousel')">
-                <i class="fas fa-images"></i> Zoom Carousel
-            </a>
-            <a href="#hero-slides" class="nav-item" onclick="showSection('hero-slides')">
-                <i class="fas fa-film"></i> Hero Slides
-            </a>
-            <a href="#site-settings" class="nav-item" onclick="showSection('site-settings')">
-                <i class="fas fa-sliders-h"></i> Site Settings
-            </a>
-            <a href="#coupons" class="nav-item" onclick="showSection('coupons')">
-                <i class="fas fa-tag"></i> Coupons
-            </a>
+            <!-- DASHBOARD & ANALYTICS -->
+            <div class="sidebar-dropdown">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'dashboard-analytics-dropdown')">
+                    <i class="fas fa-chart-line"></i> Dashboard & Analytics
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="dashboard-analytics-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('dashboard')">Dashboard Home</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('analytics')">Analytics & Reports</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('india-map')">India Order Map</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('finance')">Marketing & Finance</a>
+                </div>
+            </div>
+            <!-- ORDER MANAGEMENT -->
+            <div class="sidebar-dropdown">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'orders-dropdown')">
+                    <i class="fas fa-shopping-cart"></i> Order Management
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="orders-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('orders')">All Orders</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('lifecycle')">Order Lifecycle</a>
+                </div>
+            </div>
+            <!-- PRODUCT MANAGEMENT -->
+            <div class="sidebar-dropdown">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'products-dropdown')">
+                    <i class="fas fa-box"></i> Product Management
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="products-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('products')">All Products</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('advanced-products')">Advanced Products</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('categories')">Categories</a>
+                </div>
+            </div>
+            <!-- HOMEPAGE MANAGEMENT -->
+            <div class="sidebar-dropdown">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'homepage-dropdown')">
+                    <i class="fas fa-home"></i> Homepage Management
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="homepage-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('homepage')">Homepage CMS</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('hero-slides')">Hero Slides</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('announcements')">Announcements</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('collections')">Collections</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('collection-rows')">Collection Rows</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('zoom-carousel')">Zoom Carousel</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('editorial')">Editorial Gallery</a>
+                </div>
+            </div>
+            <!-- MARKETING & TRUST -->
+            <div class="sidebar-dropdown">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'marketing-dropdown')">
+                    <i class="fas fa-bullhorn"></i> Marketing & Trust
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="marketing-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('reels')">Instagram Reels</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('reviews')">Reviews</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('trust')">Trust Badges</a>
+                </div>
+            </div>
+            <!-- CUSTOMER MANAGEMENT -->
+            <div class="sidebar-dropdown">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'customers-dropdown')">
+                    <i class="fas fa-users"></i> Customer Management
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="customers-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('customers')">Customers</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('subscribers')">Subscribers</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('messages')">Messages</a>
+                </div>
+            </div>
         </nav>
     </div>
 
@@ -859,261 +901,6 @@
             </div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════════════ -->
-        <!-- Hero Slides Section                                             -->
-        <!-- ═══════════════════════════════════════════════════════════════ -->
-        <div id="hero-slides-section" class="dashboard-content" style="display: none;">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Hero Slides</h3>
-                    <div class="table-actions">
-                        <button class="btn btn-success" onclick="openHeroAddModal()"><i class="fas fa-plus"></i> Add Slide</button>
-                        <button class="btn btn-primary" onclick="loadHeroSlides()"><i class="fas fa-sync"></i> Refresh</button>
-                    </div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Preview</th>
-                            <th>Heading</th>
-                            <th>Button</th>
-                            <th>Order</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="heroSlidesTbody">
-                        <tr><td colspan="6" style="text-align:center; padding:1.5rem;">Loading…</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Hero Add/Edit Modal -->
-        <div id="heroModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center;">
-            <div style="background:#fff; border-radius:16px; padding:2rem; width:680px; max-width:95vw; max-height:92vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2);">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-                    <h3 id="heroModalTitle" style="margin:0;font-size:1.15rem;">Add Hero Slide</h3>
-                    <button onclick="closeHeroModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#888;">&times;</button>
-                </div>
-                <input type="hidden" id="heroSlideId">
-                <!-- Content fields 2-col -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:.85rem;">
-                    <div style="grid-column:1/-1;">
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Heading</label>
-                        <input type="text" id="heroHeading" placeholder="Big sale headline…" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;">
-                    </div>
-                    <div style="grid-column:1/-1;">
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Subheading</label>
-                        <textarea id="heroSubheading" rows="2" placeholder="Supporting text…" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;resize:vertical;"></textarea>
-                    </div>
-                    <!-- Primary button -->
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Primary Button Text</label>
-                        <input type="text" id="heroButtonText" placeholder="Shop Now" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;">
-                    </div>
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Primary Button URL</label>
-                        <input type="text" id="heroButtonUrl" placeholder="/store/" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;">
-                    </div>
-                    <!-- Secondary button -->
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Secondary Button Text</label>
-                        <input type="text" id="heroSecondaryButtonText" placeholder="Learn More" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;">
-                    </div>
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Secondary Button URL</label>
-                        <input type="text" id="heroSecondaryButtonUrl" placeholder="/about/" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;">
-                    </div>
-                    <!-- Order + Active -->
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Display Order</label>
-                        <input type="number" id="heroOrder" value="0" min="0" style="width:100%;padding:.65rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;">
-                    </div>
-                    <div style="display:flex;align-items:center;padding-top:1.4rem;">
-                        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.9rem;font-weight:500;">
-                            <input type="checkbox" id="heroActive" checked style="width:1.1rem;height:1.1rem;"> Active
-                        </label>
-                    </div>
-                    <!-- Media -->
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Background Image</label>
-                        <input type="file" id="heroImage" accept="image/*" style="width:100%;padding:.6rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.85rem;">
-                    </div>
-                    <div>
-                        <label style="display:block;margin-bottom:.35rem;font-weight:600;font-size:.83rem;color:#555;">Background Video</label>
-                        <input type="file" id="heroVideo" accept="video/*" style="width:100%;padding:.6rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.85rem;">
-                    </div>
-                </div>
-                <div style="display:flex;gap:.75rem;justify-content:flex-end;padding-top:.75rem;border-top:1px solid #f3f4f6;">
-                    <button onclick="closeHeroModal()" style="padding:.7rem 1.4rem;border:1px solid #e5e7eb;background:#fff;border-radius:8px;cursor:pointer;font-size:.9rem;">Cancel</button>
-                    <button onclick="saveHeroSlide()" style="padding:.7rem 1.8rem;background:#db2777;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;">Save Slide</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════════ -->
-        <!-- Site Settings Section                                           -->
-        <!-- ═══════════════════════════════════════════════════════════════ -->
-        <div id="site-settings-section" class="dashboard-content" style="display: none;">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Site Settings</h3>
-                    <div class="table-actions">
-                        <button class="btn btn-success" onclick="saveSiteSettings()"><i class="fas fa-save"></i> Save Settings</button>
-                    </div>
-                </div>
-                <div style="padding:1.5rem; display:grid; gap:1.2rem; max-width:560px;">
-                    <!-- Glass Flash Toggle -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; background:#fdf2f8; border-radius:10px; border:1px solid #f9a8d4;">
-                        <div>
-                            <div style="font-weight:600; color:#be185d;">Glass Flash Effect</div>
-                            <div style="font-size:.85rem; color:#666; margin-top:.25rem;">Animated shine/gloss reflection over all product images on the storefront.</div>
-                        </div>
-                        <label class="toggle-switch" style="flex-shrink:0; margin-left:1rem;">
-                            <input type="checkbox" id="glassFlashToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <!-- Shipping Settings -->
-                    <div style="padding:1rem 1.25rem; background:#f0fdf4; border-radius:10px; border:1px solid #bbf7d0;">
-                        <div style="font-weight:600; color:#15803d; margin-bottom:.75rem;"><i class="fas fa-truck" style="margin-right:.4rem;"></i>Shipping Settings</div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
-                            <div>
-                                <label style="font-size:.82rem; color:#555; display:block; margin-bottom:.35rem;">Shipping Charge (₹)</label>
-                                <input type="number" id="shippingCharge" min="0" step="1" placeholder="e.g. 49"
-                                    style="width:100%; padding:.55rem .75rem; border:1px solid #d1fae5; border-radius:8px; font-size:.95rem; outline:none;">
-                            </div>
-                            <div>
-                                <label style="font-size:.82rem; color:#555; display:block; margin-bottom:.35rem;">Free Shipping Above (₹)</label>
-                                <input type="number" id="freeShippingAbove" min="0" step="1" placeholder="e.g. 999"
-                                    style="width:100%; padding:.55rem .75rem; border:1px solid #d1fae5; border-radius:8px; font-size:.95rem; outline:none;">
-                                <div style="font-size:.75rem; color:#888; margin-top:.25rem;">0 = always charge.</div>
-                            </div>
-                            <div>
-                                <label style="font-size:.82rem; color:#555; display:block; margin-bottom:.35rem;">COD Fee (₹)</label>
-                                <input type="number" id="codFee" min="0" step="1" placeholder="e.g. 75"
-                                    style="width:100%; padding:.55rem .75rem; border:1px solid #d1fae5; border-radius:8px; font-size:.95rem; outline:none;">
-                                <div style="font-size:.75rem; color:#888; margin-top:.25rem;">Extra fee on COD orders.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Razorpay Settings -->
-                    <div style="padding:1rem 1.25rem; background:#fef3c7; border-radius:10px; border:1px solid #fde68a;">
-                        <div style="font-weight:600; color:#92400e; margin-bottom:.75rem;"><i class="fas fa-credit-card" style="margin-right:.4rem;"></i>Razorpay Payment Gateway</div>
-                        <div style="font-size:.8rem; color:#78350f; margin-bottom:.75rem; padding:.5rem .75rem; background:#fffbeb; border-radius:6px; border:1px solid #fde68a;">
-                            ⚠️ Keep your Key Secret private. Get these keys from your <a href="https://dashboard.razorpay.com" target="_blank" style="color:#b45309; text-decoration:underline;">Razorpay Dashboard</a>.
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                            <div>
-                                <label style="font-size:.82rem; color:#555; display:block; margin-bottom:.35rem;">Key ID</label>
-                                <input type="text" id="razorpayKeyId" placeholder="rzp_live_XXXXXXXXXX"
-                                    style="width:100%; padding:.55rem .75rem; border:1px solid #fde68a; border-radius:8px; font-size:.9rem; outline:none; font-family:monospace;">
-                            </div>
-                            <div>
-                                <label style="font-size:.82rem; color:#555; display:block; margin-bottom:.35rem;">Key Secret</label>
-                                <input type="password" id="razorpayKeySecret" placeholder="••••••••••••••••"
-                                    style="width:100%; padding:.55rem .75rem; border:1px solid #fde68a; border-radius:8px; font-size:.9rem; outline:none; font-family:monospace;">
-                                <div style="font-size:.72rem; color:#888; margin-top:.25rem;">Stored encrypted. Leave blank to keep existing.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="siteSettingsStatus" style="padding:0 1.5rem 1rem; font-size:.9rem; color:#16a34a; display:none;"></div>
-            </div>
-        </div>
-
-        <!-- Coupons Section -->
-        <!-- ═══════════════════════════════════════════════════════════════ -->
-        <div id="coupons-section" class="dashboard-content" style="display: none;">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Coupons</h3>
-                    <div class="table-actions">
-                        <button class="btn btn-primary" onclick="openCouponModal()"><i class="fas fa-plus"></i> Add Coupon</button>
-                    </div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Type</th>
-                            <th>Value</th>
-                            <th>Min Cart</th>
-                            <th>Max Cap</th>
-                            <th>Valid Until</th>
-                            <th>Used / Limit</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="coupons-tbody">
-                        <tr><td colspan="9" style="text-align:center; color:#aaa; padding:2rem;">Loading…</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Coupon Modal -->
-        <div id="couponModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center;">
-            <div style="background:#fff; border-radius:16px; padding:2rem; width:min(560px,95vw); max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                    <h3 id="couponModalTitle" style="font-size:1.2rem; font-weight:700; color:#1e293b;">Add Coupon</h3>
-                    <button onclick="closeCouponModal()" style="background:none; border:none; font-size:1.4rem; color:#94a3b8; cursor:pointer;">✕</button>
-                </div>
-                <input type="hidden" id="couponEditId">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div style="grid-column:1/-1;">
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Coupon Code *</label>
-                        <input type="text" id="couponCode" placeholder="e.g. SAVE20" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; text-transform:uppercase; outline:none;">
-                    </div>
-                    <div style="grid-column:1/-1;">
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Description</label>
-                        <input type="text" id="couponDescription" placeholder="Optional description" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div>
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Discount Type *</label>
-                        <select id="couponType" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;" onchange="toggleCouponCapField()">
-                            <option value="percent">Percentage (%)</option>
-                            <option value="fixed">Fixed Amount (₹)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Discount Value *</label>
-                        <input type="number" id="couponValue" min="0" step="0.01" placeholder="e.g. 20" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div>
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Min Cart Amount (₹)</label>
-                        <input type="number" id="couponMinCart" min="0" step="1" placeholder="0 = no minimum" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div id="couponCapRow">
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Max Discount Cap (₹)</label>
-                        <input type="number" id="couponMaxDiscount" min="0" step="1" placeholder="Leave blank = no cap" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div>
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Valid From</label>
-                        <input type="datetime-local" id="couponValidFrom" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div>
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Valid Until</label>
-                        <input type="datetime-local" id="couponValidTo" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div>
-                        <label style="font-size:.82rem; color:#64748b; font-weight:600; display:block; margin-bottom:.3rem;">Usage Limit</label>
-                        <input type="number" id="couponUsageLimit" min="1" step="1" placeholder="Leave blank = unlimited" style="width:100%; padding:.6rem .85rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; outline:none;">
-                    </div>
-                    <div style="display:flex; align-items:center; gap:.75rem; padding-top:1.5rem;">
-                        <label class="toggle-switch"><input type="checkbox" id="couponIsActive" checked><span class="slider"></span></label>
-                        <span style="font-size:.9rem; color:#374151; font-weight:500;">Active</span>
-                    </div>
-                </div>
-                <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-                    <button onclick="saveCoupon()" style="flex:1; padding:.75rem; background:linear-gradient(135deg,#ec4899,#a855f7); color:#fff; border:none; border-radius:10px; font-weight:700; font-size:.95rem; cursor:pointer;">Save Coupon</button>
-                    <button onclick="closeCouponModal()" style="flex:1; padding:.75rem; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; font-weight:600; font-size:.95rem; cursor:pointer;">Cancel</button>
-                </div>
-            </div>
-        </div>
-
         <!-- Orders Section -->
         <div id="orders-section" class="dashboard-content" style="display: none;">
             <div class="table-container">
@@ -1142,7 +929,6 @@
                             <th>Mobile</th>
                             <th>Address</th>
                             <th>Total</th>
-                            <th>Payment</th>
                             <th>Status</th>
                             <th>Date</th>
                             <th>Actions</th>
@@ -1176,24 +962,6 @@
                             <td>{{ order.shipping_address|truncatechars:40 }}</td>
                             <td>₹{{ order.total }}</td>
                             <td>
-                                {% if order.payment_method == 'cod' %}
-                                    <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:.75rem;font-weight:600;">COD</span>
-                                {% elif order.payment_method == 'upi' %}
-                                    <span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:20px;font-size:.75rem;font-weight:600;">UPI</span>
-                                {% elif order.payment_method == 'card' %}
-                                    <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:20px;font-size:.75rem;font-weight:600;">Card</span>
-                                {% elif order.payment_method == 'netbanking' %}
-                                    <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-size:.75rem;font-weight:600;">NetBanking</span>
-                                {% else %}
-                                    <span style="color:#9ca3af;font-size:.75rem;">—</span>
-                                {% endif %}
-                                {% if order.payment_status == 'paid' %}
-                                    <span style="background:#dcfce7;color:#15803d;padding:2px 6px;border-radius:20px;font-size:.7rem;font-weight:600;margin-left:3px;">Paid</span>
-                                {% elif order.payment_status == 'pending' and order.payment_method != 'cod' %}
-                                    <span style="background:#fee2e2;color:#b91c1c;padding:2px 6px;border-radius:20px;font-size:.7rem;font-weight:600;margin-left:3px;">Unpaid</span>
-                                {% endif %}
-                            </td>
-                            <td>
                                 <span class="status-badge status-{{ order.status }}">
                                     {{ order.get_status_display }}
                                 </span>
@@ -1212,7 +980,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9" style="text-align: center; padding: 2rem;">No orders found</td>
+                            <td colspan="8" style="text-align: center; padding: 2rem;">No orders found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -1419,6 +1187,7 @@
                             <option value="exquisite_collection">Exquisite Collection</option>
                             <option value="account_cards_media">Orders + Cart + Profile Shared Media</option>
                             <option value="instagram_reels">Instagram Reels Slider</option>
+                            <option value="glass_flash">Glass Flash Effect (Global Toggle)</option>
                         </select>
                         <input id="hpTitle" class="filter-select" type="text" placeholder="Title" style="grid-column: span 4;">
                         <input id="hpButtonText" class="filter-select" type="text" placeholder="Primary button text" style="grid-column: span 2;">
@@ -1494,6 +1263,35 @@
                     </thead>
                     <tbody id="homepageProductsTbody">
                         <tr><td colspan="4" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- Hero Slides Section                                            -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div id="hero-slides-section" class="dashboard-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Hero Slides</h3>
+                    <div class="table-actions">
+                        <button class="btn btn-success" onclick="openHeroSlideAddModal()"><i class="fas fa-plus"></i> Add Slide</button>
+                        <button class="btn btn-primary" onclick="loadHeroSlides()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th>Media</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="heroSlidesTbody">
+                        <tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Loading…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2151,7 +1949,7 @@
             }
             
             // Update active nav item
-            document.querySelectorAll('.nav-item').forEach(item => {
+            document.querySelectorAll('.nav-item, .dropdown-item').forEach(item => {
                 item.classList.remove('active');
             });
             
@@ -2159,6 +1957,11 @@
             const clickedItem = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
             if (clickedItem) {
                 clickedItem.classList.add('active');
+                // If it's a dropdown-item, also ensure the parent dropdown is open
+                const parentDropdown = clickedItem.closest('.sidebar-dropdown');
+                if (parentDropdown) {
+                    parentDropdown.classList.add('open');
+                }
             }
             
             // Update page title
@@ -2172,6 +1975,9 @@
             if (sectionName === 'homepage') {
                 loadHomepageContent();
                 loadHomepageProducts();
+            }
+            if (sectionName === 'hero-slides') {
+                loadHeroSlides();
             }
             if (sectionName === 'announcements') loadAnnouncements();
             if (sectionName === 'advanced-products') loadLowStockProducts();
@@ -2190,9 +1996,19 @@
             if (sectionName === 'collections') loadCollections();
             if (sectionName === 'collection-rows') loadCollectionRows();
             if (sectionName === 'zoom-carousel') loadZoomCarousel();
-            if (sectionName === 'hero-slides') loadHeroSlides();
-            if (sectionName === 'site-settings') loadSiteSettings();
-            if (sectionName === 'coupons') loadCoupons();
+        }
+
+        function toggleDropdown(event, dropdownId) {
+            event.preventDefault();
+            const dropdown = document.getElementById(dropdownId);
+            const parent = dropdown.closest('.sidebar-dropdown');
+            if (dropdown.style.display === 'none' || !dropdown.style.display) {
+                dropdown.style.display = 'block';
+                parent.classList.add('open');
+            } else {
+                dropdown.style.display = 'none';
+                parent.classList.remove('open');
+            }
         }
 
         function updateOrderStatus(orderId, newStatus) {
@@ -2561,102 +2377,58 @@
         function showAddProductModal() {
             const modal = document.createElement('div');
             modal.innerHTML = `
-                <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;">
-                    <div style="background:#fff;padding:2rem;border-radius:16px;width:95%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-                            <h3 style="margin:0;color:var(--text);font-size:1.2rem;">Add New Product</h3>
-                            <button onclick="closeModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#888;">&times;</button>
-                        </div>
-                        <form id="addProductForm" enctype="multipart/form-data">
-                            <!-- Row 1: Name -->
-                            <div style="margin-bottom:1rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Product Name *</label>
-                                <input type="text" name="name" required placeholder="e.g. Crystal Love Bangle" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+                        <h3 style="margin-bottom: 1.5rem; color: var(--text);">Add New Product</h3>
+                        <form id="addProductForm">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Name</label>
+                                <input type="text" name="name" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Row 2: Description -->
-                            <div style="margin-bottom:1rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Description</label>
-                                <textarea name="description" rows="3" placeholder="Product description…" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;resize:vertical;"></textarea>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
+                                <textarea name="description" rows="3" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;"></textarea>
                             </div>
-                            <!-- Row 3: Price + MRP + Discount preview -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Selling Price (₹) *</label>
-                                    <input type="number" name="price" id="addPrice" step="0.01" min="0" required placeholder="0.00" oninput="calcAddDiscount()" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">MRP (₹)</label>
-                                    <input type="number" name="mrp" id="addMrp" step="0.01" min="0" placeholder="0.00" oninput="calcAddDiscount()" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Discount %</label>
-                                    <input type="text" id="addDiscountPreview" readonly placeholder="Auto" style="width:100%;padding:.7rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;background:#f9fafb;color:#16a34a;font-weight:700;">
-                                </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Price</label>
+                                <input type="number" name="price" step="0.01" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Row 4: Cost Price + SKU (readonly) -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Cost Price (₹)</label>
-                                    <input type="number" name="cost_price" step="0.01" value="0" min="0" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">SKU</label>
-                                    <input type="text" value="Auto-generated on save" readonly style="width:100%;padding:.7rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;background:#f9fafb;color:#888;">
-                                </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cost Price</label>
+                                <input type="number" name="cost_price" step="0.01" value="0" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Row 5: Category + Stock + Low stock threshold -->
-                            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Category *</label>
-                                    <select name="category" required style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                        <option value="">Select Category</option>
-                                        {% for category in categories %}
-                                        <option value="{{ category.id }}">{{ category.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Stock *</label>
-                                    <input type="number" name="stock" min="0" required placeholder="0" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Low Stock Alert</label>
-                                    <input type="number" name="low_stock_threshold" value="5" min="0" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Category</label>
+                                <select name="category" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
-                            <!-- Row 6: Rating + Rating count -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Rating (0 – 5)</label>
-                                    <input type="number" name="rating" step="0.1" min="0" max="5" value="0" placeholder="e.g. 4.5" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Rating Count</label>
-                                    <input type="number" name="rating_count" min="0" value="0" placeholder="e.g. 128" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Stock</label>
+                                <input type="number" name="stock" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Row 7: Primary image -->
-                            <div style="margin-bottom:1rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Primary Image</label>
-                                <input type="file" name="image" accept="image/*" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Low Stock Threshold</label>
+                                <input type="number" name="low_stock_threshold" value="5" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Row 8: Additional images with dynamic add-more -->
-                            <div style="margin-bottom:1rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Additional Images</label>
-                                <div id="addImagesContainer">
-                                    <input type="file" name="additional_images" accept="image/*" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;margin-bottom:.4rem;">
-                                </div>
-                                <button type="button" onclick="addMoreImageInput('addImagesContainer','additional_images')" style="background:#f3f4f6;border:1px dashed #d1d5db;color:#555;padding:.45rem 1rem;border-radius:6px;cursor:pointer;font-size:.82rem;margin-top:.25rem;">+ Add another image</button>
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Primary Product Image</label>
+                                <input type="file" name="image" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Row 9: Video -->
-                            <div style="margin-bottom:1.5rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Product Video</label>
-                                <input type="file" name="video" accept="video/*" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Additional Images</label>
+                                <input type="file" name="additional_images" accept="image/*" multiple style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Actions -->
-                            <div style="display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem;border-top:1px solid #f3f4f6;">
-                                <button type="button" onclick="closeModal()" style="padding:.7rem 1.4rem;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-size:.9rem;">Cancel</button>
-                                <button type="submit" style="padding:.7rem 1.8rem;background:var(--success);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;">Add Product</button>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Video</label>
+                                <input type="file" name="video" accept="video/*" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                            </div>
+                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                                <button type="button" onclick="closeModal()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer;">Cancel</button>
+                                <button type="submit" style="padding: 0.75rem 1.5rem; background: var(--success); color: white; border: none; border-radius: 6px; cursor: pointer;">Add Product</button>
                             </div>
                         </form>
                     </div>
@@ -2672,45 +2444,6 @@
             window.closeModal = function() {
                 modal.remove();
             };
-        }
-
-        // ── Discount % live calculator ─────────────────────────────────────
-        function calcAddDiscount() {
-            const price = parseFloat(document.getElementById('addPrice')?.value) || 0;
-            const mrp   = parseFloat(document.getElementById('addMrp')?.value)   || 0;
-            const el    = document.getElementById('addDiscountPreview');
-            if (!el) return;
-            if (mrp > 0 && price < mrp) {
-                el.value = Math.round(((mrp - price) / mrp) * 100) + '%';
-                el.style.color = '#16a34a';
-            } else {
-                el.value = '';
-            }
-        }
-
-        function calcEditDiscount() {
-            const price = parseFloat(document.getElementById('editPrice')?.value) || 0;
-            const mrp   = parseFloat(document.getElementById('editMrp')?.value)   || 0;
-            const el    = document.getElementById('editDiscountPreview');
-            if (!el) return;
-            if (mrp > 0 && price < mrp) {
-                el.value = Math.round(((mrp - price) / mrp) * 100) + '%';
-                el.style.color = '#16a34a';
-            } else {
-                el.value = '';
-            }
-        }
-
-        // ── Dynamic "add more images" ──────────────────────────────────────
-        function addMoreImageInput(containerId, fieldName) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const inp = document.createElement('input');
-            inp.type = 'file';
-            inp.name = fieldName;
-            inp.accept = 'image/*';
-            inp.style.cssText = 'width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;margin-bottom:.4rem;display:block;';
-            container.appendChild(inp);
         }
 
         function addProduct(formData) {
@@ -3082,135 +2815,102 @@
                         </div>
                         
                         <form id="editProductForm" enctype="multipart/form-data">
-                            <!-- Name -->
-                            <div style="margin-bottom:.9rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Product Name *</label>
-                                <input type="text" name="name" value="${product.name}" required
-                                       style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Name</label>
+                                <input type="text" name="name" value="${product.name}" required 
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Description -->
-                            <div style="margin-bottom:.9rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Description</label>
-                                <textarea name="description" rows="3"
-                                          style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;resize:vertical;">${product.description}</textarea>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
+                                <textarea name="description" required rows="3"
+                                          style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; resize: vertical;">${product.description}</textarea>
                             </div>
-                            <!-- Price + MRP + Discount preview -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;margin-bottom:.9rem;">
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                                 <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Selling Price (₹) *</label>
-                                    <input type="number" name="price" id="editPrice" value="${product.price}" step="0.01" min="0" required
-                                           oninput="calcEditDiscount()" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Price (₹)</label>
+                                    <input type="number" name="price" value="${product.price}" step="0.01" min="0" required
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                                 </div>
                                 <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">MRP (₹)</label>
-                                    <input type="number" name="mrp" id="editMrp" value="${product.mrp || 0}" step="0.01" min="0"
-                                           oninput="calcEditDiscount()" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Discount %</label>
-                                    <input type="text" id="editDiscountPreview" value="${product.discount_percent > 0 ? product.discount_percent + '%' : ''}" readonly
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;background:#f9fafb;color:#16a34a;font-weight:700;">
-                                </div>
-                            </div>
-                            <!-- Cost price + SKU (readonly) -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.9rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Cost Price (₹)</label>
-                                    <input type="number" name="cost_price" value="${product.cost_price}" step="0.01" min="0"
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">SKU</label>
-                                    <input type="text" value="${product.sku || 'Auto-generated'}" readonly
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;background:#f9fafb;color:#888;">
-                                </div>
-                            </div>
-                            <!-- Category + Stock + Low stock -->
-                            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:.7rem;margin-bottom:.9rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Category *</label>
-                                    <select name="category" required style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                        ${(categories && categories.length > 0) ? categories.map(cat => `<option value="${cat.id}" ${cat.id === product.category_id ? 'selected' : ''}>${cat.name}</option>`).join('') : '<option value="">No categories</option>'}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Stock *</label>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Stock</label>
                                     <input type="number" name="stock" value="${product.stock}" min="0" required
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Category</label>
+                                <select name="category" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                                    ${(categories && categories.length > 0) ? categories.map(cat => `<option value="${cat.id}" ${cat.id === product.category_id ? 'selected' : ''}>${cat.name}</option>`).join('') : '<option value="">No categories available</option>'}
+                                </select>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cost Price (₹)</label>
+                                    <input type="number" name="cost_price" value="${product.cost_price}" step="0.01" min="0"
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                                 </div>
                                 <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Low Stock Alert</label>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Low Stock Threshold</label>
                                     <input type="number" name="low_stock_threshold" value="${product.low_stock_threshold}" min="0"
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                                 </div>
                             </div>
-                            <!-- Rating + Rating count -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.9rem;">
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Rating (0 – 5)</label>
-                                    <input type="number" name="rating" value="${product.rating || 0}" step="0.1" min="0" max="5"
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Rating Count</label>
-                                    <input type="number" name="rating_count" value="${product.rating_count || 0}" min="0"
-                                           style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
-                                </div>
-                            </div>
-                            <!-- Active toggle -->
-                            <div style="margin-bottom:.9rem;">
+
+                            <div style="margin-bottom: 1rem;">
                                 <input type="hidden" name="is_active" value="0">
-                                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:500;font-size:.9rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
                                     <input type="checkbox" name="is_active" value="1" ${product.is_active ? 'checked' : ''}
-                                           style="width:1.1rem;height:1.1rem;">
+                                           style="width: 1.1rem; height: 1.1rem;">
                                     Active on storefront
                                 </label>
                             </div>
-                            <!-- Primary image -->
-                            <div style="margin-bottom:.9rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Primary Image</label>
-                                ${product.image_url ? `<div style="margin-bottom:.4rem;"><img src="${product.image_url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);"></div>` : ''}
+
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Image</label>
                                 <input type="file" name="image" accept="image/*"
-                                       style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                                ${product.image_url ? `<div style="margin-top: 0.5rem;"><img src="${product.image_url}" alt="Current image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px;"></div>` : ''}
                             </div>
-                            <!-- Additional images -->
-                            <div style="margin-bottom:.9rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Additional Images</label>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Additional Images</label>
                                 ${product.additional_images && product.additional_images.length > 0 ? `
-                                <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;">
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
                                     ${product.additional_images.map(img => `
-                                    <div style="position:relative;">
-                                        <img src="${img.url}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
-                                        <label title="Mark to delete" style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;">
+                                    <div style="position: relative;">
+                                        <img src="${img.url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
+                                        <label style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">
                                             <input type="checkbox" name="delete_image_ids" value="${img.id}" style="display:none;">×
                                         </label>
                                     </div>`).join('')}
                                 </div>
-                                <small style="color:var(--subtext);font-size:.8rem;">Click × badge to mark image for deletion.</small>` : ''}
-                                <div id="editImagesContainer" style="margin-top:.5rem;">
-                                    <input type="file" name="additional_images" accept="image/*" style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;margin-bottom:.4rem;">
-                                </div>
-                                <button type="button" onclick="addMoreImageInput('editImagesContainer','additional_images')" style="background:#f3f4f6;border:1px dashed #d1d5db;color:#555;padding:.45rem 1rem;border-radius:6px;cursor:pointer;font-size:.82rem;margin-top:.25rem;">+ Add another image</button>
+                                <small style="color: var(--subtext);">Tick × on existing images to delete them.</small>` : ''}
+                                <input type="file" name="additional_images" accept="image/*" multiple
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; margin-top: 0.5rem;">
                             </div>
-                            <!-- Video -->
-                            <div style="margin-bottom:1.2rem;">
-                                <label style="display:block;margin-bottom:.4rem;font-weight:600;font-size:.85rem;color:#555;">Product Video</label>
+
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Video</label>
                                 ${product.videos && product.videos.length > 0 ? `
-                                <div style="margin-bottom:.4rem;font-size:.85rem;color:var(--subtext);">
-                                    Current: <a href="${product.videos[0].url}" target="_blank" style="color:var(--primary);">View video</a>
-                                    <label style="margin-left:1rem;cursor:pointer;">
-                                        <input type="checkbox" name="replace_video" value="1"> Replace
+                                <div style="margin-bottom: 0.5rem; color: var(--subtext); font-size: 0.85rem;">
+                                    Current: <a href="${product.videos[0].url}" target="_blank" style="color: var(--primary);">View video</a>
+                                    <label style="margin-left: 1rem; cursor: pointer;">
+                                        <input type="checkbox" name="replace_video" value="1"> Replace with new upload
                                     </label>
                                 </div>` : ''}
                                 <input type="file" name="video" accept="video/*"
-                                       style="width:100%;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem;">
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
                             </div>
-                            <!-- Actions -->
-                            <div style="display:flex;gap:.75rem;justify-content:flex-end;padding-top:.75rem;border-top:1px solid #f3f4f6;">
-                                <button type="button" onclick="closeEditProductModal()"
-                                        style="padding:.7rem 1.4rem;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-size:.9rem;">Cancel</button>
-                                <button type="submit"
-                                        style="padding:.7rem 1.8rem;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;">Update Product</button>
+
+                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                                <button type="button" onclick="closeEditProductModal()" 
+                                        style="padding: 0.75rem 1.5rem; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer;">Cancel</button>
+                                <button type="submit" 
+                                        style="padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">Update Product</button>
                             </div>
                         </form>
                     </div>
@@ -5019,292 +4719,180 @@
             const data = await apiFetchJson(`/admin-dashboard/api/zoom-carousel/${id}/toggle/`, { method: 'POST' });
             if (data.success) loadZoomCarousel();
         }
+    </script>
 
-        // ── Hero Slides ────────────────────────────────────────────────────
+    <!-- Hero Slide Modal -->
+    <div id="heroSlideModal" class="modal-overlay" style="display: none;">
+        <div class="modal" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3 id="heroSlideModalTitle">Add Hero Slide</h3>
+                <button type="button" class="modal-close" onclick="closeHeroSlideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="heroSlideForm" enctype="multipart/form-data" style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 0.75rem;">
+                    <input type="hidden" id="heroSlideId">
+                    <input id="heroSlideTitle" class="filter-select" type="text" placeholder="Title" style="grid-column: span 12;">
+                    <textarea id="heroSlideSubtitle" class="filter-select" placeholder="Subtitle / description" style="grid-column: span 12; min-height: 110px;"></textarea>
+                    <input id="heroSlideButtonText" class="filter-select" type="text" placeholder="Primary button text" style="grid-column: span 6;">
+                    <input id="heroSlideButtonUrl" class="filter-select" type="text" placeholder="Primary button URL" style="grid-column: span 6;">
+                    <input id="heroSlideSecondaryButtonText" class="filter-select" type="text" placeholder="Secondary button text" style="grid-column: span 6;">
+                    <input id="heroSlideSecondaryButtonUrl" class="filter-select" type="text" placeholder="Secondary button URL" style="grid-column: span 6;">
+                    <label class="filter-select" style="grid-column: span 6; display:flex; align-items:center; gap:0.75rem;">
+                        <input id="heroSlideImage" type="file" accept="image/*">
+                        <span>Background image</span>
+                    </label>
+                    <label class="filter-select" style="grid-column: span 6; display:flex; align-items:center; gap:0.75rem;">
+                        <input id="heroSlideVideo" type="file" accept="video/*">
+                        <span>Background video</span>
+                    </label>
+                    <input id="heroSlideOrder" class="filter-select" type="number" placeholder="Order (0 = first)" min="0" style="grid-column: span 6;">
+                    <label class="filter-select" style="grid-column: span 6; display:flex; align-items:center; gap:0.75rem;">
+                        <input id="heroSlideActive" type="checkbox">
+                        <span>Active</span>
+                    </label>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeHeroSlideModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveHeroSlide()">Save</button>
+            </div>
+        </div>
+    </div>
 
-        async function loadHeroSlides() {
-            const tbody = document.getElementById('heroSlidesTbody');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;">Loading…</td></tr>';
-            const data = await apiFetchJson('/admin-dashboard/api/hero-slides/');
-            if (!data.success) { tbody.innerHTML = '<tr><td colspan="6">Failed to load.</td></tr>'; return; }
-            if (!data.slides.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:#888;">No slides yet.</td></tr>'; return; }
-            tbody.innerHTML = data.slides.map(s => `
-                <tr>
-                    <td>${s.image_url ? `<img src="${s.image_url}" style="height:52px;width:90px;object-fit:cover;border-radius:6px;">` : s.video_url ? '<span style="color:#888;font-size:.8rem;">Video</span>' : '—'}</td>
-                    <td>${s.heading || '<em style="color:#888">No heading</em>'}</td>
-                    <td>${s.button_text ? `<a href="${s.button_url}" style="color:#be185d;">${s.button_text}</a>` : '—'}</td>
-                    <td>${s.order}</td>
-                    <td><span class="status-badge ${s.is_active ? 'delivered' : 'cancelled'}" style="cursor:pointer;" onclick="toggleHeroSlide(${s.id})">${s.is_active ? 'Active' : 'Inactive'}</span></td>
-                    <td>
-                        <button class="action-btn edit" onclick="openHeroEditModal(${s.id})"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete" onclick="deleteHeroSlide(${s.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    <script>
+        // ── Hero Slides ─────────────────────────────────────────────────────────
+        // Cache loaded slides so the edit modal can pre-fill without a second fetch
+        // (there is no GET-by-id endpoint — we use the list cache instead)
+        let _heroSlidesCache = [];
 
-        function _heroModalClear() {
-            ['heroHeading','heroSubheading','heroButtonText','heroButtonUrl',
-             'heroSecondaryButtonText','heroSecondaryButtonUrl'].forEach(id => {
-                document.getElementById(id).value = '';
-            });
+        function openHeroSlideAddModal() {
+            document.getElementById('heroSlideModalTitle').textContent = 'Add Hero Slide';
+            document.getElementById('heroSlideForm').reset();
             document.getElementById('heroSlideId').value = '';
-            document.getElementById('heroOrder').value = '0';
-            document.getElementById('heroImage').value = '';
-            document.getElementById('heroVideo').value = '';
-            document.getElementById('heroActive').checked = true;
+            document.getElementById('heroSlideModal').style.display = 'flex';
         }
 
-        function openHeroAddModal() {
-            document.getElementById('heroModalTitle').textContent = 'Add Hero Slide';
-            _heroModalClear();
-            document.getElementById('heroModal').style.display = 'flex';
+        function openHeroSlideEditModal(id) {
+            const slide = _heroSlidesCache.find(s => s.id == id);
+            if (!slide) {
+                alert('Slide data not found — please refresh the page.');
+                return;
+            }
+            document.getElementById('heroSlideModalTitle').textContent = 'Edit Hero Slide';
+            document.getElementById('heroSlideId').value = id;
+            // View uses heading / subheading (not title / subtitle)
+            document.getElementById('heroSlideTitle').value    = slide.heading || '';
+            document.getElementById('heroSlideSubtitle').value = slide.subheading || '';
+            document.getElementById('heroSlideButtonText').value          = slide.button_text || '';
+            document.getElementById('heroSlideButtonUrl').value           = slide.button_url || '';
+            document.getElementById('heroSlideSecondaryButtonText').value = slide.secondary_button_text || '';
+            document.getElementById('heroSlideSecondaryButtonUrl').value  = slide.secondary_button_url || '';
+            document.getElementById('heroSlideOrder').value  = slide.order || 0;
+            document.getElementById('heroSlideActive').checked = slide.is_active;
+            document.getElementById('heroSlideModal').style.display = 'flex';
         }
 
-        async function openHeroEditModal(id) {
-            const data = await apiFetchJson('/admin-dashboard/api/hero-slides/');
-            if (!data.success) return;
-            const s = data.slides.find(x => x.id === id);
-            if (!s) return;
-            _heroModalClear();
-            document.getElementById('heroModalTitle').textContent = 'Edit Hero Slide';
-            document.getElementById('heroSlideId').value = s.id;
-            document.getElementById('heroHeading').value = s.heading;
-            document.getElementById('heroSubheading').value = s.subheading;
-            document.getElementById('heroButtonText').value = s.button_text;
-            document.getElementById('heroButtonUrl').value = s.button_url;
-            document.getElementById('heroSecondaryButtonText').value = s.secondary_button_text || '';
-            document.getElementById('heroSecondaryButtonUrl').value = s.secondary_button_url || '';
-            document.getElementById('heroOrder').value = s.order;
-            document.getElementById('heroActive').checked = s.is_active;
-            document.getElementById('heroModal').style.display = 'flex';
+        function closeHeroSlideModal() {
+            document.getElementById('heroSlideModal').style.display = 'none';
         }
 
-        function closeHeroModal() {
-            document.getElementById('heroModal').style.display = 'none';
-        }
-
-        async function saveHeroSlide() {
+        function saveHeroSlide() {
             const id = document.getElementById('heroSlideId').value;
-            const fd = new FormData();
-            fd.append('heading', document.getElementById('heroHeading').value);
-            fd.append('subheading', document.getElementById('heroSubheading').value);
-            fd.append('button_text', document.getElementById('heroButtonText').value);
-            fd.append('button_url', document.getElementById('heroButtonUrl').value);
-            fd.append('secondary_button_text', document.getElementById('heroSecondaryButtonText').value);
-            fd.append('secondary_button_url', document.getElementById('heroSecondaryButtonUrl').value);
-            fd.append('order', document.getElementById('heroOrder').value);
-            fd.append('is_active', document.getElementById('heroActive').checked ? 'on' : 'off');
-            const imgFile = document.getElementById('heroImage').files[0];
-            if (imgFile) fd.append('background_image', imgFile);
-            const vidFile = document.getElementById('heroVideo').files[0];
-            if (vidFile) fd.append('background_video', vidFile);
+            const formData = new FormData();
+            // POST field names must match what the Django view reads
+            formData.append('heading',    document.getElementById('heroSlideTitle').value);
+            formData.append('subheading', document.getElementById('heroSlideSubtitle').value);
+            formData.append('button_text',              document.getElementById('heroSlideButtonText').value);
+            formData.append('button_url',               document.getElementById('heroSlideButtonUrl').value);
+            formData.append('secondary_button_text',    document.getElementById('heroSlideSecondaryButtonText').value);
+            formData.append('secondary_button_url',     document.getElementById('heroSlideSecondaryButtonUrl').value);
+            formData.append('order',     document.getElementById('heroSlideOrder').value);
+            formData.append('is_active', document.getElementById('heroSlideActive').checked ? '1' : '0');
+            const imageFile = document.getElementById('heroSlideImage').files[0];
+            if (imageFile) formData.append('background_image', imageFile);
+            const videoFile = document.getElementById('heroSlideVideo').files[0];
+            if (videoFile) formData.append('background_video', videoFile);
 
+            // Correct URL pattern: add → POST /admin-dashboard/api/hero-slides/
+            //                      edit → POST /admin-dashboard/api/hero-slides/<id>/update/
             const url = id
                 ? `/admin-dashboard/api/hero-slides/${id}/update/`
                 : '/admin-dashboard/api/hero-slides/';
-            const csrfToken = getCookie('csrftoken');
-            const resp = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd });
-            const data = await resp.json();
-            if (data.success) {
-                showNotification('Saved', 'success');
-                closeHeroModal();
-                loadHeroSlides();
-            } else {
-                showNotification(data.error || 'Failed to save', 'error');
-            }
-        }
 
-        async function deleteHeroSlide(id) {
-            if (!confirm('Delete this slide?')) return;
-            const data = await apiFetchJson(`/admin-dashboard/api/hero-slides/${id}/delete/`, { method: 'POST' });
-            if (data.success) { showNotification('Deleted', 'success'); loadHeroSlides(); }
-            else showNotification(data.error || 'Failed', 'error');
-        }
-
-        async function toggleHeroSlide(id) {
-            const data = await apiFetchJson(`/admin-dashboard/api/hero-slides/${id}/toggle/`, { method: 'POST' });
-            if (data.success) loadHeroSlides();
-        }
-
-        // ── Site Settings ──────────────────────────────────────────────────
-
-        async function loadSiteSettings() {
-            const data = await apiFetchJson('/admin-dashboard/api/site-settings/');
-            if (!data.success) return;
-            document.getElementById('glassFlashToggle').checked = data.glass_flash_enabled;
-            document.getElementById('shippingCharge').value = data.shipping_charge ?? 0;
-            document.getElementById('freeShippingAbove').value = data.free_shipping_above ?? 0;
-            document.getElementById('codFee').value = data.cod_fee ?? 75;
-            document.getElementById('razorpayKeyId').value = data.razorpay_key_id || '';
-            // Never pre-fill secret — only accept new value
-        }
-
-        async function saveSiteSettings() {
-            const csrfToken = getCookie('csrftoken');
-            const payload = {
-                glass_flash_enabled: document.getElementById('glassFlashToggle').checked,
-                shipping_charge: parseFloat(document.getElementById('shippingCharge').value) || 0,
-                free_shipping_above: parseFloat(document.getElementById('freeShippingAbove').value) || 0,
-                cod_fee: parseFloat(document.getElementById('codFee').value) || 0,
-                razorpay_key_id: document.getElementById('razorpayKeyId').value.trim(),
-            };
-            const secret = document.getElementById('razorpayKeySecret').value.trim();
-            if (secret) payload.razorpay_key_secret = secret;
-            const resp = await fetch('/admin-dashboard/api/site-settings/', {
+            fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify(payload),
-            });
-            const data = await resp.json();
-            const status = document.getElementById('siteSettingsStatus');
-            if (data.success) {
-                document.getElementById('razorpayKeySecret').value = '';
-                status.textContent = '✓ Settings saved successfully.';
-                status.style.display = 'block';
-                setTimeout(() => { status.style.display = 'none'; }, 3000);
-            } else {
-                showNotification(data.error || 'Failed to save', 'error');
-            }
+                body: formData,
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Save failed');
+                    closeHeroSlideModal();
+                    loadHeroSlides();
+                })
+                .catch(err => {
+                    alert('Error saving hero slide: ' + err);
+                });
         }
 
-        // ── Coupons ────────────────────────────────────────────────────────
-
-        async function loadCoupons() {
-            const data = await apiFetchJson('/admin-dashboard/api/coupons/');
-            if (!data.success) return;
-            const tbody = document.getElementById('coupons-tbody');
-            if (!data.coupons.length) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#aaa; padding:2rem;">No coupons yet.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.coupons.map(c => {
-                const typeLabel = c.discount_type === 'percent' ? `${c.discount_value}%` : `₹${c.discount_value}`;
-                const cap = c.max_discount ? `₹${c.max_discount}` : '—';
-                const validTo = c.valid_to ? c.valid_to.slice(0,16).replace('T',' ') : '—';
-                const usage = `${c.usage_count} / ${c.usage_limit ?? '∞'}`;
-                const statusBadge = c.is_active
-                    ? '<span style="background:#dcfce7;color:#16a34a;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:600;">Active</span>'
-                    : '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:600;">Inactive</span>';
-                return `<tr>
-                    <td><strong style="color:#7c3aed;">${c.code}</strong></td>
-                    <td>${c.discount_type === 'percent' ? 'Percent' : 'Fixed'}</td>
-                    <td>${typeLabel}</td>
-                    <td>${c.min_cart_amount > 0 ? '₹'+c.min_cart_amount : '—'}</td>
-                    <td>${cap}</td>
-                    <td>${validTo}</td>
-                    <td>${usage}</td>
-                    <td>${statusBadge}</td>
-                    <td>
-                        <button class="action-btn edit-btn" onclick="editCoupon(${c.id})"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn" style="background:#f0fdf4;color:#16a34a;" onclick="toggleCoupon(${c.id})" title="${c.is_active ? 'Deactivate' : 'Activate'}"><i class="fas fa-${c.is_active ? 'toggle-on' : 'toggle-off'}"></i></button>
-                        <button class="action-btn delete-btn" onclick="deleteCoupon(${c.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-
-        function toggleCouponCapField() {
-            const isPercent = document.getElementById('couponType').value === 'percent';
-            document.getElementById('couponCapRow').style.display = isPercent ? '' : 'none';
-        }
-
-        function openCouponModal(coupon = null) {
-            document.getElementById('couponEditId').value = '';
-            document.getElementById('couponModalTitle').textContent = 'Add Coupon';
-            document.getElementById('couponCode').value = '';
-            document.getElementById('couponDescription').value = '';
-            document.getElementById('couponType').value = 'percent';
-            document.getElementById('couponValue').value = '';
-            document.getElementById('couponMinCart').value = '';
-            document.getElementById('couponMaxDiscount').value = '';
-            document.getElementById('couponValidFrom').value = '';
-            document.getElementById('couponValidTo').value = '';
-            document.getElementById('couponUsageLimit').value = '';
-            document.getElementById('couponIsActive').checked = true;
-            toggleCouponCapField();
-            if (coupon) {
-                document.getElementById('couponEditId').value = coupon.id;
-                document.getElementById('couponModalTitle').textContent = 'Edit Coupon';
-                document.getElementById('couponCode').value = coupon.code;
-                document.getElementById('couponDescription').value = coupon.description || '';
-                document.getElementById('couponType').value = coupon.discount_type;
-                document.getElementById('couponValue').value = coupon.discount_value;
-                document.getElementById('couponMinCart').value = coupon.min_cart_amount || '';
-                document.getElementById('couponMaxDiscount').value = coupon.max_discount || '';
-                document.getElementById('couponValidFrom').value = coupon.valid_from || '';
-                document.getElementById('couponValidTo').value = coupon.valid_to || '';
-                document.getElementById('couponUsageLimit').value = coupon.usage_limit || '';
-                document.getElementById('couponIsActive').checked = coupon.is_active;
-                toggleCouponCapField();
-            }
-            document.getElementById('couponModal').style.display = 'flex';
-        }
-
-        function closeCouponModal() {
-            document.getElementById('couponModal').style.display = 'none';
-        }
-
-        let _couponsCache = [];
-        async function editCoupon(id) {
-            if (!_couponsCache.length) {
-                const data = await apiFetchJson('/admin-dashboard/api/coupons/');
-                if (data.success) _couponsCache = data.coupons;
-            }
-            const coupon = _couponsCache.find(c => c.id === id);
-            if (coupon) openCouponModal(coupon);
-        }
-
-        async function saveCoupon() {
-            const csrfToken = getCookie('csrftoken');
-            const editId = document.getElementById('couponEditId').value;
-            const payload = {
-                code: document.getElementById('couponCode').value.trim().toUpperCase(),
-                description: document.getElementById('couponDescription').value.trim(),
-                discount_type: document.getElementById('couponType').value,
-                discount_value: parseFloat(document.getElementById('couponValue').value) || 0,
-                min_cart_amount: parseFloat(document.getElementById('couponMinCart').value) || 0,
-                max_discount: document.getElementById('couponMaxDiscount').value || null,
-                valid_from: document.getElementById('couponValidFrom').value || null,
-                valid_to: document.getElementById('couponValidTo').value || null,
-                usage_limit: parseInt(document.getElementById('couponUsageLimit').value) || null,
-                is_active: document.getElementById('couponIsActive').checked,
-            };
-            if (!payload.code || !payload.discount_value) {
-                showNotification('Code and Discount Value are required.', 'error'); return;
-            }
-            const url = editId
-                ? `/admin-dashboard/api/coupons/${editId}/update/`
-                : '/admin-dashboard/api/coupons/';
-            const resp = await fetch(url, {
+        function deleteHeroSlide(id) {
+            if (!confirm('Delete this hero slide?')) return;
+            // View only accepts POST (not DELETE); CSRF token required
+            fetch(`/admin-dashboard/api/hero-slides/${id}/delete/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify(payload),
-            });
-            const data = await resp.json();
-            if (data.success) {
-                closeCouponModal();
-                _couponsCache = [];
-                loadCoupons();
-                showNotification('Coupon saved!', 'success');
-            } else {
-                showNotification(data.error || 'Failed to save coupon', 'error');
-            }
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Delete failed');
+                    loadHeroSlides();
+                })
+                .catch(err => {
+                    alert('Error deleting hero slide: ' + err);
+                });
         }
 
-        async function deleteCoupon(id) {
-            if (!confirm('Delete this coupon?')) return;
-            const csrfToken = getCookie('csrftoken');
-            const data = await apiFetchJson(`/admin-dashboard/api/coupons/${id}/delete/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
-            if (data.success) { _couponsCache = []; loadCoupons(); showNotification('Coupon deleted', 'success'); }
-            else showNotification(data.error || 'Failed', 'error');
+        function loadHeroSlides() {
+            fetch('/admin-dashboard/api/hero-slides/')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Load failed');
+                    // Cache for edit modal pre-fill
+                    _heroSlidesCache = data.slides;
+                    const tbody = document.getElementById('heroSlidesTbody');
+                    if (!data.slides.length) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem;">No hero slides yet.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.slides.map(slide => `
+                        <tr>
+                            <td>${slide.heading || '(Untitled)'}</td>
+                            <td>${slide.order}</td>
+                            <td><span class="status-badge status-${slide.is_active ? 'delivered' : 'cancelled'}">${slide.is_active ? 'Active' : 'Inactive'}</span></td>
+                            <td>${slide.image_url ? '🖼️ ' : ''}${slide.video_url ? '🎥' : ''}</td>
+                            <td class="actions">
+                                <button class="btn btn-sm btn-primary" onclick="openHeroSlideEditModal(${slide.id})">Edit</button>
+                                <button class="btn btn-sm btn-danger"  onclick="deleteHeroSlide(${slide.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(err => {
+                    document.getElementById('heroSlidesTbody').innerHTML =
+                        '<tr><td colspan="5" style="text-align:center;padding:1.5rem;">Error loading slides.</td></tr>';
+                    console.error('loadHeroSlides error:', err);
+                });
         }
 
-        async function toggleCoupon(id) {
-            const csrfToken = getCookie('csrftoken');
-            const data = await apiFetchJson(`/admin-dashboard/api/coupons/${id}/toggle/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
-            if (data.success) { _couponsCache = []; loadCoupons(); }
-        }
+        // Expose to global scope for onclick handlers
+        window.openHeroSlideAddModal  = openHeroSlideAddModal;
+        window.openHeroSlideEditModal = openHeroSlideEditModal;
+        window.closeHeroSlideModal    = closeHeroSlideModal;
+        window.saveHeroSlide          = saveHeroSlide;
+        window.deleteHeroSlide        = deleteHeroSlide;
+        window.loadHeroSlides         = loadHeroSlides;
+        window.showSection            = showSection;
+        window.toggleDropdown         = toggleDropdown;
     </script>
 </body>
 </html>
