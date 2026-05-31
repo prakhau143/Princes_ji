@@ -45,6 +45,37 @@ class UserProfile(models.Model):
 		return self.user.username
 
 
+class CustomerProfile(models.Model):
+	"""Extends User with an auto-generated 8-char customer ID and admin notes."""
+	user = models.OneToOneField(
+		User, on_delete=models.CASCADE, related_name='customer_profile'
+	)
+	customer_id = models.CharField(max_length=8, unique=True, editable=False, blank=True)
+	is_enabled = models.BooleanField(default=True)          # admin can disable
+	alternate_phone = models.CharField(max_length=20, blank=True)
+	gstin = models.CharField(max_length=15, blank=True)
+	notes = models.TextField(blank=True)
+
+	def save(self, *args, **kwargs):
+		if not self.customer_id:
+			self.customer_id = self._generate_id()
+		super().save(*args, **kwargs)
+
+	@staticmethod
+	def _generate_id():
+		import random, string
+		while True:
+			letters = ''.join(random.choices(string.ascii_uppercase, k=4))
+			digits  = ''.join(random.choices(string.digits, k=4))
+			cid = f"{letters[:2]}{digits[:2]}{letters[2:]}{digits[2:]}"  # e.g. PR37KH2B
+			if not CustomerProfile.objects.filter(customer_id=cid).exists():
+				return cid
+
+	def __str__(self):
+		name = self.user.get_full_name() or self.user.username
+		return f"{name} ({self.customer_id})"
+
+
 class Address(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
 	full_name = models.CharField(max_length=100)
@@ -74,6 +105,8 @@ class Address(models.Model):
 class Category(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 	is_active = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+	updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
 	def __str__(self):
 		return self.name
@@ -230,6 +263,9 @@ class Order(models.Model):
 	shipped_at = models.DateTimeField(null=True, blank=True)
 	out_for_delivery_at = models.DateTimeField(null=True, blank=True)
 	delivered_at = models.DateTimeField(null=True, blank=True)
+	# Manual order fields
+	admin_notes = models.TextField(blank=True, help_text="Admin reason / notes for manual orders")
+	is_manual = models.BooleanField(default=False, help_text="True if created manually by admin")
 
 	def __str__(self):
 		return f"Order #{self.id} by {self.user.username}"
@@ -264,6 +300,32 @@ class Notification(models.Model):
 	
 	def __str__(self):
 		return self.title
+
+class UserNotification(models.Model):
+	"""User-facing notifications (order updates, shipping alerts, etc.)"""
+	NOTIF_TYPES = [
+		('order_placed',    'Order Placed'),
+		('order_updated',   'Order Updated'),
+		('order_shipped',   'Order Shipped'),
+		('order_delivered', 'Order Delivered'),
+		('order_cancelled', 'Order Cancelled'),
+		('manual_order',    'Manual Order Created'),
+		('general',         'General'),
+	]
+	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications')
+	title = models.CharField(max_length=200)
+	message = models.TextField()
+	notif_type = models.CharField(max_length=30, choices=NOTIF_TYPES, default='general')
+	is_read = models.BooleanField(default=False)
+	related_order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['-created_at']
+
+	def __str__(self):
+		return f"[{self.user.username}] {self.title}"
+
 
 class PasswordResetOTP(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -662,6 +724,10 @@ class SiteSettings(models.Model):
 		max_digits=6, decimal_places=2, default=75,
 		help_text="Extra fee charged for Cash on Delivery orders"
 	)
+	return_exchange_fee = models.DecimalField(
+		max_digits=6, decimal_places=2, default=100,
+		help_text="Fee charged for Return / Exchange requests (₹0 for refunds)"
+	)
 	razorpay_key_id = models.CharField(
 		max_length=200, blank=True,
 		help_text="Razorpay Key ID from your Razorpay Dashboard"
@@ -735,3 +801,217 @@ class Coupon(models.Model):
 		if self.max_discount:
 			discount = min(discount, self.max_discount)
 		return discount
+
+
+class AdminUserProfile(models.Model):
+	"""
+	Extended profile for staff/admin users. Stores designation, contact info,
+	and a list of feature keys that control which sidebar sections they can access.
+	Superusers always have full access regardless of this profile.
+	"""
+	FEATURE_CHOICES = [
+		('dashboard',         'Dashboard & Analytics'),
+		('orders',            'Order Management'),
+		('products',          'Product Management'),
+		('homepage',          'Homepage Management'),
+		('marketing',         'Marketing & Trust'),
+		('customers',         'Customer Management'),
+		('website_frontend',  'Website User-side Functionality'),
+	]
+
+	user            = models.OneToOneField(
+		settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='admin_profile'
+	)
+	designation     = models.CharField(max_length=100, blank=True)
+	phone_number    = models.CharField(max_length=20, blank=True)
+	address         = models.TextField(blank=True)
+	assigned_features = models.JSONField(
+		default=list,
+		help_text='List of feature keys this admin user can access in the dashboard.',
+	)
+	created_at      = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		verbose_name          = 'Admin User Profile'
+		verbose_name_plural   = '👤 Admin User Profiles'
+
+	def has_feature(self, key):
+		return key in (self.assigned_features or [])
+
+	def __str__(self):
+		name = self.user.get_full_name() or self.user.username
+		return f"{name} — {self.designation or 'Staff'}"
+
+
+# ──────────────────────────────────────────────────────────
+#  RETURN & REFUND MANAGEMENT
+# ──────────────────────────────────────────────────────────
+
+class ReturnRequest(models.Model):
+	STATUS_CHOICES = [
+		('requested',        'Requested'),
+		('review',           'Under Review'),
+		('approved',         'Approved'),
+		('pickup_scheduled', 'Pickup Scheduled'),
+		('received',         'Received'),
+		('quality_check',    'Quality Check'),
+		('refund_pending',   'Refund Pending'),
+		('refund_completed', 'Refund Completed'),
+		('rejected',         'Rejected'),
+	]
+	REASON_CHOICES = [
+		('damaged',             'Item Damaged'),
+		('quality_issue',       'Quality Issue'),
+		('size_issue',          'Size / Fit Issue'),
+		('wrong_product',       'Wrong Product Received'),
+		('customer_preference', 'Customer Changed Mind'),
+		('other',               'Other'),
+	]
+	QC_CHOICES = [
+		('pass',        'Pass — Resellable'),
+		('fail',        'Fail — Damaged'),
+		('investigate', 'Investigate'),
+	]
+	RESALE_CHOICES = [
+		('resellable',    'Resellable'),
+		('repair_needed', 'Repair Needed'),
+		('damaged',       'Damaged / Scrap'),
+	]
+	PRIORITY_CHOICES = [
+		('low', 'Low'), ('normal', 'Normal'), ('high', 'High'),
+	]
+
+	# Core relationships
+	order      = models.ForeignKey('Order',     on_delete=models.PROTECT, related_name='return_requests')
+	order_item = models.ForeignKey('OrderItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='return_requests')
+	customer   = models.ForeignKey(User,        on_delete=models.PROTECT, related_name='return_requests')
+
+	# Product snapshot (denormalised so history is preserved even if product changes)
+	product_name = models.CharField(max_length=300)
+	product_sku  = models.CharField(max_length=100, blank=True)
+	order_amount = models.DecimalField(max_digits=10, decimal_places=2, help_text='Refundable amount cached from order')
+	quantity     = models.PositiveIntegerField(default=1)
+
+	RETURN_TYPE_CHOICES = [
+		('refund',       'Refund (Money Back)'),
+		('exchange',     'Exchange (New Item)'),
+		('store_credit', 'Store Credit'),
+	]
+	CONDITION_CHOICES = [
+		('unused_original', 'Unused & Original Packaging'),
+		('opened_unused',   'Opened but Unused'),
+		('used',            'Used'),
+		('damaged',         'Damaged'),
+	]
+	REFUND_METHOD_CHOICES = [
+		('original_payment', 'Original Payment Method'),
+		('bank_transfer',    'Bank Transfer'),
+	]
+
+	# Return details
+	return_reason  = models.CharField(max_length=30, choices=REASON_CHOICES)
+	reason_detail  = models.TextField(blank=True)
+	return_images  = models.JSONField(default=list, help_text='List of uploaded image URLs/paths')
+	return_type    = models.CharField(max_length=15, choices=RETURN_TYPE_CHOICES, default='refund')
+	condition      = models.CharField(max_length=20, choices=CONDITION_CHOICES, blank=True)
+	pickup_address = models.TextField(blank=True, help_text='Pickup address for return courier')
+
+	# Refund bank details (if bank transfer chosen)
+	refund_method         = models.CharField(max_length=20, choices=REFUND_METHOD_CHOICES, default='original_payment')
+	account_holder_name   = models.CharField(max_length=200, blank=True)
+	account_number        = models.CharField(max_length=50, blank=True)
+	ifsc_code             = models.CharField(max_length=20, blank=True)
+	bank_name             = models.CharField(max_length=100, blank=True)
+
+	# Processing fee charged to customer (for exchange/return; 0 for refunds)
+	processing_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+	# Status & routing
+	status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
+	priority    = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='normal')
+	assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_returns')
+
+	# ── Jewellery Quality-Check fields ──────────────────────
+	expected_weight      = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True, help_text='grams')
+	received_weight      = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True, help_text='grams')
+	stone_count_expected = models.PositiveIntegerField(null=True, blank=True)
+	stone_count_received = models.PositiveIntegerField(null=True, blank=True)
+	hallmark_ok          = models.BooleanField(null=True, blank=True)
+	packaging_ok         = models.BooleanField(null=True, blank=True)
+	damage_notes         = models.TextField(blank=True)
+	qc_result            = models.CharField(max_length=15, choices=QC_CHOICES, blank=True)
+	qc_notes             = models.TextField(blank=True)
+
+	# ── Financial ────────────────────────────────────────────
+	shipping_deduction  = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+	damage_penalty      = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+	final_refund_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+	refund_reference    = models.CharField(max_length=200, blank=True, help_text='Payment gateway reference / UTR')
+
+	# ── Recovery ─────────────────────────────────────────────
+	resale_status = models.CharField(max_length=15, choices=RESALE_CHOICES, blank=True)
+	admin_notes   = models.TextField(blank=True)
+
+	# ── Timestamps ───────────────────────────────────────────
+	created_at  = models.DateTimeField(auto_now_add=True)
+	updated_at  = models.DateTimeField(auto_now=True)
+	approved_at = models.DateTimeField(null=True, blank=True)
+	received_at = models.DateTimeField(null=True, blank=True)
+	refunded_at = models.DateTimeField(null=True, blank=True)
+
+	class Meta:
+		ordering              = ['-created_at']
+		verbose_name          = 'Return Request'
+		verbose_name_plural   = '↩ Return & Refund Requests'
+
+	def __str__(self):
+		return f"RTN-{self.id:04d} | Order #{self.order_id} | {self.product_name}"
+
+	@property
+	def rtn_id(self):
+		"""
+		Generates a premium 8-character return ID with special characters.
+		Format: RTN#XXXX  (e.g. RTN#K9AX, RTN#3MQP)
+		Deterministic — same ID always produces same RTN number.
+		"""
+		import hashlib
+		# Build a deterministic hash from the DB id
+		raw = hashlib.sha256(f"PRINCESS-RTN-{self.id}".encode()).hexdigest().upper()
+		# Use full A-Z + 0-9 alphabet via base-36 conversion of first 8 hex digits
+		n = int(raw[:8], 16)
+		alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # 32 chars, no ambiguous I/O/0/1
+		code = ""
+		for _ in range(4):
+			code = alphabet[n % 32] + code
+			n //= 32
+		return f"RTN#{code}"
+
+	@property
+	def age_days(self):
+		from django.utils import timezone as tz
+		return (tz.now() - self.created_at).days
+
+	@property
+	def is_high_value(self):
+		return float(self.order_amount) >= 10000
+
+	@property
+	def calculated_refund(self):
+		return float(self.order_amount) - float(self.shipping_deduction) - float(self.damage_penalty)
+
+
+class ReturnStageLog(models.Model):
+	"""Immutable audit trail for every stage transition in a return request."""
+	return_request = models.ForeignKey(ReturnRequest, on_delete=models.CASCADE, related_name='stage_logs')
+	from_status    = models.CharField(max_length=20, blank=True)
+	to_status      = models.CharField(max_length=20)
+	note           = models.TextField(blank=True)
+	changed_by     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+	changed_at     = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['changed_at']
+		verbose_name = 'Return Stage Log'
+
+	def __str__(self):
+		return f"RTN-{self.return_request_id:04d}: {self.from_status} → {self.to_status}"

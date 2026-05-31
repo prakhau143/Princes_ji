@@ -11,6 +11,8 @@ from .models import (
 	Announcement, HomepageSectionProduct, InstagramReel, TrustBadge, WishlistItem, ProductReview,
 	HomepageSectionContent, OrderLifecycleLog, EditorialMedia,
 	Collection, CollectionRow, ZoomCarouselItem, HeroSlide, SiteSettings, Coupon,
+	UserNotification,
+	ReturnRequest, ReturnStageLog,
 )
 from django import forms
 
@@ -439,7 +441,9 @@ def profile_view(request):
 def order_history_view(request):
 	from datetime import timedelta, date as _date
 	status_filter = request.GET.get('tab', 'all')
-	qs = Order.objects.filter(user=request.user).prefetch_related('items__product', 'items__review').order_by('-created_at')
+	qs = Order.objects.filter(user=request.user).prefetch_related(
+		'items__product', 'items__review', 'return_requests'
+	).order_by('-created_at')
 	if status_filter == 'active':
 		qs = qs.filter(status__in=['pending', 'processing', 'packed', 'shipped', 'out_for_delivery'])
 	elif status_filter == 'delivered':
@@ -464,6 +468,24 @@ def order_history_view(request):
 			for item in order.items.all():
 				if not hasattr(item, 'review'):
 					reviewable_ids.add(item.id)
+
+		# ── Return progress for mini strip ──────────────────────────
+		RTN_PHASE_MAP = {
+			'requested': 1, 'review': 2,
+			'approved': 3, 'pickup_scheduled': 3,
+			'received': 4, 'quality_check': 4, 'refund_pending': 4,
+			'refund_completed': 5,
+			'rejected': -1,
+		}
+		all_rtns = list(order.return_requests.all())   # uses prefetch cache
+		rtn_obj = next(
+			(r for r in sorted(all_rtns, key=lambda r: r.created_at, reverse=True)
+			 if r.status != 'rejected'),
+			None
+		) or (sorted(all_rtns, key=lambda r: r.created_at, reverse=True)[0] if all_rtns else None)
+		has_return = bool(rtn_obj)
+		rtn_phase  = RTN_PHASE_MAP.get(rtn_obj.status, 1) if rtn_obj else 0
+
 		orders_data.append({
 			'order': order,
 			'conf': conf,
@@ -471,6 +493,8 @@ def order_history_view(request):
 			'can_cancel': can_cancel,
 			'can_return': can_return,
 			'reviewable_ids': reviewable_ids,
+			'has_return': has_return,
+			'rtn_phase': rtn_phase,
 		})
 
 	return render(request, 'store/order_history.html', {
@@ -491,8 +515,12 @@ def order_timeline_api(request, order_id):
 	}
 	cur_rank = STATUS_RANK.get(order.status, 0)
 
+	# If order is in a return/refund state, all delivery steps count as done
+	is_return_status = order.status in ('returned', 'refund_pending', 'refund_completed', 'rto')
+
 	def _is_done(key, ts, key_rank):
-		# Done if timestamp is set OR current status is at/past this step
+		if is_return_status:
+			return True
 		return bool(ts) or (cur_rank >= key_rank)
 
 	steps = [
@@ -521,9 +549,91 @@ def order_timeline_api(request, order_id):
 			s['date_fmt'] = 'Completed'
 		else:
 			s['est'] = (order.created_at + timedelta(days=OFFSETS.get(s['key'], 1))).strftime('%b %d')
-	done_count = sum(1 for s in steps if s['done'])
-	# progress bar: 0% at step0, 25% each additional done step → 0/25/50/75/100
-	progress_pct = max(0, done_count - 1) * 25
+
+	# ── Return / Refund stages ───────────────────────────────────────────────
+	return_steps = []
+	has_return = False
+	try:
+		# Get the most recent return request (prefer non-rejected)
+		rtn = (
+			order.return_requests.exclude(status='rejected').order_by('-created_at').first()
+			or order.return_requests.order_by('-created_at').first()
+		)
+		if rtn:
+			has_return = True
+			RTN_RANK = {
+				'requested': 1, 'review': 2,
+				'approved': 3, 'pickup_scheduled': 4,
+				'received': 5, 'quality_check': 5,
+				'refund_pending': 6,
+				'refund_completed': 7,
+				'rejected': 7,
+			}
+			rr = RTN_RANK.get(rtn.status, 1)
+			is_rejected = (rtn.status == 'rejected')
+
+			def _rd(key_rank, ts=None):
+				return bool(ts) or (rr >= key_rank)
+
+			return_steps = [
+				{'key': 'rtn_requested',  'label': 'Return Requested',
+				 'icon': '↩️', 'date': rtn.created_at,
+				 'done': True,             'is_return': True},
+				{'key': 'rtn_review',     'label': 'Under Review',
+				 'icon': '🔍', 'date': None,
+				 'done': _rd(2),           'is_return': True},
+				{'key': 'rtn_approved',   'label': 'Return Approved',
+				 'icon': '✅', 'date': rtn.approved_at,
+				 'done': _rd(3, rtn.approved_at), 'is_return': True},
+				{'key': 'rtn_pickup',     'label': 'Pickup & Quality Check',
+				 'icon': '🚚', 'date': rtn.received_at,
+				 'done': _rd(5, rtn.received_at), 'is_return': True},
+				{'key': 'rtn_processing', 'label': 'Refund Processing',
+				 'icon': '💳', 'date': None,
+				 'done': _rd(6),           'is_return': True},
+			]
+			# Final step — completed or rejected
+			if is_rejected:
+				return_steps.append({
+					'key': 'rtn_rejected', 'label': 'Return Rejected',
+					'icon': '❌', 'date': rtn.updated_at,
+					'done': True, 'is_return': True, 'is_rejected': True,
+				})
+			else:
+				return_steps.append({
+					'key': 'rtn_completed', 'label': 'Refund Completed',
+					'icon': '🎉', 'date': rtn.refunded_at,
+					'done': _rd(7, rtn.refunded_at), 'is_return': True,
+				})
+
+			# Format dates on return steps; add estimated dates for pending stages
+			RTN_EST_OFFSETS = {
+				'rtn_review': 2, 'rtn_approved': 4,
+				'rtn_pickup': 7, 'rtn_processing': 9, 'rtn_completed': 14,
+			}
+			for s in return_steps:
+				raw_date = s.get('date')
+				if s['done'] and raw_date:
+					s['date_fmt'] = raw_date.strftime('%b %d, %Y')
+				elif s['done']:
+					s['date_fmt'] = 'In Progress'
+				else:
+					offset = RTN_EST_OFFSETS.get(s['key'])
+					if offset is not None:
+						s['est'] = (rtn.created_at + timedelta(days=offset)).strftime('%b %d')
+					s['date_fmt'] = None
+	except Exception:
+		pass
+
+	all_steps = steps + return_steps
+	done_count = sum(1 for s in all_steps if s['done'])
+	total      = max(len(all_steps), 1)
+	# Smooth 0–100% based on fraction of all steps done
+	if total == 1:
+		progress_pct = 100 if all_steps[0]['done'] else 0
+	else:
+		progress_pct = int((done_count - 1) / (total - 1) * 100) if done_count > 0 else 0
+
 	items = [{'name': i.product.name,
 	          'image': i.product.image.url if i.product.image else '',
 	          'qty': i.quantity,
@@ -534,8 +644,9 @@ def order_timeline_api(request, order_id):
 		'conf': f"AJ{order.created_at.year}{order.id:05d}",
 		'status': order.get_status_display(),
 		'status_key': order.status,
-		'steps': steps,
+		'steps': all_steps,
 		'progress_pct': progress_pct,
+		'has_return': has_return,
 		'items': items,
 	})
 
@@ -1114,3 +1225,310 @@ def verify_payment_api(request):
 		return JsonResponse({'ok': True, 'order_id': order.id})
 	except Exception as e:
 		return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+# ── Mobile Menu: Categories with preview images ──────────────────────────────
+def categories_with_previews_api(request):
+	"""Returns active categories each with one preview product image.
+	Used by the mobile menu 2-column category grid."""
+	categories = Category.objects.filter(is_active=True).order_by('name')
+	data = []
+	for cat in categories:
+		preview = (
+			Product.objects
+			.filter(category=cat, is_active=True)
+			.exclude(image='')
+			.only('id', 'image')
+			.first()
+		)
+		data.append({
+			'id': cat.id,
+			'name': cat.name,
+			'url': f'/store/category/{cat.id}/',
+			'preview_image': preview.image.url if preview and preview.image else None,
+		})
+	return JsonResponse(data, safe=False)
+
+
+# ─── User Notification APIs ──────────────────────────────────────────────────
+
+@login_required
+def user_notifications_api(request):
+    """Return the current user's notifications with unread count."""
+    notifs = UserNotification.objects.filter(user=request.user)[:30]
+    unread_count = UserNotification.objects.filter(user=request.user, is_read=False).count()
+    data = []
+    for n in notifs:
+        data.append({
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "notif_type": n.notif_type,
+            "is_read": n.is_read,
+            "order_id": n.related_order_id,
+            "time": n.created_at.strftime("%b %d, %H:%M"),
+        })
+    return JsonResponse({"success": True, "notifications": data, "unread_count": unread_count})
+
+
+@login_required
+def user_mark_notification_read_api(request, notif_id):
+    """Mark a single notification as read."""
+    if request.method == "POST":
+        notif = get_object_or_404(UserNotification, id=notif_id, user=request.user)
+        notif.is_read = True
+        notif.save(update_fields=["is_read"])
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False}, status=405)
+
+
+@login_required
+def user_mark_all_notifications_read_api(request):
+    """Mark all notifications as read for current user."""
+    if request.method == "POST":
+        UserNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False}, status=405)
+
+
+# ══════════════════════════════════════════════════════════════
+#  USER-SIDE RETURN & REFUND PAGE
+# ══════════════════════════════════════════════════════════════
+
+def returns_page_view(request):
+    """Render the luxury returns & refund page."""
+    settings_obj = SiteSettings.get_settings()
+    return render(request, 'store/return_request.html', {
+        'return_exchange_fee': float(settings_obj.return_exchange_fee),
+    })
+
+
+def returns_lookup_order_api(request):
+    """Find an order by order_id + email (or mobile) — allows guest access."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    order_id = str(data.get("order_id", "")).strip()
+    email    = (data.get("email", "") or "").strip().lower()
+    mobile   = (data.get("mobile", "") or "").strip()
+
+    if not order_id:
+        return JsonResponse({"success": False, "error": "Order ID is required."}, status=400)
+
+    try:
+        qs = Order.objects.filter(id=int(order_id))
+        if request.user.is_authenticated:
+            # Logged-in users can look up their own orders directly — no extra verification
+            qs = qs.filter(user=request.user)
+        elif email:
+            qs = qs.filter(user__email__iexact=email)
+        elif mobile:
+            qs = qs.filter(mobile_number=mobile)
+        else:
+            return JsonResponse({"success": False, "error": "Please provide email or mobile."}, status=400)
+        order = qs.get()
+    except (Order.DoesNotExist, ValueError):
+        return JsonResponse({"success": False, "error": "No order found with these details. Please check and try again."}, status=404)
+
+    # Only delivered orders are eligible
+    if order.status not in ("delivered", "returned", "rto"):
+        return JsonResponse({
+            "success": False,
+            "error": f"This order is currently '{order.get_status_display()}'. Returns can only be raised for delivered orders.",
+        }, status=400)
+
+    # Check if a return already exists and isn't rejected
+    existing = ReturnRequest.objects.filter(order=order).exclude(status="rejected").first()
+    if existing:
+        return JsonResponse({
+            "success": False,
+            "error": f"A return request ({existing.rtn_id}) already exists for this order with status '{existing.get_status_display()}'.",
+        }, status=400)
+
+    # Build items list
+    items = []
+    for it in order.items.select_related('product').all():
+        try:
+            img = it.product.image.url if it.product.image else ''
+        except Exception:
+            img = ''
+        items.append({
+            "item_id":  it.id,
+            "product":  it.product.name,
+            "sku":      getattr(it.product, 'sku', ''),
+            "image":    img,
+            "price":    float(it.price),
+            "quantity": it.quantity,
+        })
+
+    try:
+        address_parts = [
+            order.shipping_name or order.user.get_full_name(),
+            order.shipping_address,
+            order.shipping_city,
+            order.shipping_state,
+            order.shipping_postal_code,
+        ]
+        address_str = "\n".join(
+            p for p in address_parts
+            if p and p not in ('Address not provided', 'City not provided', 'State not provided', '00000')
+        )
+    except Exception:
+        address_str = getattr(order, 'shipping_address', '') or ''
+
+    try:
+        total_val = float(order.total)
+    except Exception:
+        total_val = 0.0
+
+    return JsonResponse({
+        "success": True,
+        "order": {
+            "id":           order.id,
+            "status":       order.status,
+            "total":        total_val,
+            "created_at":   order.created_at.strftime("%d %B %Y"),
+            "delivered_at": order.delivered_at.strftime("%d %B %Y") if order.delivered_at else "N/A",
+            "items":        items,
+            "address":      address_str,
+        },
+    })
+
+
+def returns_submit_api(request):
+    """Submit a return / exchange / refund request (login required)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Please log in to submit a return."}, status=401)
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST required"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    order_id   = data.get("order_id")
+    item_id    = data.get("item_id")   # optional
+    reason     = (data.get("reason") or "").strip()
+    detail     = (data.get("detail") or "").strip()
+    return_type = (data.get("return_type") or "refund").strip()
+    condition   = (data.get("condition") or "").strip()
+    refund_method = (data.get("refund_method") or "original_payment").strip()
+    pickup_address = (data.get("pickup_address") or "").strip()
+    images      = data.get("images", [])
+    # Bank details (if bank transfer)
+    account_holder_name = (data.get("account_holder_name") or "").strip()
+    account_number      = (data.get("account_number") or "").strip()
+    ifsc_code           = (data.get("ifsc_code") or "").strip()
+    bank_name           = (data.get("bank_name") or "").strip()
+
+    if not order_id or not reason:
+        return JsonResponse({"success": False, "error": "Order ID and reason are required."}, status=400)
+
+    try:
+        order = Order.objects.get(id=int(order_id), user=request.user)
+    except (Order.DoesNotExist, ValueError):
+        return JsonResponse({"success": False, "error": "Order not found."}, status=404)
+
+    if order.status not in ("delivered", "returned", "rto"):
+        return JsonResponse({"success": False, "error": "Order is not eligible for return."}, status=400)
+
+    existing = ReturnRequest.objects.filter(order=order).exclude(status="rejected").first()
+    if existing:
+        return JsonResponse({"success": False, "error": f"A return ({existing.rtn_id}) already exists for this order."}, status=400)
+
+    # Determine processing fee
+    settings_obj = SiteSettings.get_settings()
+    fee = float(settings_obj.return_exchange_fee) if return_type == 'exchange' else 0.0
+
+    # Resolve order item
+    order_item = None
+    product_name = order.items.first().product.name if order.items.exists() else 'N/A'
+    product_sku  = ''
+    order_amount = float(order.total)
+    if item_id:
+        try:
+            oi = order.items.get(id=int(item_id))
+            order_item   = oi
+            product_name = oi.product.name
+            product_sku  = getattr(oi.product, 'sku', '')
+            order_amount = float(oi.price) * oi.quantity
+        except OrderItem.DoesNotExist:
+            pass
+
+    rr = ReturnRequest.objects.create(
+        order=order,
+        order_item=order_item,
+        customer=request.user,
+        product_name=product_name,
+        product_sku=product_sku,
+        order_amount=order_amount,
+        quantity=order_item.quantity if order_item else 1,
+        return_reason=reason,
+        reason_detail=detail,
+        return_images=images,
+        return_type=return_type,
+        condition=condition,
+        refund_method=refund_method,
+        pickup_address=pickup_address,
+        account_holder_name=account_holder_name,
+        account_number=account_number,
+        ifsc_code=ifsc_code,
+        bank_name=bank_name,
+        processing_fee=fee,
+        status='requested',
+        priority='high' if order_amount >= 10000 else 'normal',
+    )
+    # Initial log entry
+    ReturnStageLog.objects.create(
+        return_request=rr,
+        from_status='',
+        to_status='requested',
+        note=f"Return request submitted by customer. Type: {return_type}. Reason: {reason}.",
+        changed_by=request.user,
+    )
+    # Notify customer
+    UserNotification.objects.create(
+        user=request.user,
+        title=f"Return Request Submitted — {rr.rtn_id}",
+        message=f"Your {return_type} request for Order #{order.id} has been received. Reference: {rr.rtn_id}. We will review within 24–48 hours.",
+        notif_type="order_updated",
+        related_order=order,
+    )
+
+    return JsonResponse({
+        "success": True,
+        "rtn_id": rr.rtn_id,
+        "message": "Your return request has been submitted. We'll review it within 24–48 hours.",
+    })
+
+
+@login_required
+def returns_my_requests_api(request):
+    """Return all return requests for the logged-in user."""
+    rrs = ReturnRequest.objects.filter(customer=request.user).order_by('-created_at')
+    data = []
+    for rr in rrs:
+        data.append({
+            "id":          rr.id,
+            "rtn_id":      rr.rtn_id,
+            "order_id":    rr.order_id,
+            "product":     rr.product_name,
+            "return_type": rr.return_type,
+            "status":      rr.status,
+            "created_at":  rr.created_at.strftime("%d %b %Y"),
+            "amount":      float(rr.order_amount),
+            "timeline":    [
+                {
+                    "stage":     lg.to_status,
+                    "note":      lg.note,
+                    "date":      lg.changed_at.strftime("%d %b %Y, %H:%M"),
+                }
+                for lg in rr.stage_logs.all()
+            ],
+        })
+    return JsonResponse({"success": True, "requests": data})

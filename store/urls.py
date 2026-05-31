@@ -61,4 +61,18 @@ urlpatterns = [
     # Collections
     path('collections/', views.collections_list_view, name='collections_list'),
     path('collections/<slug:slug>/', views.collection_detail_view, name='collection_detail'),
+
+    # Mobile menu API
+    path('api/categories-with-previews/', views.categories_with_previews_api, name='categories_with_previews'),
+
+    # Return & Refund (user-side)
+    path('returns/', views.returns_page_view, name='returns_page'),
+    path('api/returns/lookup-order/', views.returns_lookup_order_api, name='returns_lookup_order_api'),
+    path('api/returns/submit/', views.returns_submit_api, name='returns_submit_api'),
+    path('api/returns/my-requests/', views.returns_my_requests_api, name='returns_my_requests_api'),
+
+    # User notifications
+    path('api/notifications/', views.user_notifications_api, name='user_notifications_api'),
+    path('api/notifications/<int:notif_id>/read/', views.user_mark_notification_read_api, name='user_mark_notification_read_api'),
+    path('api/notifications/mark-all-read/', views.user_mark_all_notifications_read_api, name='user_mark_all_notifications_read_api'),
 ]

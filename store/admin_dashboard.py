@@ -61,7 +61,19 @@ def admin_dashboard(request):
     
     # Order status choices
     order_status_choices = Order.STATUS_CHOICES
-    
+
+    # ── Feature-based access for the current admin user ──────────────────────
+    # Superusers see everything. Sub-admins see only their assigned_features.
+    from store.models import AdminUserProfile
+    ALL_FEATURES = ['dashboard', 'orders', 'products', 'homepage', 'marketing', 'customers', 'website_frontend']
+    if request.user.is_superuser:
+        user_features = ALL_FEATURES
+    else:
+        try:
+            user_features = request.user.admin_profile.assigned_features or []
+        except AdminUserProfile.DoesNotExist:
+            user_features = []
+
     return render(request, 'enhanced_admin_dashboard.html', {
         'total_orders': total_orders,
         'total_sales': total_sales,
@@ -81,7 +93,9 @@ def admin_dashboard(request):
         'top_product': top_product,
         'active_customers': active_customers,
         'order_status_choices': order_status_choices,
-        'conversion_rate': 2.5,  # You can calculate this based on your metrics
+        'conversion_rate': 2.5,
+        'user_features_json': json.dumps(user_features),
+        'is_superuser': request.user.is_superuser,
     })
 
 @staff_member_required

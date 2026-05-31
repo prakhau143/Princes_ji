@@ -7,12 +7,14 @@ from django.db.models import Q, Sum, Count, F, ExpressionWrapper, DecimalField
 from django.db.models.functions import TruncDate, TruncMonth
 import json
 from .models import (
+    CustomerProfile,
     Order,
     OrderItem,
     Product,
     Category,
     User,
     Notification,
+    UserNotification,
     InstagramReel,
     TrustBadge,
     MarketingSpend,
@@ -33,6 +35,9 @@ from .models import (
 	HeroSlide,
 	SiteSettings,
 	Coupon,
+	AdminUserProfile,
+	ReturnRequest,
+	ReturnStageLog,
 )
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -565,11 +570,19 @@ def mark_all_notifications_read(request):
 @require_http_methods(["GET", "POST"])
 def categories_api(request):
     if request.method == "GET":
-        categories = Category.objects.filter(is_active=True).order_by("name")
+        categories = Category.objects.all().order_by("name")
         return JsonResponse(
             {
                 "success": True,
-                "categories": [{"id": c.id, "name": c.name} for c in categories],
+                "categories": [
+                    {
+                        "id": c.id,
+                        "name": c.name,
+                        "is_active": c.is_active,
+                        "product_count": c.products.count(),
+                    }
+                    for c in categories
+                ],
             }
         )
 
@@ -585,7 +598,7 @@ def categories_api(request):
         {
             "success": True,
             "created": created,
-            "category": {"id": category.id, "name": category.name},
+            "category": {"id": category.id, "name": category.name, "is_active": category.is_active},
         }
     )
 
@@ -597,6 +610,125 @@ def delete_category_api(request, category_id):
     category.is_active = False
     category.save(update_fields=["is_active"])
     return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def categories_update_api(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    try:
+        body = json.loads(request.body)
+    except Exception:
+        body = {}
+    new_name = (body.get("name") or request.POST.get("name") or "").strip()
+    if new_name and new_name != category.name:
+        if Category.objects.filter(name=new_name).exclude(id=category_id).exists():
+            return JsonResponse({"success": False, "error": "Category name already exists"})
+        category.name = new_name
+    if "is_active" in body:
+        category.is_active = bool(body["is_active"])
+    category.save()
+    return JsonResponse({"success": True, "category": {"id": category.id, "name": category.name, "is_active": category.is_active}})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def categories_toggle_api(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    category.is_active = not category.is_active
+    category.save(update_fields=["is_active"])
+    return JsonResponse({"success": True, "is_active": category.is_active})
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def categories_products_api(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    products = Product.objects.filter(category=category).order_by("name")
+    result = []
+    for p in products:
+        image_url = None
+        if p.image:
+            try:
+                image_url = p.image.url
+            except Exception:
+                pass
+        result.append({
+            "id": p.id,
+            "name": p.name,
+            "price": float(p.price),
+            "cost_price": float(p.cost_price),
+            "stock": p.stock,
+            "is_active": p.is_active,
+            "image_url": image_url,
+        })
+    return JsonResponse({
+        "success": True,
+        "category": {"id": category.id, "name": category.name},
+        "products": result,
+    })
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def product_status_trend_api(request):
+    from datetime import date
+    today = date.today()
+    labels = []
+    active_counts = []
+    disabled_counts = []
+    out_of_stock_counts = []
+    for i in range(5, -1, -1):
+        # Get the start of each of the last 6 months
+        if today.month - i <= 0:
+            month = today.month - i + 12
+            year = today.year - 1
+        else:
+            month = today.month - i
+            year = today.year
+        month_label = date(year, month, 1).strftime("%b")
+        # Count products created on or before end of that month
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        end_of_month = date(year, month, last_day)
+        base_qs = Product.objects.filter(created_at__date__lte=end_of_month)
+        labels.append(month_label)
+        active_counts.append(base_qs.filter(is_active=True).count())
+        disabled_counts.append(base_qs.filter(is_active=False).count())
+        out_of_stock_counts.append(base_qs.filter(stock=0).count())
+
+    return JsonResponse({
+        "success": True,
+        "labels": labels,
+        "active": active_counts,
+        "disabled": disabled_counts,
+        "out_of_stock": out_of_stock_counts,
+    })
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def top_categories_revenue_api(request):
+    from datetime import date, timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=365)
+    revenue_by_cat = (
+        OrderItem.objects.filter(
+            order__status="delivered",
+            order__created_at__date__gte=start_date,
+        )
+        .values("product__category__name")
+        .annotate(total_revenue=Sum(F("price") * F("quantity")))
+        .order_by("-total_revenue")[:10]
+    )
+    data = [
+        {
+            "category": item["product__category__name"] or "Uncategorized",
+            "revenue": float(item["total_revenue"] or 0),
+        }
+        for item in revenue_by_cat
+    ]
+    return JsonResponse({"success": True, "data": data})
 
 
 @staff_member_required
@@ -1744,8 +1876,20 @@ def bulk_import_products_api(request):
 @staff_member_required
 @require_http_methods(["GET"])
 def product_list_simple_api(request):
-    products = Product.objects.filter(is_active=True).order_by('name').values('id', 'name')
-    return JsonResponse({"success": True, "products": list(products)})
+    products = Product.objects.filter(is_active=True).order_by('name').values('id', 'name', 'price', 'stock', 'sku')
+    return JsonResponse({
+        "success": True,
+        "products": [
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "price": float(p["price"]),
+                "stock": p["stock"],
+                "sku": p["sku"] or "",
+            }
+            for p in products
+        ],
+    })
 
 
 # ─── Editorial Gallery ────────────────────────────────────────────────────────
@@ -2227,7 +2371,11 @@ def site_settings_api(request):
 			"shipping_charge": float(settings_obj.shipping_charge),
 			"free_shipping_above": float(settings_obj.free_shipping_above),
 			"cod_fee": float(settings_obj.cod_fee),
+			"return_exchange_fee": float(settings_obj.return_exchange_fee),
+			"shipping_charge": float(settings_obj.shipping_charge),
+			"free_shipping_above": float(settings_obj.free_shipping_above),
 			"razorpay_key_id": settings_obj.razorpay_key_id,
+			"razorpay_has_secret": bool(settings_obj.razorpay_key_secret),
 			# Never expose the secret to the frontend
 		})
 	try:
@@ -2240,12 +2388,24 @@ def site_settings_api(request):
 			settings_obj.free_shipping_above = data["free_shipping_above"]
 		if "cod_fee" in data:
 			settings_obj.cod_fee = data["cod_fee"]
+		if "return_exchange_fee" in data:
+			settings_obj.return_exchange_fee = data["return_exchange_fee"]
 		if "razorpay_key_id" in data:
 			settings_obj.razorpay_key_id = data["razorpay_key_id"]
 		if "razorpay_key_secret" in data and data["razorpay_key_secret"]:
 			settings_obj.razorpay_key_secret = data["razorpay_key_secret"]
 		settings_obj.save()
-		return JsonResponse({"success": True})
+		return JsonResponse({
+			"success": True,
+			"settings": {
+				"cod_fee": float(settings_obj.cod_fee),
+				"return_exchange_fee": float(settings_obj.return_exchange_fee),
+				"shipping_charge": float(settings_obj.shipping_charge),
+				"free_shipping_above": float(settings_obj.free_shipping_above),
+				"razorpay_key_id": settings_obj.razorpay_key_id,
+				"razorpay_has_secret": bool(settings_obj.razorpay_key_secret),
+			}
+		})
 	except Exception as e:
 		return JsonResponse({"success": False, "error": str(e)})
 
@@ -2324,3 +2484,1224 @@ def coupon_toggle_api(request, coupon_id):
 	coupon.is_active = not coupon.is_active
 	coupon.save()
 	return JsonResponse({"success": True, "is_active": coupon.is_active})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CUSTOMER ANALYTICS & MANAGEMENT APIs
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _get_or_create_customer_profile(user):
+	profile, _ = CustomerProfile.objects.get_or_create(user=user)
+	return profile
+
+
+@staff_member_required
+def customer_list_api(request):
+	users = (
+		User.objects.filter(is_staff=False)
+		.select_related('userprofile', 'customer_profile')
+		.annotate(
+			order_count=Count('order', distinct=True),
+			lifetime_val=Sum('order__total', filter=Q(order__status='delivered')),
+		)
+		.order_by('-date_joined')
+	)
+	data = []
+	for u in users:
+		cp = getattr(u, 'customer_profile', None)
+		if cp is None:
+			cp = _get_or_create_customer_profile(u)
+		phone = ''
+		try:
+			phone = u.userprofile.mobile or u.userprofile.phone or cp.alternate_phone
+		except Exception:
+			pass
+		data.append({
+			'id': u.id,
+			'customer_id': cp.customer_id,
+			'name': u.get_full_name() or u.username,
+			'email': u.email,
+			'phone': phone,
+			'is_enabled': cp.is_enabled,
+			'is_active': u.is_active,
+			'total_orders': u.order_count or 0,
+			'lifetime_value': float(u.lifetime_val or 0),
+			'join_date': u.date_joined.strftime('%Y-%m-%d'),
+			'notes': cp.notes,
+		})
+	return JsonResponse({'success': True, 'customers': data})
+
+
+@staff_member_required
+def customer_orders_api(request, customer_id):
+	user = get_object_or_404(User, id=customer_id)
+	orders = Order.objects.filter(user=user).order_by('-created_at')
+	return JsonResponse({
+		'success': True,
+		'orders': [{
+			'id': o.id,
+			'total': float(o.total),
+			'status': o.status,
+			'status_display': o.get_status_display(),
+			'created_at': o.created_at.strftime('%d %b %Y, %H:%M'),
+			'items_count': o.items.count(),
+		} for o in orders],
+	})
+
+
+@staff_member_required
+def customer_create_api(request):
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'POST required'})
+	try:
+		data = json.loads(request.body)
+		email = data.get('email', '').strip()
+		if not email:
+			return JsonResponse({'success': False, 'error': 'Email required'})
+		if User.objects.filter(email=email).exists():
+			return JsonResponse({'success': False, 'error': 'Email already registered'})
+		import random, string
+		temp_pw = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+		u = User.objects.create_user(
+			username=email,
+			email=email,
+			password=temp_pw,
+			first_name=data.get('first_name', '').strip(),
+			last_name=data.get('last_name', '').strip(),
+		)
+		cp = _get_or_create_customer_profile(u)
+		cp.alternate_phone = data.get('alternate_phone', '')
+		cp.gstin = data.get('gstin', '')
+		cp.notes = data.get('notes', '')
+		cp.is_enabled = data.get('is_enabled', True)
+		cp.save()
+		return JsonResponse({'success': True, 'customer_id': cp.customer_id})
+	except Exception as e:
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
+@staff_member_required
+def customer_update_api(request, customer_id):
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'POST required'})
+	try:
+		user = get_object_or_404(User, id=customer_id)
+		data = json.loads(request.body)
+		user.first_name = data.get('first_name', user.first_name)
+		user.last_name  = data.get('last_name',  user.last_name)
+		user.email      = data.get('email',       user.email)
+		user.save()
+		cp = _get_or_create_customer_profile(user)
+		cp.alternate_phone = data.get('alternate_phone', cp.alternate_phone)
+		cp.gstin  = data.get('gstin',  cp.gstin)
+		cp.notes  = data.get('notes',  cp.notes)
+		if 'is_enabled' in data:
+			cp.is_enabled = bool(data['is_enabled'])
+		cp.save()
+		# also update phone in UserProfile if present
+		try:
+			if data.get('phone'):
+				user.userprofile.mobile = data['phone']
+				user.userprofile.save(update_fields=['mobile'])
+		except Exception:
+			pass
+		return JsonResponse({'success': True})
+	except Exception as e:
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
+@staff_member_required
+def customer_toggle_api(request, customer_id):
+	user = get_object_or_404(User, id=customer_id)
+	cp = _get_or_create_customer_profile(user)
+	cp.is_enabled = not cp.is_enabled
+	cp.save(update_fields=['is_enabled'])
+	return JsonResponse({'success': True, 'is_enabled': cp.is_enabled})
+
+
+@staff_member_required
+def customer_category_graph_api(request):
+	rows = (
+		OrderItem.objects
+		.filter(order__status='delivered')
+		.values('order__user__id', 'product__category__name')
+		.annotate(total_spent=Sum('price'))
+		.order_by('order__user__id')
+	)
+	customers_map = {}
+	for row in rows:
+		uid = row['order__user__id']
+		cat = row['product__category__name'] or 'Uncategorized'
+		if uid not in customers_map:
+			try:
+				u = User.objects.get(pk=uid)
+				cp = getattr(u, 'customer_profile', None)
+				label = (cp.customer_id if cp else None) or (u.get_full_name() or u.username)[:10]
+			except Exception:
+				label = f'#{uid}'
+			customers_map[uid] = {'label': label, 'categories': {}}
+		customers_map[uid]['categories'][cat] = float(row['total_spent'])
+	# Return top 15 customers by total spend
+	result = sorted(
+		customers_map.values(),
+		key=lambda x: sum(x['categories'].values()),
+		reverse=True
+	)[:15]
+	return JsonResponse({'success': True, 'data': result})
+
+
+@staff_member_required
+def top_customers_api(request):
+	days = int(request.GET.get('days', 30))
+	since = timezone.now() - timedelta(days=days)
+	qs = (
+		User.objects
+		.filter(order__status='delivered', order__created_at__gte=since)
+		.annotate(total_spent=Sum('order__total'))
+		.select_related('customer_profile')
+		.order_by('-total_spent')[:20]
+	)
+	data = []
+	for u in qs:
+		cp = getattr(u, 'customer_profile', None)
+		if cp is None:
+			cp = _get_or_create_customer_profile(u)
+		data.append({
+			'id': u.id,
+			'customer_id': cp.customer_id,
+			'name': u.get_full_name() or u.username,
+			'email': u.email,
+			'total_spent': float(u.total_spent or 0),
+		})
+	return JsonResponse({'success': True, 'customers': data})
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  ORDER MANAGEMENT UPGRADE  –  Manual Order, Edit Items, Kanban, Trend, Search
+# ──────────────────────────────────────────────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET"])
+def customer_search_api(request):
+    """Search users by name / email / phone for manual order creation."""
+    q = (request.GET.get("q") or "").strip()
+    if len(q) < 2:
+        return JsonResponse({"success": True, "customers": []})
+    users = User.objects.filter(
+        Q(email__icontains=q) |
+        Q(first_name__icontains=q) |
+        Q(last_name__icontains=q) |
+        Q(username__icontains=q) |
+        Q(userprofile__mobile__icontains=q)
+    ).distinct()[:10]
+    customers = []
+    for u in users:
+        try:
+            phone = u.userprofile.mobile or ""
+        except Exception:
+            phone = ""
+        customers.append({
+            "id": u.id,
+            "name": u.get_full_name() or u.username,
+            "email": u.email,
+            "phone": phone,
+        })
+    return JsonResponse({"success": True, "customers": customers})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def create_manual_order_api(request):
+    """Create a manual order on behalf of a customer."""
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    user_id = data.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "Customer required"}, status=400)
+    user = get_object_or_404(User, id=user_id)
+
+    items_data = data.get("items", [])
+    if not items_data:
+        return JsonResponse({"success": False, "error": "At least one product required"}, status=400)
+
+    shipping_address = (data.get("shipping_address") or "").strip()
+    if not shipping_address:
+        return JsonResponse({"success": False, "error": "Shipping address required"}, status=400)
+
+    payment_method = data.get("payment_method", "cod")
+    admin_notes = data.get("reason", "")
+
+    # Calculate subtotal
+    subtotal = 0
+    order_items = []
+    for item_data in items_data:
+        product_id = item_data.get("product_id")
+        qty = int(item_data.get("quantity", 1))
+        custom_price = item_data.get("price")
+        if not product_id:
+            continue
+        product = get_object_or_404(Product, id=product_id)
+        price = float(custom_price) if custom_price else float(product.price)
+        subtotal += price * qty
+        order_items.append({"product": product, "quantity": qty, "price": price})
+
+    if not order_items:
+        return JsonResponse({"success": False, "error": "No valid products"}, status=400)
+
+    # Add COD fee if applicable (use frontend-sent value or fall back to SiteSettings)
+    cod_fee_amount = 0.0
+    if payment_method == "cod":
+        frontend_cod_fee = data.get("cod_fee")
+        if frontend_cod_fee is not None:
+            cod_fee_amount = float(frontend_cod_fee)
+        else:
+            site_settings = SiteSettings.get_settings()
+            cod_fee_amount = float(site_settings.cod_fee)
+    total = subtotal + cod_fee_amount
+
+    order = Order.objects.create(
+        user=user,
+        shipping_address=shipping_address,
+        shipping_name=user.get_full_name() or user.username,
+        total=total,
+        payment_method=payment_method,
+        payment_status="pending",
+        status="pending",
+        admin_notes=admin_notes,
+        is_manual=True,
+        cod_fee_amount=cod_fee_amount,
+    )
+    for oi in order_items:
+        OrderItem.objects.create(
+            order=order,
+            product=oi["product"],
+            quantity=oi["quantity"],
+            price=oi["price"],
+        )
+
+    # User-facing notification
+    UserNotification.objects.create(
+        user=user,
+        title="New Order Created",
+        message=f"Order #{order.id} has been placed for you. Total: ₹{total:.2f}",
+        notif_type="manual_order",
+        related_order=order,
+    )
+    return JsonResponse({"success": True, "order_id": order.id})
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def order_edit_items_api(request, order_id):
+    """Return items in an order for the edit modal."""
+    order = get_object_or_404(Order, id=order_id)
+    items = []
+    for item in order.items.select_related("product").all():
+        img_url = None
+        try:
+            img_url = item.product.image.url if item.product.image else None
+        except Exception:
+            pass
+        items.append({
+            "id": item.id,
+            "product_id": item.product.id,
+            "product_name": item.product.name,
+            "sku": item.product.sku or "",
+            "image_url": img_url,
+            "quantity": item.quantity,
+            "price": float(item.price),
+            "original_price": float(item.product.price),
+        })
+    return JsonResponse({
+        "success": True,
+        "order_id": order.id,
+        "customer": order.user.get_full_name() or order.user.username,
+        "status": order.status,
+        "items": items,
+    })
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def order_update_items_api(request, order_id):
+    """Update items in an existing order (product, qty, price)."""
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    items_data = data.get("items", [])
+    reason = data.get("reason", "Admin edit")
+    changes = []
+
+    for item_data in items_data:
+        item_id = item_data.get("item_id")
+        new_product_id = item_data.get("product_id")
+        new_qty = int(item_data.get("quantity", 1))
+        new_price = item_data.get("price")
+
+        try:
+            item = OrderItem.objects.get(id=item_id, order=order)
+        except OrderItem.DoesNotExist:
+            continue
+
+        old_name = item.product.name
+        if new_product_id and new_product_id != item.product_id:
+            new_product = get_object_or_404(Product, id=new_product_id)
+            item.product = new_product
+            changes.append(f"Product changed from {old_name} to {new_product.name}")
+        if new_price is not None:
+            item.price = float(new_price)
+        if new_qty != item.quantity:
+            item.quantity = new_qty
+        item.save()
+
+    # Recalculate order total
+    new_total = sum(i.price * i.quantity for i in order.items.all())
+    order.total = new_total
+    if reason:
+        order.admin_notes = (order.admin_notes + "\n" + reason).strip()
+    order.save(update_fields=["total", "admin_notes"])
+
+    # Notify user
+    UserNotification.objects.create(
+        user=order.user,
+        title=f"Order #{order.id} Updated",
+        message=f"Your order has been updated by admin. New total: ₹{float(new_total):.2f}. " + (", ".join(changes) or "Items updated."),
+        notif_type="order_updated",
+        related_order=order,
+    )
+    return JsonResponse({"success": True, "new_total": float(new_total)})
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def orders_kanban_api(request):
+    """Return orders grouped by status for the kanban board, with filters."""
+    status_filter = request.GET.get("status", "")
+    payment_filter = request.GET.get("payment", "")
+    date_range = request.GET.get("date_range", "all")
+    search = (request.GET.get("search") or "").strip()
+
+    orders_qs = Order.objects.select_related("user").order_by("-created_at")
+
+    if date_range == "today":
+        orders_qs = orders_qs.filter(created_at__date=timezone.now().date())
+    elif date_range == "week":
+        orders_qs = orders_qs.filter(created_at__gte=timezone.now() - timedelta(days=7))
+    elif date_range == "month":
+        orders_qs = orders_qs.filter(created_at__gte=timezone.now() - timedelta(days=30))
+
+    if status_filter and status_filter != "all":
+        orders_qs = orders_qs.filter(status=status_filter)
+    if payment_filter and payment_filter != "all":
+        orders_qs = orders_qs.filter(payment_method=payment_filter)
+    if search:
+        orders_qs = orders_qs.filter(
+            Q(id__icontains=search) |
+            Q(user__email__icontains=search) |
+            Q(user__first_name__icontains=search) |
+            Q(user__last_name__icontains=search) |
+            Q(mobile_number__icontains=search)
+        )
+
+    # Limit to last 200 orders total for kanban
+    orders_qs = orders_qs[:200]
+
+    grouped = {}
+    status_order = ['pending','processing','packed','shipped','out_for_delivery','delivered','rto','returned','refund_pending','refund_completed','cancelled']
+    for s in status_order:
+        grouped[s] = []
+
+    for order in orders_qs:
+        name = order.user.get_full_name() or order.user.username
+        s = order.status if order.status in grouped else 'pending'
+        grouped[s].append({
+            "id": order.id,
+            "customer": name,
+            "email": order.user.email,
+            "phone": order.mobile_number or "",
+            "total": float(order.total),
+            "payment_method": order.payment_method,
+            "payment_status": order.payment_status,
+            "status": order.status,
+            "status_display": order.get_status_display(),
+            "date": order.created_at.strftime("%b %d, %H:%M"),
+            "is_manual": order.is_manual,
+            "address": order.shipping_address[:50] if order.shipping_address else "",
+        })
+
+    # Status counts for funnel/summary
+    all_orders_qs = Order.objects.all()
+    summary = {s: all_orders_qs.filter(status=s).count() for s in status_order}
+    summary["total"] = all_orders_qs.count()
+
+    return JsonResponse({"success": True, "orders": grouped, "summary": summary})
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def orders_trend_api(request):
+    """Daily order counts for the past N days (for trend line chart)."""
+    days = int(request.GET.get("days", 30))
+    today = timezone.now().date()
+    start = today - timedelta(days=days - 1)
+
+    qs = (
+        Order.objects.filter(created_at__date__gte=start)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(
+            total_orders=Count("id"),
+            delivered=Count("id", filter=Q(status="delivered")),
+            cancelled=Count("id", filter=Q(status="cancelled")),
+        )
+        .order_by("day")
+    )
+    by_day = {row["day"]: row for row in qs}
+
+    labels, total_list, delivered_list, cancelled_list = [], [], [], []
+    current = start
+    while current <= today:
+        labels.append(current.strftime("%b %d"))
+        row = by_day.get(current, {})
+        total_list.append(row.get("total_orders", 0))
+        delivered_list.append(row.get("delivered", 0))
+        cancelled_list.append(row.get("cancelled", 0))
+        current += timedelta(days=1)
+
+    return JsonResponse({
+        "success": True,
+        "labels": labels,
+        "total": total_list,
+        "delivered": delivered_list,
+        "cancelled": cancelled_list,
+    })
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def lifecycle_analytics_api(request):
+    """Return lifecycle hub analytics: stage counts, conversion rates, avg times, aging."""
+    now = timezone.now()
+
+    # Stage counts
+    stage_counts = dict(
+        Order.objects.values("status").annotate(c=Count("id")).values_list("status", "c")
+    )
+
+    pipeline_statuses = ["pending", "processing", "packed", "shipped", "out_for_delivery"]
+    active_pipeline = sum(stage_counts.get(s, 0) for s in pipeline_statuses)
+    completed = stage_counts.get("delivered", 0)
+    cancelled = stage_counts.get("cancelled", 0)
+    returned = stage_counts.get("returned", 0) + stage_counts.get("rto", 0)
+    total_all = Order.objects.count()
+
+    # Conversion rates (funnel: placed → processing → packed → shipped → delivered)
+    placed = total_all or 1  # avoid division by zero
+    confirmed_rate = round((stage_counts.get("processing", 0) + sum(stage_counts.get(s, 0) for s in ["packed", "shipped", "out_for_delivery", "delivered"])) / placed * 100, 1)
+    packing_rate   = round((stage_counts.get("packed", 0)     + sum(stage_counts.get(s, 0) for s in ["shipped", "out_for_delivery", "delivered"])) / placed * 100, 1)
+    shipping_rate  = round((stage_counts.get("shipped", 0)    + stage_counts.get("out_for_delivery", 0) + stage_counts.get("delivered", 0)) / placed * 100, 1)
+    delivery_rate  = round(stage_counts.get("delivered", 0)   / placed * 100, 1)
+
+    # Funnel data for chart (absolute counts at each stage or past it)
+    funnel = [
+        {"stage": "Placed",     "count": total_all},
+        {"stage": "Confirmed",  "count": total_all - stage_counts.get("pending", 0)},
+        {"stage": "Packed",     "count": sum(stage_counts.get(s, 0) for s in ["packed", "shipped", "out_for_delivery", "delivered", "rto", "returned"])},
+        {"stage": "Shipped",    "count": sum(stage_counts.get(s, 0) for s in ["shipped", "out_for_delivery", "delivered", "rto"])},
+        {"stage": "Delivered",  "count": stage_counts.get("delivered", 0)},
+    ]
+
+    # Avg transition times using timestamp fields (in hours, rounded to 1 dp)
+    def avg_hours_between(field_a, field_b):
+        """Average hours between two datetime fields on Order."""
+        qs = Order.objects.filter(
+            **{f"{field_a}__isnull": False, f"{field_b}__isnull": False}
+        )
+        total_secs = 0
+        count = 0
+        for o in qs.only(field_a, field_b)[:2000]:  # cap for perf
+            a = getattr(o, field_a)
+            b = getattr(o, field_b)
+            if b > a:
+                total_secs += (b - a).total_seconds()
+                count += 1
+        return round(total_secs / count / 3600, 1) if count else 0
+
+    speed = [
+        {"label": "Placed → Confirmed", "hours": None},  # no packed_at baseline for this
+        {"label": "Confirmed → Packed",  "hours": None},
+        {"label": "Packed → Shipped",    "hours": avg_hours_between("packed_at", "shipped_at")},
+        {"label": "Shipped → Delivered", "hours": avg_hours_between("shipped_at", "delivered_at")},
+    ]
+
+    # Placed → Packed using created_at → packed_at
+    qs_p2p = Order.objects.filter(packed_at__isnull=False)
+    total_secs_p2p = 0
+    cnt_p2p = 0
+    for o in qs_p2p.only("created_at", "packed_at")[:2000]:
+        if o.packed_at > o.created_at:
+            total_secs_p2p += (o.packed_at - o.created_at).total_seconds()
+            cnt_p2p += 1
+    speed[0]["hours"] = round(total_secs_p2p / cnt_p2p / 3600, 1) if cnt_p2p else 0
+    speed[0]["label"] = "Placed → Packed"
+
+    # Packed → Shipped already done above, shift the labels
+    speed[1]["label"] = "Packed → Shipped"
+    speed[1]["hours"] = speed[2]["hours"]
+    speed[2]["label"] = "Shipped → OFD"
+    speed[2]["hours"] = avg_hours_between("shipped_at", "out_for_delivery_at")
+    speed[3]["label"] = "OFD → Delivered"
+    speed[3]["hours"] = avg_hours_between("out_for_delivery_at", "delivered_at")
+
+    # Order aging: orders stuck in early stages
+    active_qs = Order.objects.filter(status__in=["pending", "processing"])
+    aging_24  = active_qs.filter(created_at__lt=now - timedelta(hours=24)).count()
+    aging_48  = active_qs.filter(created_at__lt=now - timedelta(hours=48)).count()
+    aging_72  = active_qs.filter(created_at__lt=now - timedelta(hours=72)).count()
+
+    # Recent orders per stage for quick view (latest 5 per pipeline stage)
+    stage_orders = {}
+    for st in pipeline_statuses:
+        orders = Order.objects.filter(status=st).order_by("-created_at")[:5]
+        stage_orders[st] = [
+            {
+                "id": o.id,
+                "customer": o.shipping_name or (o.user.get_full_name() or o.user.username),
+                "total": float(o.total),
+                "created_at": o.created_at.strftime("%b %d, %H:%M"),
+                "hours_ago": round((now - o.created_at).total_seconds() / 3600, 1),
+            }
+            for o in orders
+        ]
+
+    return JsonResponse({
+        "success": True,
+        "total_orders": total_all,
+        "active_pipeline": active_pipeline,
+        "completed": completed,
+        "cancelled": cancelled,
+        "returned": returned,
+        "stage_counts": stage_counts,
+        "funnel": funnel,
+        "speed": speed,
+        "aging": {"gt24": aging_24, "gt48": aging_48, "gt72": aging_72},
+        "conversion": {
+            "confirmed": confirmed_rate,
+            "packing": packing_rate,
+            "shipping": shipping_rate,
+            "delivery": delivery_rate,
+        },
+        "stage_orders": stage_orders,
+    })
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_cancel_order_api(request, order_id):
+    """Admin cancels an order with a mandatory reason. Notifies the customer."""
+    order = get_object_or_404(Order, id=order_id)
+
+    # Guard: don't allow re-cancelling or cancelling already-closed orders
+    NON_CANCELLABLE = ["cancelled", "refund_completed"]
+    if order.status in NON_CANCELLABLE:
+        return JsonResponse(
+            {"success": False, "error": f"Order is already '{order.status}' and cannot be cancelled."},
+            status=400,
+        )
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    reason_code = data.get("reason_code", "other")
+    reason_note = (data.get("reason_note") or "").strip()
+
+    REASON_LABELS = {
+        "out_of_stock":      "Item(s) out of stock",
+        "customer_request":  "Customer requested cancellation",
+        "payment_issue":     "Payment issue / not received",
+        "wrong_address":     "Wrong / undeliverable address",
+        "fraud":             "Suspicious / fraudulent order",
+        "duplicate":         "Duplicate order",
+        "other":             "Other reason",
+    }
+    reason_label = REASON_LABELS.get(reason_code, reason_code)
+    full_reason = reason_label + (f" — {reason_note}" if reason_note else "")
+
+    prev_status = order.status
+    order.status = "cancelled"
+    order.admin_notes = (order.admin_notes + "\n" if order.admin_notes else "") + f"[Admin Cancel] {full_reason}"
+    order.save(update_fields=["status", "admin_notes", "updated_at"])
+
+    # Lifecycle log
+    from .models import OrderLifecycleLog
+    OrderLifecycleLog.objects.create(
+        order=order,
+        event_type="status_change",
+        previous_status=prev_status,
+        new_status="cancelled",
+        note=f"Admin cancelled: {full_reason}",
+        created_by=request.user,
+    )
+
+    # Notify customer
+    UserNotification.objects.create(
+        user=order.user,
+        title=f"Order #{order.id} Cancelled",
+        message=f"Your order #{order.id} has been cancelled by admin. Reason: {full_reason}. "
+                f"If you have any questions please contact support.",
+        notif_type="order_cancelled",
+        related_order=order,
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": f"Order #{order.id} cancelled.",
+        "order_id": order.id,
+    })
+
+
+# ─────────────────────────────────────────────
+#  USER MANAGEMENT  (superuser-only)
+# ─────────────────────────────────────────────
+
+def _serialize_admin_user(u):
+    """Return a dict representation of a staff User + AdminUserProfile."""
+    try:
+        profile = u.admin_profile
+        designation   = profile.designation
+        phone_number  = profile.phone_number
+        address       = profile.address
+        features      = profile.assigned_features or []
+    except AdminUserProfile.DoesNotExist:
+        designation = phone_number = address = ""
+        features = []
+    return {
+        "id":               u.id,
+        "username":         u.username,
+        "email":            u.email,
+        "first_name":       u.first_name,
+        "last_name":        u.last_name,
+        "full_name":        u.get_full_name() or u.username,
+        "designation":      designation,
+        "phone_number":     phone_number,
+        "address":          address,
+        "assigned_features": features,
+        "is_active":        u.is_active,
+        "is_superuser":     u.is_superuser,
+        "date_joined":      u.date_joined.strftime("%b %d, %Y"),
+        "last_login":       u.last_login.strftime("%b %d, %Y %H:%M") if u.last_login else "Never",
+    }
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def admin_users_list_api(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Permission denied."}, status=403)
+    users = User.objects.filter(is_staff=True).select_related("admin_profile").order_by("-date_joined")
+    return JsonResponse({"success": True, "users": [_serialize_admin_user(u) for u in users]})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_users_create_api(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Permission denied."}, status=403)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    email       = (data.get("email") or "").strip()
+    first_name  = (data.get("first_name") or "").strip()
+    last_name   = (data.get("last_name") or "").strip()
+    password    = (data.get("password") or "").strip()
+    designation = (data.get("designation") or "").strip()
+    phone       = (data.get("phone_number") or "").strip()
+    address     = (data.get("address") or "").strip()
+    features    = data.get("assigned_features", [])
+    # username = email prefix unless explicitly supplied
+    username    = (data.get("username") or email.split("@")[0]).strip()
+
+    if not email:
+        return JsonResponse({"success": False, "error": "Email is required."}, status=400)
+    if not password or len(password) < 6:
+        return JsonResponse({"success": False, "error": "Password must be at least 6 characters."}, status=400)
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({"success": False, "error": f"Username '{username}' is already taken."}, status=400)
+    if User.objects.filter(email__iexact=email).exists():
+        return JsonResponse({"success": False, "error": f"Email '{email}' is already in use."}, status=400)
+
+    user = User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        is_staff=True,
+        is_active=True,
+    )
+    AdminUserProfile.objects.create(
+        user=user,
+        designation=designation,
+        phone_number=phone,
+        address=address,
+        assigned_features=features,
+    )
+    return JsonResponse({"success": True, "message": f"User '{username}' created.", "user": _serialize_admin_user(user)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_users_update_api(request, user_id):
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Permission denied."}, status=403)
+    user = get_object_or_404(User, id=user_id, is_staff=True)
+    if user.is_superuser and user.id != request.user.id:
+        return JsonResponse({"success": False, "error": "Cannot modify another superuser."}, status=400)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    user.first_name = (data.get("first_name") or user.first_name).strip()
+    user.last_name  = (data.get("last_name")  or user.last_name).strip()
+    new_email       = (data.get("email") or "").strip()
+    if new_email and new_email.lower() != user.email.lower():
+        if User.objects.filter(email__iexact=new_email).exclude(id=user.id).exists():
+            return JsonResponse({"success": False, "error": "Email already in use."}, status=400)
+        user.email = new_email
+    new_pw = (data.get("password") or "").strip()
+    if new_pw:
+        if len(new_pw) < 6:
+            return JsonResponse({"success": False, "error": "Password must be at least 6 characters."}, status=400)
+        user.set_password(new_pw)
+    user.save()
+
+    profile, _ = AdminUserProfile.objects.get_or_create(user=user)
+    profile.designation   = (data.get("designation")   or profile.designation).strip()
+    profile.phone_number  = (data.get("phone_number")  or profile.phone_number).strip()
+    profile.address       = (data.get("address")       or profile.address).strip()
+    if "assigned_features" in data:
+        profile.assigned_features = data["assigned_features"]
+    profile.save()
+    return JsonResponse({"success": True, "message": f"User '{user.username}' updated.", "user": _serialize_admin_user(user)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_users_toggle_api(request, user_id):
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Permission denied."}, status=403)
+    user = get_object_or_404(User, id=user_id, is_staff=True)
+    if user.id == request.user.id:
+        return JsonResponse({"success": False, "error": "Cannot deactivate your own account."}, status=400)
+    if user.is_superuser:
+        return JsonResponse({"success": False, "error": "Cannot toggle a superuser."}, status=400)
+    user.is_active = not user.is_active
+    user.save(update_fields=["is_active"])
+    return JsonResponse({"success": True, "is_active": user.is_active,
+                         "message": f"User {'activated' if user.is_active else 'deactivated'}."})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_users_delete_api(request, user_id):
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Permission denied."}, status=403)
+    user = get_object_or_404(User, id=user_id, is_staff=True)
+    if user.id == request.user.id:
+        return JsonResponse({"success": False, "error": "Cannot delete your own account."}, status=400)
+    if user.is_superuser:
+        return JsonResponse({"success": False, "error": "Cannot delete a superuser here."}, status=400)
+    uname = user.username
+    user.delete()
+    return JsonResponse({"success": True, "message": f"User '{uname}' deleted."})
+
+
+# ══════════════════════════════════════════════════════════════
+#  RETURN & REFUND MANAGEMENT  APIs
+# ══════════════════════════════════════════════════════════════
+
+def _serialize_return(rr):
+    """Compact serialization for list/kanban views."""
+    from django.utils import timezone as tz
+    age = (tz.now() - rr.created_at).days
+    return {
+        "id":           rr.id,
+        "rtn_id":       f"RTN-{rr.id:04d}",
+        "order_id":     rr.order_id,
+        "customer_id":  rr.customer_id,
+        "customer_name": rr.customer.get_full_name() or rr.customer.username,
+        "customer_email": rr.customer.email,
+        "product_name": rr.product_name,
+        "product_sku":  rr.product_sku,
+        "order_amount": float(rr.order_amount),
+        "quantity":     rr.quantity,
+        "return_reason": rr.return_reason,
+        "reason_label": rr.get_return_reason_display(),
+        "status":       rr.status,
+        "priority":     rr.priority,
+        "qc_result":    rr.qc_result,
+        "resale_status":rr.resale_status,
+        "final_refund_amount": float(rr.final_refund_amount) if rr.final_refund_amount is not None else None,
+        "calculated_refund": rr.calculated_refund,
+        "is_high_value": rr.is_high_value,
+        "age_days":     age,
+        "created_at":   rr.created_at.strftime("%b %d, %Y"),
+        "created_iso":  rr.created_at.isoformat(),
+        "refunded_at":  rr.refunded_at.strftime("%b %d, %Y") if rr.refunded_at else None,
+    }
+
+
+def _serialize_return_detail(rr):
+    """Full serialization for the investigation drawer."""
+    base = _serialize_return(rr)
+    # Refund method + bank details
+    base.update({
+        "refund_method":       rr.refund_method,
+        "account_holder_name": rr.account_holder_name,
+        "account_number":      rr.account_number,
+        "ifsc_code":           rr.ifsc_code,
+        "bank_name":           rr.bank_name,
+        "order_payment_method": rr.order.payment_method if rr.order else "",
+    })
+    base.update({
+        "reason_detail":       rr.reason_detail,
+        "return_images":       rr.return_images,
+        "admin_notes":         rr.admin_notes,
+        "refund_reference":    rr.refund_reference,
+        "shipping_deduction":  float(rr.shipping_deduction),
+        "damage_penalty":      float(rr.damage_penalty),
+        "qc": {
+            "expected_weight":      float(rr.expected_weight)       if rr.expected_weight      is not None else None,
+            "received_weight":      float(rr.received_weight)       if rr.received_weight      is not None else None,
+            "stone_count_expected": rr.stone_count_expected,
+            "stone_count_received": rr.stone_count_received,
+            "hallmark_ok":          rr.hallmark_ok,
+            "packaging_ok":         rr.packaging_ok,
+            "damage_notes":         rr.damage_notes,
+            "qc_result":            rr.qc_result,
+            "qc_notes":             rr.qc_notes,
+        },
+        "timeline": [
+            {
+                "from_status": lg.from_status,
+                "to_status":   lg.to_status,
+                "note":        lg.note,
+                "changed_by":  lg.changed_by.get_full_name() or lg.changed_by.username if lg.changed_by else "System",
+                "changed_at":  lg.changed_at.strftime("%b %d, %Y %H:%M"),
+            }
+            for lg in rr.stage_logs.all()
+        ],
+    })
+    return base
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def returns_list_api(request):
+    """List return requests with optional filters."""
+    qs = ReturnRequest.objects.select_related("customer", "order").order_by("-created_at")
+    status_f   = request.GET.get("status")
+    priority_f = request.GET.get("priority")
+    search_f   = request.GET.get("q", "").strip()
+    if status_f:
+        qs = qs.filter(status=status_f)
+    if priority_f:
+        qs = qs.filter(priority=priority_f)
+    if search_f:
+        qs = qs.filter(
+            Q(product_name__icontains=search_f) |
+            Q(customer__username__icontains=search_f) |
+            Q(customer__email__icontains=search_f) |
+            Q(order__id__icontains=search_f)
+        )
+    returns = [_serialize_return(r) for r in qs[:200]]
+    return JsonResponse({"success": True, "returns": returns, "total": len(returns)})
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def returns_analytics_api(request):
+    """KPIs, alerts, stage counts, and chart data for the analytics panels."""
+    from django.utils import timezone as tz
+    from datetime import timedelta, date
+
+    now = tz.now()
+    this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # ── KPIs ────────────────────────────────────────────────
+    total         = ReturnRequest.objects.count()
+    pending_review = ReturnRequest.objects.filter(status="review").count()
+    pending_refund = ReturnRequest.objects.filter(status="refund_pending").count()
+    refunded_month = ReturnRequest.objects.filter(
+        status="refund_completed", refunded_at__gte=this_month_start
+    ).aggregate(t=Sum("final_refund_amount"))["t"] or 0
+    delivered_total = Order.objects.filter(status="delivered").count()
+    return_rate = round((total / delivered_total * 100), 1) if delivered_total else 0
+
+    # Avg resolution (days from requested → refund_completed)
+    resolved = ReturnRequest.objects.filter(status="refund_completed", refunded_at__isnull=False)
+    avg_res = 0
+    if resolved.exists():
+        deltas = [(r.refunded_at - r.created_at).days for r in resolved]
+        avg_res = round(sum(deltas) / len(deltas), 1)
+
+    # ── Smart Alerts ────────────────────────────────────────
+    alerts = []
+    hv = ReturnRequest.objects.filter(
+        is_high_value_calculated=False, order_amount__gte=10000,
+        status__in=["requested", "review"]
+    ).count()
+    # Simpler query without property:
+    hv = ReturnRequest.objects.filter(order_amount__gte=10000, status__in=["requested", "review"]).count()
+    if hv:
+        alerts.append({"type": "high_value",  "msg": f"{hv} High-Value Return{'s' if hv>1 else ''} Awaiting Review",  "count": hv, "severity": "warning"})
+
+    stale_threshold = now - timedelta(days=7)
+    stale = ReturnRequest.objects.filter(
+        created_at__lt=stale_threshold,
+        status__in=["requested", "review", "approved", "pickup_scheduled"]
+    ).count()
+    if stale:
+        alerts.append({"type": "stale", "msg": f"{stale} Return{'s' if stale>1 else ''} Pending > 7 Days", "count": stale, "severity": "danger"})
+
+    qc_fail = ReturnRequest.objects.filter(qc_result="fail").count()
+    if qc_fail:
+        alerts.append({"type": "qc_fail", "msg": f"{qc_fail} QC Failure{'s' if qc_fail>1 else ''}", "count": qc_fail, "severity": "danger"})
+
+    refund_q = ReturnRequest.objects.filter(status="refund_pending").aggregate(t=Sum("final_refund_amount"))["t"] or 0
+    if refund_q > 0:
+        alerts.append({"type": "refund_queue", "msg": f"Refund Queue ₹{refund_q:,.0f}", "count": 0, "severity": "warning"})
+
+    # ── Stage counts & values ────────────────────────────────
+    STAGES = ["requested", "review", "approved", "pickup_scheduled", "received", "quality_check", "refund_pending", "refund_completed", "rejected"]
+    stage_counts = {}
+    for s in STAGES:
+        agg = ReturnRequest.objects.filter(status=s).aggregate(cnt=Count("id"), val=Sum("order_amount"))
+        stage_counts[s] = {"count": agg["cnt"] or 0, "value": float(agg["val"] or 0)}
+
+    # ── Return reasons breakdown ─────────────────────────────
+    reason_data = list(
+        ReturnRequest.objects.values("return_reason")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    # ── Refund trend last 30 days ─────────────────────────────
+    trend = []
+    for i in range(29, -1, -1):
+        d = (now - timedelta(days=i)).date()
+        amt = ReturnRequest.objects.filter(
+            refunded_at__date=d, status="refund_completed"
+        ).aggregate(t=Sum("final_refund_amount"))["t"] or 0
+        trend.append({"date": str(d), "amount": float(amt)})
+
+    # ── Top returned products ────────────────────────────────
+    top_products = list(
+        ReturnRequest.objects.values("product_name")
+        .annotate(count=Count("id"), total_val=Sum("order_amount"))
+        .order_by("-count")[:8]
+    )
+
+    # ── Recovery stats ───────────────────────────────────────
+    recovery = {
+        "resellable":    ReturnRequest.objects.filter(resale_status="resellable").count(),
+        "repair_needed": ReturnRequest.objects.filter(resale_status="repair_needed").count(),
+        "damaged":       ReturnRequest.objects.filter(resale_status="damaged").count(),
+    }
+
+    # ── Customer risk ────────────────────────────────────────
+    cust_risk = list(
+        ReturnRequest.objects.values("customer__id", "customer__username", "customer__email")
+        .annotate(return_count=Count("id"), total_val=Sum("order_amount"))
+        .order_by("-return_count")[:8]
+    )
+
+    return JsonResponse({
+        "success": True,
+        "kpis": {
+            "total":           total,
+            "pending_review":  pending_review,
+            "pending_refund":  pending_refund,
+            "refunded_month":  float(refunded_month),
+            "return_rate":     return_rate,
+            "avg_resolution":  avg_res,
+        },
+        "alerts":        alerts,
+        "stage_counts":  stage_counts,
+        "reason_data":   reason_data,
+        "refund_trend":  trend,
+        "top_products":  top_products,
+        "recovery":      recovery,
+        "customer_risk": cust_risk,
+    })
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def return_detail_api(request, return_id):
+    rr = get_object_or_404(
+        ReturnRequest.objects.select_related('order', 'customer'),
+        id=return_id,
+    )
+    return JsonResponse({"success": True, "return": _serialize_return_detail(rr)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def return_update_status_api(request, return_id):
+    rr = get_object_or_404(ReturnRequest, id=return_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    new_status = data.get("status")
+    valid_statuses = [s[0] for s in ReturnRequest.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return JsonResponse({"success": False, "error": "Invalid status."}, status=400)
+
+    from django.utils import timezone as tz
+    prev = rr.status
+    rr.status = new_status
+    # Stamp relevant timestamps
+    if new_status == "approved"  and not rr.approved_at:  rr.approved_at = tz.now()
+    if new_status == "received"  and not rr.received_at:  rr.received_at = tz.now()
+    if new_status == "refund_completed":
+        rr.refunded_at = tz.now()
+        if rr.final_refund_amount is None:
+            rr.final_refund_amount = rr.calculated_refund
+    note = (data.get("note") or "").strip()
+    rr.save()
+
+    ReturnStageLog.objects.create(
+        return_request=rr,
+        from_status=prev,
+        to_status=new_status,
+        note=note,
+        changed_by=request.user,
+    )
+    return JsonResponse({"success": True, "message": f"Status updated to '{new_status}'.", "return": _serialize_return(rr)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def return_save_qc_api(request, return_id):
+    rr = get_object_or_404(ReturnRequest, id=return_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    def _f(val):
+        try: return float(val) if val not in (None, "") else None
+        except: return None
+    def _i(val):
+        try: return int(val) if val not in (None, "") else None
+        except: return None
+
+    rr.expected_weight      = _f(data.get("expected_weight"))
+    rr.received_weight      = _f(data.get("received_weight"))
+    rr.stone_count_expected = _i(data.get("stone_count_expected"))
+    rr.stone_count_received = _i(data.get("stone_count_received"))
+    rr.hallmark_ok          = data.get("hallmark_ok")   # bool or None
+    rr.packaging_ok         = data.get("packaging_ok")  # bool or None
+    rr.damage_notes         = (data.get("damage_notes")  or "").strip()
+    qc_res                  = (data.get("qc_result")     or "").strip()
+    if qc_res in ["pass", "fail", "investigate"]:
+        rr.qc_result = qc_res
+    rr.qc_notes = (data.get("qc_notes") or "").strip()
+    # Map QC result → resale status
+    qc_to_resale = {"pass": "resellable", "fail": "damaged", "investigate": "repair_needed"}
+    if qc_res in qc_to_resale:
+        rr.resale_status = qc_to_resale[qc_res]
+    rr.save()
+
+    return JsonResponse({"success": True, "message": "QC data saved.", "return": _serialize_return(rr)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def return_process_refund_api(request, return_id):
+    rr = get_object_or_404(ReturnRequest, id=return_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    action = data.get("action")  # "approve" | "partial" | "reject"
+    if action not in ("approve", "partial", "reject"):
+        return JsonResponse({"success": False, "error": "Invalid action."}, status=400)
+
+    from django.utils import timezone as tz
+    prev = rr.status
+
+    if action == "reject":
+        rr.status        = "rejected"
+        rr.admin_notes   = (rr.admin_notes + "\n" if rr.admin_notes else "") + f"[Rejected] {data.get('note','')}"
+        note_text        = f"Refund rejected. {data.get('note','')}"
+        rr.save()
+    else:
+        try:
+            ship_ded   = float(data.get("shipping_deduction", 0))
+            dmg_pen    = float(data.get("damage_penalty", 0))
+            final_amt  = float(data.get("final_refund_amount") or rr.calculated_refund)
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "error": "Invalid refund amounts."}, status=400)
+
+        rr.shipping_deduction  = ship_ded
+        rr.damage_penalty      = dmg_pen
+        rr.final_refund_amount = final_amt
+        rr.refund_reference    = (data.get("refund_reference") or "").strip()
+        rr.status              = "refund_completed"
+        rr.refunded_at         = tz.now()
+        note_text              = f"{'Full' if action=='approve' else 'Partial'} refund ₹{final_amt:,.2f} approved."
+        rr.save()
+
+        # Notify customer
+        UserNotification.objects.create(
+            user=rr.customer,
+            title=f"Refund Processed — {rr.rtn_id}",
+            message=f"Your return {rr.rtn_id} has been processed. Refund of ₹{final_amt:,.2f} has been approved. Reference: {rr.refund_reference or 'N/A'}",
+            notif_type="order_updated",
+            related_order=rr.order,
+        )
+
+    ReturnStageLog.objects.create(
+        return_request=rr,
+        from_status=prev,
+        to_status=rr.status,
+        note=note_text,
+        changed_by=request.user,
+    )
+    return JsonResponse({"success": True, "message": note_text, "return": _serialize_return(rr)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def return_add_note_api(request, return_id):
+    rr = get_object_or_404(ReturnRequest, id=return_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+    note = (data.get("note") or "").strip()
+    if not note:
+        return JsonResponse({"success": False, "error": "Note is empty."}, status=400)
+    from django.utils import timezone as tz
+    rr.admin_notes = (rr.admin_notes + "\n" if rr.admin_notes else "") + f"[{tz.now().strftime('%b %d %H:%M')}] {note}"
+    rr.save(update_fields=["admin_notes", "updated_at"])
+    ReturnStageLog.objects.create(
+        return_request=rr, from_status=rr.status, to_status=rr.status,
+        note=f"[Note] {note}", changed_by=request.user,
+    )
+    return JsonResponse({"success": True, "message": "Note added."})

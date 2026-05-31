@@ -1,0 +1,1564 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Returns & Refunds — Princess Jewellery{% endblock %}
+
+{% block extra_head %}{% endblock %}
+{% block content %}
+<style>
+/* ══════════════════════════════════════════════════
+   PREMIUM RETURNS PAGE — Princess Jewellery
+══════════════════════════════════════════════════ */
+:root {
+    --gold:        #D4AF37;
+    --gold-light:  #f0d97a;
+    --gold-dark:   #b8960c;
+    --gold-faint:  #fdf8e8;
+    --gold-glow:   rgba(212,175,55,.18);
+    --dark:        #1a1208;
+    --mid:         #5a4e35;
+    --light:       #fdf8ee;
+    --white:       #ffffff;
+    --border-c:    rgba(212,175,55,.25);
+    --border-hard: rgba(212,175,55,.5);
+    --success:     #16a34a;
+    --error:       #dc2626;
+    --card-shadow: 0 4px 24px rgba(180,150,12,.10), 0 1px 4px rgba(0,0,0,.04);
+    --card-shadow-hover: 0 12px 40px rgba(180,150,12,.18), 0 2px 8px rgba(0,0,0,.06);
+}
+
+/* ── Base ─────────────────────────────────────── */
+.rtn-page {
+    background: #fdfbf4;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--dark);
+}
+
+/* ══ HERO ══════════════════════════════════════ */
+.rtn-hero {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1208 0%, #2d2010 40%, #1a1208 100%);
+    padding: 5rem 1.5rem 4rem;
+    text-align: center;
+}
+.rtn-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 120%, rgba(212,175,55,.22) 0%, transparent 70%);
+    pointer-events: none;
+}
+/* Floating sparkle orbs */
+.rtn-hero-orb {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,175,55,.35), transparent 70%);
+    pointer-events: none; animation: rtnFloat 6s ease-in-out infinite;
+}
+.rtn-hero-orb.a { width:300px;height:300px; top:-80px;  left:-60px;  animation-delay:0s; }
+.rtn-hero-orb.b { width:200px;height:200px; top: 20px;  right:-40px; animation-delay:2s; }
+.rtn-hero-orb.c { width:150px;height:150px; bottom:-40px; left:30%;  animation-delay:4s; }
+@keyframes rtnFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-16px) scale(1.04)} }
+
+.rtn-hero-badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: rgba(212,175,55,.12);
+    border: 1px solid rgba(212,175,55,.4);
+    color: var(--gold-light);
+    font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    padding: .45rem 1.4rem; border-radius: 40px; margin-bottom: 1.5rem;
+    backdrop-filter: blur(8px);
+}
+.rtn-hero-title {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: .06em;
+    margin-bottom: .4rem;
+    text-shadow: 0 2px 20px rgba(0,0,0,.3);
+}
+.rtn-hero-title strong { font-weight: 700; color: var(--gold); }
+.rtn-hero-subtitle {
+    font-size: 1.05rem; color: rgba(255,255,255,.6);
+    margin-bottom: 2.5rem; font-style: italic; letter-spacing: .02em;
+}
+
+/* Stat pills */
+.rtn-stat-row {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    position: relative; z-index: 1;
+}
+.rtn-stat-pill {
+    display: flex; align-items: center; gap: .6rem;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(212,175,55,.3);
+    backdrop-filter: blur(12px);
+    border-radius: 14px; padding: .6rem 1.2rem;
+    transition: all .25s;
+}
+.rtn-stat-pill:hover { background: rgba(212,175,55,.12); transform: translateY(-2px); }
+.rtn-stat-pill-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(212,175,55,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; color: var(--gold);
+}
+.rtn-stat-pill-text { text-align: left; }
+.rtn-stat-pill-val { font-size: .95rem; font-weight: 800; color: #fff; line-height: 1; }
+.rtn-stat-pill-lbl { font-size: .68rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .07em; }
+
+/* ══ TRUST BAR ══════════════════════════════════ */
+.rtn-trust-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border-c);
+    padding: .85rem 1.5rem;
+}
+.rtn-trust-bar-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    gap: 2rem; flex-wrap: wrap;
+}
+.rtn-trust-item {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .75rem; font-weight: 600; color: var(--mid);
+}
+.rtn-trust-item i { color: var(--gold); font-size: .8rem; }
+.rtn-trust-sep { width: 1px; height: 18px; background: var(--border-c); }
+
+/* ══ LAYOUT ══════════════════════════════════════ */
+.rtn-container {
+    max-width: 980px; margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+}
+.rtn-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem; align-items: start;
+}
+@media(max-width:860px) { .rtn-grid { grid-template-columns: 1fr; } }
+
+/* ══ STEPPER ══════════════════════════════════== */
+.rtn-stepper {
+    display: flex; align-items: center;
+    background: var(--white);
+    border: 1px solid var(--border-c);
+    border-radius: 18px;
+    padding: .6rem 1rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+}
+.rtn-step {
+    flex: 1; display: flex; align-items: center; gap: .55rem;
+    font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    color: #c8b97a; padding: .45rem .6rem; border-radius: 10px;
+    transition: all .25s; cursor: default; white-space: nowrap;
+}
+.rtn-step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 800; flex-shrink: 0;
+    background: #f0e8c4; color: #b8960c;
+    transition: all .3s;
+}
+.rtn-step.active { color: var(--gold-dark); background: rgba(212,175,55,.08); }
+.rtn-step.active .rtn-step-num {
+    background: var(--gold);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(212,175,55,.45);
+}
+.rtn-step.done { color: var(--success); }
+.rtn-step.done .rtn-step-num {
+    background: var(--success); color: #fff;
+    box-shadow: 0 4px 10px rgba(22,163,74,.3);
+}
+.rtn-step-connector { flex: 0 0 20px; height: 1.5px; background: var(--border-c); margin: 0 .2rem; }
+
+/* ══ CARDS ════════════════════════════════════== */
+.rtn-card {
+    background: var(--white);
+    border: 1px solid var(--border-c);
+    border-radius: 20px;
+    padding: 1.75rem 2rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.25rem;
+    transition: box-shadow .2s;
+    position: relative; overflow: hidden;
+}
+.rtn-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
+    opacity: 0; transition: opacity .25s;
+}
+.rtn-card:hover { box-shadow: var(--card-shadow-hover); }
+.rtn-card:hover::before { opacity: 1; }
+
+.rtn-card-title {
+    display: flex; align-items: center; gap: .6rem;
+    font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--gold-dark);
+    padding-bottom: 1rem; margin-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(212,175,55,.15);
+}
+.rtn-card-title-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: .75rem; flex-shrink: 0;
+}
+
+/* ══ FORMS ════════════════════════════════════== */
+.rtn-label {
+    display: block; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--mid); margin-bottom: .45rem;
+}
+.rtn-input-wrap { position: relative; }
+.rtn-input-icon {
+    position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+    color: var(--gold); font-size: .85rem; pointer-events: none;
+}
+.rtn-input-wrap .rtn-input { padding-left: 2.4rem; }
+.rtn-input {
+    width: 100%; padding: .75rem 1rem; border: 1.5px solid #e8e0cc;
+    border-radius: 12px; font-size: .88rem; color: var(--dark);
+    background: #fffef7; outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    font-family: inherit; box-sizing: border-box;
+}
+.rtn-input:focus {
+    border-color: var(--gold); background: #fff;
+    box-shadow: 0 0 0 4px rgba(212,175,55,.12);
+}
+.rtn-input::placeholder { color: #c0aa70; }
+.rtn-input-group { margin-bottom: 1.2rem; }
+.rtn-textarea { resize: vertical; min-height: 100px; }
+.rtn-char-count { font-size: .7rem; color: #b0a070; text-align: right; margin-top: .3rem; }
+.rtn-field-error { font-size: .73rem; color: var(--error); margin-top: .3rem; }
+
+/* Error / alert banners */
+.rtn-alert {
+    display: none; border-radius: 12px; padding: .8rem 1rem;
+    font-size: .85rem; margin-bottom: 1rem;
+    align-items: center; gap: .6rem;
+}
+.rtn-alert.error { background: #fff2f2; border: 1px solid #fca5a5; color: #991b1b; }
+.rtn-alert.warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+.rtn-alert.visible { display: flex; }
+
+/* ══ LOOKUP SECTION ══════════════════════════== */
+.rtn-lookup-hero {
+    text-align: center; padding: .5rem 0 1.5rem;
+}
+.rtn-lookup-hero-icon {
+    width: 64px; height: 64px; margin: 0 auto 1rem;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; color: #fff;
+    box-shadow: 0 8px 24px rgba(212,175,55,.3);
+}
+.rtn-lookup-title { font-size: 1.15rem; font-weight: 700; color: var(--dark); margin-bottom: .3rem; }
+.rtn-lookup-sub { font-size: .82rem; color: var(--mid); }
+
+/* OR separator */
+.rtn-or-sep {
+    display: flex; align-items: center; gap: .75rem;
+    color: #c0aa70; font-size: .75rem; font-weight: 700; letter-spacing: .08em;
+    margin: -.2rem 0 1rem;
+}
+.rtn-or-sep::before,.rtn-or-sep::after { content:''; flex:1; height:1px; background:linear-gradient(to right,transparent,#e0d4a0); }
+.rtn-or-sep::after { background: linear-gradient(to left,transparent,#e0d4a0); }
+
+/* ══ ORDER FOUND BANNER ══════════════════════== */
+.rtn-order-found {
+    display: flex; align-items: center; gap: 1rem;
+    background: linear-gradient(135deg, #fffbea, #fdf5d0);
+    border: 1.5px solid rgba(212,175,55,.45);
+    border-radius: 16px; padding: 1.1rem 1.4rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 16px rgba(212,175,55,.12);
+}
+.rtn-order-badge {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 1.2rem; flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(212,175,55,.3);
+}
+.rtn-order-info-id { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-dark); }
+.rtn-order-info-prod { font-size: .95rem; font-weight: 700; color: var(--dark); margin: .15rem 0; }
+.rtn-order-info-meta { font-size: .75rem; color: var(--mid); }
+.rtn-eligible-badge {
+    margin-left: auto; display: flex; align-items: center; gap: .4rem;
+    background: #d1fae5; color: #065f46;
+    font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    padding: .3rem .75rem; border-radius: 20px; border: 1px solid #6ee7b7;
+    white-space: nowrap;
+}
+
+/* ══ RETURN TYPE CARDS ═══════════════════════== */
+.rtn-type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .85rem; margin-bottom: 1rem; }
+@media(max-width:480px){ .rtn-type-grid{ grid-template-columns:1fr; } }
+.rtn-type-card {
+    border: 2px solid var(--border-c);
+    border-radius: 16px; padding: 1.25rem .75rem;
+    text-align: center; cursor: pointer;
+    transition: all .25s; position: relative; overflow: hidden;
+    background: #fff;
+}
+.rtn-type-card::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(212,175,55,.06), transparent);
+    opacity: 0; transition: opacity .25s;
+}
+.rtn-type-card:hover { border-color: var(--gold-light); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(212,175,55,.15); }
+.rtn-type-card:hover::after { opacity: 1; }
+.rtn-type-card.selected {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #fffbea, #fdf8e0);
+    box-shadow: 0 0 0 4px rgba(212,175,55,.15), 0 6px 20px rgba(212,175,55,.18);
+    transform: translateY(-3px);
+}
+.rtn-type-card.selected::after { opacity: 1; }
+.rtn-type-icon {
+    width: 44px; height: 44px; border-radius: 12px; margin: 0 auto .75rem;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    transition: all .25s;
+}
+.rtn-type-card:nth-child(1) .rtn-type-icon { background: #dcfce7; color: #16a34a; }
+.rtn-type-card:nth-child(2) .rtn-type-icon { background: #fff7ed; color: #d97706; }
+.rtn-type-card:nth-child(3) .rtn-type-icon { background: #eff6ff; color: #2563eb; }
+.rtn-type-card.selected .rtn-type-icon { background: var(--gold); color: #fff; box-shadow: 0 4px 12px rgba(212,175,55,.4); }
+.rtn-type-name { font-size: .88rem; font-weight: 800; color: var(--dark); margin-bottom: .2rem; }
+.rtn-type-sub  { font-size: .72rem; color: var(--mid); }
+.rtn-type-fee  { font-size: .7rem; font-weight: 700; margin-top: .4rem; padding: .2rem .6rem; border-radius: 20px; display: inline-block; }
+.rtn-type-fee.free { background: #dcfce7; color: #16a34a; }
+.rtn-type-fee.paid { background: #fff7ed; color: #d97706; }
+
+/* ══ FEE NOTICE ══════════════════════════════== */
+.rtn-fee-notice {
+    display: none; align-items: flex-start; gap: .75rem;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 1px solid #fcd34d;
+    border-radius: 12px; padding: .9rem 1.1rem;
+    font-size: .83rem; color: #92400e; margin-bottom: 1rem;
+}
+.rtn-fee-notice.show { display: flex; }
+.rtn-fee-notice-icon { font-size: 1.1rem; color: #d97706; flex-shrink: 0; margin-top: .05rem; }
+
+/* ══ REFUND METHOD ════════════════════════════= */
+.rtn-method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: 1rem; }
+.rtn-method-card {
+    border: 2px solid var(--border-c); border-radius: 14px; padding: 1.1rem 1rem;
+    text-align: center; cursor: pointer; transition: all .25s; background: #fff;
+}
+.rtn-method-card:hover { border-color: var(--gold-light); transform: translateY(-2px); }
+.rtn-method-card.selected {
+    border-color: var(--gold); background: linear-gradient(135deg, #fffbea, #fdf8e0);
+    box-shadow: 0 0 0 3px rgba(212,175,55,.15);
+}
+.rtn-method-card-icon { font-size: 1.4rem; margin-bottom: .4rem; }
+.rtn-method-card-name { font-size: .85rem; font-weight: 700; color: var(--dark); }
+.rtn-method-card-sub  { font-size: .7rem; color: var(--mid); margin-top: .15rem; }
+
+/* ══ CONDITION RADIO ══════════════════════════= */
+.rtn-radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.rtn-radio-label {
+    display: flex; align-items: center; gap: .6rem; padding: .65rem .9rem;
+    border: 1.5px solid var(--border-c); border-radius: 10px; cursor: pointer;
+    font-size: .82rem; color: var(--dark); transition: all .2s; background: #fff;
+}
+.rtn-radio-label:hover { border-color: var(--gold-light); background: #fffdf0; }
+.rtn-radio-label input[type=radio] { accent-color: var(--gold); }
+.rtn-radio-label.selected { border-color: var(--gold); background: #fffbea; font-weight: 700; }
+
+/* ══ UPLOAD ZONE ══════════════════════════════= */
+.rtn-upload-zone {
+    border: 2px dashed rgba(212,175,55,.4); border-radius: 14px;
+    padding: 2rem 1rem; text-align: center; cursor: pointer;
+    transition: all .25s; position: relative; background: #fffef7;
+}
+.rtn-upload-zone:hover { border-color: var(--gold); background: rgba(212,175,55,.04); }
+.rtn-upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.rtn-upload-icon {
+    width: 48px; height: 48px; margin: 0 auto .75rem;
+    background: rgba(212,175,55,.12); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; color: var(--gold);
+}
+.rtn-upload-text { font-size: .85rem; color: var(--mid); font-weight: 600; }
+.rtn-upload-sub  { font-size: .72rem; color: #b0a060; margin-top: .25rem; }
+.rtn-preview-grid { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .85rem; }
+.rtn-preview-img { width: 68px; height: 68px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-c); }
+
+/* ══ BUTTONS ══════════════════════════════════= */
+.rtn-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+    height: 52px; padding: 0 2rem; border: none; border-radius: 14px;
+    font-size: .9rem; font-weight: 700; cursor: pointer; transition: all .22s;
+    font-family: inherit; letter-spacing: .04em;
+}
+.rtn-btn-gold {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-dark));
+    background-size: 200% 100%; background-position: 0;
+    color: #fff; width: 100%;
+    box-shadow: 0 4px 16px rgba(212,175,55,.35);
+}
+.rtn-btn-gold:hover:not(:disabled) {
+    background-position: 100%;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(212,175,55,.45);
+}
+.rtn-btn-outline {
+    background: #fff; color: var(--gold-dark);
+    border: 2px solid var(--gold); width: 100%;
+}
+.rtn-btn-outline:hover:not(:disabled) { background: rgba(212,175,55,.06); transform: translateY(-1px); }
+.rtn-btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+.rtn-btn-gap { display: flex; flex-direction: column; gap: .6rem; }
+
+/* ══ CHECKBOX ═════════════════════════════════= */
+.rtn-checkbox-label {
+    display: flex; align-items: flex-start; gap: .75rem; padding: .6rem 0;
+    font-size: .84rem; color: var(--mid); cursor: pointer;
+    border-bottom: 1px solid rgba(212,175,55,.1);
+}
+.rtn-checkbox-label:last-of-type { border-bottom: none; }
+.rtn-checkbox-wrap {
+    width: 20px; height: 20px; border: 2px solid var(--border-hard);
+    border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    margin-top: .05rem; background: #fff; transition: all .2s;
+}
+.rtn-checkbox-label input[type=checkbox] { position: absolute; opacity: 0; width: 0; height: 0; }
+.rtn-checkbox-label:has(input:checked) .rtn-checkbox-wrap { background: var(--gold); border-color: var(--gold); }
+.rtn-checkbox-label:has(input:checked) .rtn-checkbox-wrap::after {
+    content: '✓'; color: #fff; font-size: .75rem; font-weight: 900;
+}
+
+/* ══ SUCCESS SCREEN ════════════════════════════ */
+.rtn-success {
+    text-align: center; padding: 3rem 2rem;
+    background: linear-gradient(135deg, #fffbea, #fdf5d0, #fff9ea);
+    border: 2px solid rgba(212,175,55,.4);
+    border-radius: 24px;
+    box-shadow: 0 8px 40px rgba(212,175,55,.2);
+    position: relative; overflow: hidden;
+}
+.rtn-success::before {
+    content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+    width: 300px; height: 300px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,175,55,.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+.rtn-success-ring {
+    width: 80px; height: 80px; margin: 0 auto 1.25rem;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #fff;
+    box-shadow: 0 8px 32px rgba(212,175,55,.45);
+    animation: rtnSuccessPop .5s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes rtnSuccessPop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+.rtn-success-tag {
+    display: inline-block; font-size: .68rem; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--gold-dark);
+    background: rgba(212,175,55,.12); border: 1px solid rgba(212,175,55,.3);
+    padding: .3rem 1rem; border-radius: 20px; margin-bottom: .75rem;
+}
+.rtn-ref-id {
+    font-size: 1.75rem; font-weight: 800; color: var(--gold-dark);
+    letter-spacing: .08em; margin: .75rem 0 .4rem;
+    font-family: 'Courier New', monospace;
+}
+.rtn-success-msg { color: var(--mid); font-size: .88rem; margin: .5rem 0 2rem; line-height: 1.6; }
+
+/* ── Success mini timeline ── */
+.rtn-stl { display: flex; flex-direction: column; gap: 0; max-width: 340px; margin: 0 auto 2rem; text-align: left; }
+.rtn-stl-item { display: flex; align-items: flex-start; gap: .9rem; position: relative; }
+.rtn-stl-lhs { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+.rtn-stl-dot {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: .6rem;
+    transition: all .3s;
+}
+.rtn-stl-dot.done    { background: var(--success); color: #fff; font-size: .7rem; box-shadow: 0 2px 8px rgba(22,163,74,.3); }
+.rtn-stl-dot.active  { background: var(--gold); color: #fff; box-shadow: 0 2px 8px rgba(212,175,55,.35); }
+.rtn-stl-dot.pending { background: #e8e0c8; color: #b0a060; }
+.rtn-stl-line { width: 2px; flex: 1; min-height: 18px; background: #e8e0c8; margin: 2px 0; }
+.rtn-stl-line.done { background: linear-gradient(var(--success), #d0f0dc); }
+.rtn-stl-rhs { padding: .1rem 0 1.1rem; }
+.rtn-stl-label { font-size: .85rem; font-weight: 700; color: var(--dark); }
+.rtn-stl-label.active { color: var(--gold-dark); }
+.rtn-stl-label.pending { color: #b0a060; }
+.rtn-stl-date  { font-size: .72rem; color: var(--mid); }
+
+/* ══ MY REQUESTS SECTION ════════════════════== */
+.rtn-requests-empty {
+    text-align: center; padding: 2rem;
+}
+.rtn-requests-empty-icon {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: rgba(212,175,55,.1); margin: 0 auto .75rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: var(--gold);
+}
+.rtn-track-table { width: 100%; border-collapse: collapse; }
+.rtn-track-table thead th {
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--gold-dark); padding: .7rem .85rem;
+    background: rgba(212,175,55,.06);
+    border-bottom: 1.5px solid rgba(212,175,55,.2);
+    text-align: left; white-space: nowrap;
+}
+.rtn-track-table tbody td {
+    padding: .85rem .85rem; border-bottom: 1px solid rgba(212,175,55,.08);
+    font-size: .83rem; vertical-align: middle;
+}
+.rtn-track-table tbody tr { transition: background .15s; }
+.rtn-track-table tbody tr:hover td { background: rgba(212,175,55,.04); }
+.rtn-status-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .25rem .7rem; border-radius: 20px;
+    font-size: .7rem; font-weight: 700; white-space: nowrap;
+}
+.rtn-rtn-id { font-weight: 800; color: var(--gold-dark); font-family: monospace; letter-spacing: .04em; }
+.rtn-expand-btn {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .72rem; color: var(--gold-dark); cursor: pointer; font-weight: 700;
+    background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.3);
+    padding: .25rem .6rem; border-radius: 8px; transition: all .2s;
+}
+.rtn-expand-btn:hover { background: rgba(212,175,55,.18); }
+.rtn-timeline-row td { padding: 0 !important; }
+.rtn-timeline-inner {
+    padding: 1.1rem 1.5rem;
+    background: linear-gradient(135deg, #fffbea, #fdf8e6);
+    border-top: 1px dashed rgba(212,175,55,.3);
+}
+
+/* ══ SIDEBAR ══════════════════════════════════= */
+.rtn-sidebar { position: sticky; top: 90px; }
+
+.rtn-policy-card {
+    background: linear-gradient(135deg, #1a1208, #2d2010);
+    border: 1px solid rgba(212,175,55,.3);
+    border-radius: 20px; padding: 1.5rem;
+    margin-bottom: 1.25rem; overflow: hidden; position: relative;
+}
+.rtn-policy-card::before {
+    content: '';
+    position: absolute; top: -30%; right: -20%;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,175,55,.15), transparent 70%);
+    pointer-events: none;
+}
+.rtn-policy-card-title {
+    font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--gold);
+    padding-bottom: .85rem; margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(212,175,55,.2);
+    display: flex; align-items: center; gap: .5rem;
+}
+.rtn-policy-item {
+    display: flex; gap: .7rem; align-items: flex-start;
+    margin-bottom: .75rem; font-size: .82rem; color: rgba(255,255,255,.75);
+    line-height: 1.45;
+}
+.rtn-policy-item i { color: var(--gold); flex-shrink: 0; margin-top: .15rem; }
+
+/* Process steps sidebar */
+.rtn-process-card {
+    background: var(--white);
+    border: 1px solid var(--border-c);
+    border-radius: 20px; padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--card-shadow);
+}
+.rtn-process-card-title {
+    font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--gold-dark);
+    padding-bottom: .85rem; margin-bottom: 1.2rem;
+    border-bottom: 1px solid rgba(212,175,55,.15);
+    display: flex; align-items: center; gap: .5rem;
+}
+.rtn-process-step {
+    display: flex; align-items: flex-start; gap: .85rem; margin-bottom: .9rem;
+}
+.rtn-process-step:last-child { margin-bottom: 0; }
+.rtn-process-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 800; border: 1.5px solid var(--border-hard);
+    color: var(--gold-dark); background: rgba(212,175,55,.08);
+}
+.rtn-process-num.done { background: var(--gold); border-color: var(--gold); color: #fff; }
+.rtn-process-num.active { background: var(--gold); border-color: var(--gold); color: #fff; box-shadow: 0 0 0 3px rgba(212,175,55,.2); }
+.rtn-process-text { padding-top: .2rem; }
+.rtn-process-label { font-size: .84rem; font-weight: 700; color: var(--dark); }
+.rtn-process-sub   { font-size: .72rem; color: var(--mid); margin-top: .1rem; }
+
+/* Support card */
+.rtn-support {
+    background: linear-gradient(135deg, var(--gold-dark), #c8a020);
+    border-radius: 20px; padding: 1.5rem;
+    overflow: hidden; position: relative;
+}
+.rtn-support::before {
+    content: ''; position: absolute; bottom: -20px; right: -20px;
+    width: 100px; height: 100px; border-radius: 50%;
+    background: rgba(255,255,255,.08); pointer-events: none;
+}
+.rtn-support-title {
+    font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .12em; color: rgba(255,255,255,.8);
+    padding-bottom: .85rem; margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.2);
+}
+.rtn-support-link {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .55rem 0; text-decoration: none; color: #fff;
+    font-size: .83rem; font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    transition: transform .15s;
+}
+.rtn-support-link:last-of-type { border-bottom: none; }
+.rtn-support-link:hover { transform: translateX(4px); }
+.rtn-support-link-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,.15); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; font-size: .85rem;
+}
+.rtn-support-resp {
+    margin-top: .85rem; display: flex; align-items: center; gap: .4rem;
+    font-size: .72rem; color: rgba(255,255,255,.65);
+    background: rgba(255,255,255,.1); border-radius: 8px; padding: .4rem .7rem;
+}
+
+/* ══ TOAST ════════════════════════════════════= */
+.rtn-toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    padding: .9rem 1.5rem; border-radius: 14px;
+    font-size: .875rem; font-weight: 600; z-index: 9999;
+    box-shadow: 0 8px 30px rgba(0,0,0,.18);
+    transform: translateY(120px); transition: transform .35s cubic-bezier(.4,0,.2,1);
+    display: flex; align-items: center; gap: .6rem;
+}
+.rtn-toast.show { transform: translateY(0); }
+.rtn-toast.success { background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; }
+.rtn-toast.error   { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+
+/* ══ DIVIDER ══════════════════════════════════= */
+.rtn-divider {
+    display: flex; align-items: center; gap: .85rem; margin: 1.5rem 0;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--gold-dark);
+}
+.rtn-divider::before,.rtn-divider::after { content:''; flex:1; height:1px; background:rgba(212,175,55,.2); }
+
+/* ══ ANIMATE-IN ═══════════════════════════════= */
+@keyframes rtnFadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.rtn-card { animation: rtnFadeUp .35s ease both; }
+.rtn-card:nth-child(2){ animation-delay:.05s; }
+.rtn-card:nth-child(3){ animation-delay:.1s;  }
+.rtn-card:nth-child(4){ animation-delay:.15s; }
+
+/* ══ RESPONSIVE ═══════════════════════════════= */
+@media(max-width:520px){
+    .rtn-type-grid{ grid-template-columns:1fr; gap:.6rem; }
+    .rtn-method-grid{ grid-template-columns:1fr 1fr; }
+    .rtn-radio-group{ grid-template-columns:1fr; }
+    .rtn-stat-row{ gap:.6rem; }
+    .rtn-stat-pill{ flex:1; min-width:140px; }
+    .rtn-hero{ padding:3.5rem 1rem 3rem; }
+    .rtn-hero-title{ font-size:1.9rem; }
+}
+</style>
+
+<div class="rtn-page">
+
+    <!-- ═══════════════════════════════════
+         HERO
+    ═══════════════════════════════════ -->
+    <section class="rtn-hero">
+        <div class="rtn-hero-orb a"></div>
+        <div class="rtn-hero-orb b"></div>
+        <div class="rtn-hero-orb c"></div>
+        <div style="position:relative;z-index:1;">
+            <div class="rtn-hero-badge">
+                <i class="fas fa-shield-alt"></i> Princess Jewellery
+            </div>
+            <h1 class="rtn-hero-title">Returns &amp; <strong>Refunds</strong></h1>
+            <p class="rtn-hero-subtitle">Hassle-free. Transparent. Built on trust.</p>
+
+            <div class="rtn-stat-row">
+                <div class="rtn-stat-pill">
+                    <div class="rtn-stat-pill-icon"><i class="fas fa-undo-alt"></i></div>
+                    <div class="rtn-stat-pill-text">
+                        <div class="rtn-stat-pill-val">7 Days</div>
+                        <div class="rtn-stat-pill-lbl">Return Window</div>
+                    </div>
+                </div>
+                <div class="rtn-stat-pill">
+                    <div class="rtn-stat-pill-icon"><i class="fas fa-rupee-sign"></i></div>
+                    <div class="rtn-stat-pill-text">
+                        <div class="rtn-stat-pill-val">100%</div>
+                        <div class="rtn-stat-pill-lbl">Refund Guarantee</div>
+                    </div>
+                </div>
+                <div class="rtn-stat-pill">
+                    <div class="rtn-stat-pill-icon"><i class="fas fa-truck"></i></div>
+                    <div class="rtn-stat-pill-text">
+                        <div class="rtn-stat-pill-val">Free</div>
+                        <div class="rtn-stat-pill-lbl">Insured Pickup</div>
+                    </div>
+                </div>
+                <div class="rtn-stat-pill">
+                    <div class="rtn-stat-pill-icon"><i class="fas fa-clock"></i></div>
+                    <div class="rtn-stat-pill-text">
+                        <div class="rtn-stat-pill-val">48 hrs</div>
+                        <div class="rtn-stat-pill-lbl">Review Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust bar -->
+    <div class="rtn-trust-bar">
+        <div class="rtn-trust-bar-inner">
+            <div class="rtn-trust-item"><i class="fas fa-lock"></i> SSL Secured</div>
+            <div class="rtn-trust-sep"></div>
+            <div class="rtn-trust-item"><i class="fas fa-certificate"></i> Certified Jeweller</div>
+            <div class="rtn-trust-sep"></div>
+            <div class="rtn-trust-item"><i class="fas fa-star" style="color:#d97706;"></i> 4.9 / 5 Customer Rating</div>
+            <div class="rtn-trust-sep"></div>
+            <div class="rtn-trust-item"><i class="fas fa-headset"></i> 24 / 7 Support</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         MAIN CONTENT
+    ═══════════════════════════════════ -->
+    <div class="rtn-container">
+        <div class="rtn-grid">
+
+            <!-- ── Left / Main column ──────────────── -->
+            <div>
+
+                <!-- Step Indicator -->
+                <div class="rtn-stepper" id="rtnSteps">
+                    <div class="rtn-step active" data-step="1">
+                        <div class="rtn-step-num">1</div> Find Order
+                    </div>
+                    <div class="rtn-step-connector"></div>
+                    <div class="rtn-step" data-step="2">
+                        <div class="rtn-step-num">2</div> Return Details
+                    </div>
+                    <div class="rtn-step-connector"></div>
+                    <div class="rtn-step" data-step="3">
+                        <div class="rtn-step-num">3</div> Confirmation
+                    </div>
+                </div>
+
+                <!-- ════ STEP 1 — Find Order ════ -->
+                <div id="rtnStep1">
+                    <div class="rtn-card">
+
+                        <div class="rtn-lookup-hero">
+                            <div class="rtn-lookup-hero-icon"><i class="fas fa-search"></i></div>
+                            <div class="rtn-lookup-title">Find Your Order</div>
+                            <div class="rtn-lookup-sub">Enter your Order ID and email or mobile to locate your order.</div>
+                        </div>
+
+                        <div id="rtnLookupError" class="rtn-alert error"></div>
+
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Order ID <span style="color:var(--error);">*</span></label>
+                            <div class="rtn-input-wrap">
+                                <i class="rtn-input-icon fas fa-hashtag"></i>
+                                <input type="text" id="rtnOrderId" class="rtn-input" placeholder="e.g. 12345">
+                            </div>
+                        </div>
+
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Email Address</label>
+                            <div class="rtn-input-wrap">
+                                <i class="rtn-input-icon fas fa-envelope"></i>
+                                <input type="email" id="rtnEmail" class="rtn-input" placeholder="your@email.com">
+                            </div>
+                        </div>
+
+                        <div class="rtn-or-sep">OR</div>
+
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Mobile Number</label>
+                            <div class="rtn-input-wrap">
+                                <i class="rtn-input-icon fas fa-mobile-alt"></i>
+                                <input type="tel" id="rtnMobile" class="rtn-input" placeholder="+91 99999 99999">
+                            </div>
+                        </div>
+
+                        <button class="rtn-btn rtn-btn-gold" id="rtnFindBtn" onclick="rtnLookupOrder()">
+                            <i class="fas fa-search"></i> Find My Order
+                        </button>
+                    </div>
+
+                    {% if user.is_authenticated %}
+                    <!-- My Return Requests -->
+                    <div class="rtn-card">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-history"></i></div>
+                            My Return Requests
+                        </div>
+                        <div id="rtnMyRequests">
+                            <div style="text-align:center;padding:2rem;">
+                                <i class="fas fa-spinner fa-spin" style="color:var(--gold);font-size:1.2rem;"></i>
+                                <div style="font-size:.82rem;color:var(--mid);margin-top:.5rem;">Loading your requests…</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- ════ STEP 2 — Return Form ════ -->
+                <div id="rtnStep2" style="display:none;">
+
+                    <!-- Order summary banner -->
+                    <div class="rtn-order-found" id="rtnOrderSummary"></div>
+
+                    <!-- Item selector (multiple items) -->
+                    <div class="rtn-card" id="rtnItemCard" style="display:none;">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-gem"></i></div>
+                            Select Item to Return
+                        </div>
+                        <div id="rtnItemList"></div>
+                    </div>
+
+                    <!-- Return details -->
+                    <div class="rtn-card">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-clipboard-list"></i></div>
+                            Return Details
+                        </div>
+
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Return Reason <span style="color:var(--error);">*</span></label>
+                            <div class="rtn-input-wrap">
+                                <i class="rtn-input-icon fas fa-question-circle"></i>
+                                <select id="rtnReason" class="rtn-input">
+                                    <option value="">— Select a Reason —</option>
+                                    <option value="damaged">Product Damaged / Defective</option>
+                                    <option value="quality_issue">Quality Not As Expected</option>
+                                    <option value="wrong_product">Wrong Item Received</option>
+                                    <option value="size_issue">Size / Fit Issue</option>
+                                    <option value="customer_preference">Changed My Mind</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Describe the Issue <span style="color:#c0aa70;font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem;">(optional but helpful)</span></label>
+                            <textarea id="rtnDetail" class="rtn-input rtn-textarea" maxlength="500"
+                                placeholder="Please share any extra details that will help us resolve this quickly…"
+                                oninput="document.getElementById('rtnDetailCount').textContent=this.value.length"></textarea>
+                            <div class="rtn-char-count"><span id="rtnDetailCount">0</span> / 500</div>
+                        </div>
+
+                        <!-- Upload zone -->
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Upload Evidence Photos</label>
+                            <div class="rtn-upload-zone" id="rtnUploadZone">
+                                <input type="file" id="rtnImages" accept="image/*,video/mp4" multiple onchange="rtnPreviewImages(this)">
+                                <div class="rtn-upload-icon"><i class="fas fa-camera"></i></div>
+                                <div class="rtn-upload-text">Drag &amp; drop or click to upload</div>
+                                <div class="rtn-upload-sub">JPG · PNG · MP4 &nbsp;·&nbsp; Max 5 files</div>
+                            </div>
+                            <div class="rtn-preview-grid" id="rtnImagePreview"></div>
+                        </div>
+
+                        <!-- Product condition -->
+                        <div class="rtn-input-group">
+                            <label class="rtn-label">Product Condition</label>
+                            <div class="rtn-radio-group" id="rtnConditionGroup">
+                                <label class="rtn-radio-label" onclick="rtnSelectCondition(this,'unused_original')">
+                                    <input type="radio" name="rtnCondition" value="unused_original">
+                                    <span>Unused &amp; Original Packaging</span>
+                                </label>
+                                <label class="rtn-radio-label" onclick="rtnSelectCondition(this,'opened_unused')">
+                                    <input type="radio" name="rtnCondition" value="opened_unused">
+                                    <span>Opened but Unused</span>
+                                </label>
+                                <label class="rtn-radio-label" onclick="rtnSelectCondition(this,'used')">
+                                    <input type="radio" name="rtnCondition" value="used">
+                                    <span>Used</span>
+                                </label>
+                                <label class="rtn-radio-label" onclick="rtnSelectCondition(this,'damaged')">
+                                    <input type="radio" name="rtnCondition" value="damaged">
+                                    <span>Damaged</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What would you like? -->
+                    <div class="rtn-card">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-tags"></i></div>
+                            What Would You Like?
+                        </div>
+
+                        <div class="rtn-type-grid">
+                            <div class="rtn-type-card selected" onclick="rtnSelectType(this,'refund')" id="rtnTypeRefund">
+                                <div class="rtn-type-icon"><i class="fas fa-rupee-sign"></i></div>
+                                <div class="rtn-type-name">Refund</div>
+                                <div class="rtn-type-sub">Money back to you</div>
+                                <div class="rtn-type-fee free">No Fee</div>
+                            </div>
+                            <div class="rtn-type-card" onclick="rtnSelectType(this,'exchange')" id="rtnTypeExchange">
+                                <div class="rtn-type-icon"><i class="fas fa-exchange-alt"></i></div>
+                                <div class="rtn-type-name">Exchange</div>
+                                <div class="rtn-type-sub">Get a new item</div>
+                                <div class="rtn-type-fee paid">₹{{ return_exchange_fee|floatformat:0 }} fee</div>
+                            </div>
+                            <div class="rtn-type-card" onclick="rtnSelectType(this,'store_credit')" id="rtnTypeCredit">
+                                <div class="rtn-type-icon"><i class="fas fa-wallet"></i></div>
+                                <div class="rtn-type-name">Store Credit</div>
+                                <div class="rtn-type-sub">Use on next order</div>
+                                <div class="rtn-type-fee free">No Fee</div>
+                            </div>
+                        </div>
+
+                        <div class="rtn-fee-notice" id="rtnFeeNotice">
+                            <div class="rtn-fee-notice-icon"><i class="fas fa-info-circle"></i></div>
+                            <div>A processing &amp; pickup fee of <strong>₹{{ return_exchange_fee|floatformat:0 }}</strong> applies for exchange requests. This is deducted from your order value.</div>
+                        </div>
+                    </div>
+
+                    <!-- Refund method -->
+                    <div class="rtn-card" id="rtnRefundMethodCard">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-university"></i></div>
+                            Refund Method
+                        </div>
+                        <div class="rtn-method-grid">
+                            <div class="rtn-method-card selected" onclick="rtnSelectMethod(this,'original_payment')" id="rtnMethodOriginal">
+                                <div class="rtn-method-card-icon"><i class="fas fa-credit-card" style="color:var(--gold);"></i></div>
+                                <div class="rtn-method-card-name">Original Payment</div>
+                                <div class="rtn-method-card-sub">3–7 business days</div>
+                            </div>
+                            <div class="rtn-method-card" onclick="rtnSelectMethod(this,'bank_transfer')" id="rtnMethodBank">
+                                <div class="rtn-method-card-icon"><i class="fas fa-building" style="color:var(--gold);"></i></div>
+                                <div class="rtn-method-card-name">Bank Transfer</div>
+                                <div class="rtn-method-card-sub">5–7 business days</div>
+                            </div>
+                        </div>
+
+                        <div id="rtnBankFields" style="display:none;">
+                            <div class="rtn-divider"><i class="fas fa-university"></i> Bank Details</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                                <div class="rtn-input-group">
+                                    <label class="rtn-label">Account Holder Name</label>
+                                    <input type="text" id="rtnAccName" class="rtn-input" placeholder="As per bank records">
+                                </div>
+                                <div class="rtn-input-group">
+                                    <label class="rtn-label">Account Number</label>
+                                    <input type="text" id="rtnAccNo" class="rtn-input" placeholder="XXXX XXXX XXXX">
+                                </div>
+                                <div class="rtn-input-group">
+                                    <label class="rtn-label">IFSC Code</label>
+                                    <input type="text" id="rtnIfsc" class="rtn-input" placeholder="SBIN0001234">
+                                </div>
+                                <div class="rtn-input-group">
+                                    <label class="rtn-label">Bank Name</label>
+                                    <input type="text" id="rtnBankName" class="rtn-input" placeholder="State Bank of India">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pickup address -->
+                    <div class="rtn-card">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-map-marker-alt"></i></div>
+                            Pickup Address
+                        </div>
+                        <textarea id="rtnPickupAddr" class="rtn-input rtn-textarea" rows="3"
+                            placeholder="Full address where our courier should pick up the item…"></textarea>
+                        <div style="display:flex;align-items:center;gap:.4rem;margin-top:.5rem;font-size:.75rem;color:var(--mid);">
+                            <i class="fas fa-info-circle" style="color:var(--gold);"></i>
+                            Pickup will be scheduled within 2–3 working days after approval.
+                        </div>
+                    </div>
+
+                    <!-- Terms & Submit -->
+                    <div class="rtn-card">
+                        <div class="rtn-card-title">
+                            <div class="rtn-card-title-icon"><i class="fas fa-file-alt"></i></div>
+                            Terms &amp; Conditions
+                        </div>
+
+                        <label class="rtn-checkbox-label" id="rtnChk1Label">
+                            <div class="rtn-checkbox-wrap"></div>
+                            <input type="checkbox" id="rtnChk1">
+                            Product is in returnable condition as per our policy
+                        </label>
+                        <label class="rtn-checkbox-label" id="rtnChk2Label">
+                            <div class="rtn-checkbox-wrap"></div>
+                            <input type="checkbox" id="rtnChk2">
+                            I have read and understood the <a href="#" style="color:var(--gold-dark);text-decoration:underline;font-weight:700;">Return Policy</a>
+                        </label>
+                        <label class="rtn-checkbox-label" id="rtnChk3Label">
+                            <div class="rtn-checkbox-wrap"></div>
+                            <input type="checkbox" id="rtnChk3">
+                            I agree that physical inspection of the returned item is required before refund is processed
+                        </label>
+
+                        <div id="rtnSubmitError" class="rtn-alert error" style="margin-top:1rem;"></div>
+
+                        <div class="rtn-btn-gap" style="margin-top:1.25rem;">
+                            <button class="rtn-btn rtn-btn-gold" id="rtnSubmitBtn" onclick="rtnSubmit()">
+                                <i class="fas fa-paper-plane"></i> Submit Return Request
+                            </button>
+                            <button class="rtn-btn rtn-btn-outline" onclick="rtnGoBack()">
+                                <i class="fas fa-arrow-left"></i> Go Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════ STEP 3 — Success ════ -->
+                <div id="rtnStep3" style="display:none;">
+                    <div class="rtn-success">
+                        <div class="rtn-success-ring"><i class="fas fa-check"></i></div>
+                        <div class="rtn-success-tag">Request Submitted Successfully</div>
+                        <div class="rtn-ref-id" id="rtnRefId">RTN-XXXX</div>
+                        <p class="rtn-success-msg">
+                            We've received your return request and will review it within 24–48 hours.<br>
+                            You'll receive an email &amp; SMS confirmation shortly.
+                        </p>
+
+                        <!-- Journey timeline -->
+                        <div class="rtn-stl">
+                            <div class="rtn-stl-item">
+                                <div class="rtn-stl-lhs">
+                                    <div class="rtn-stl-dot done"><i class="fas fa-check" style="font-size:.55rem;"></i></div>
+                                    <div class="rtn-stl-line done"></div>
+                                </div>
+                                <div class="rtn-stl-rhs">
+                                    <div class="rtn-stl-label">Return Requested</div>
+                                    <div class="rtn-stl-date">Just now</div>
+                                </div>
+                            </div>
+                            <div class="rtn-stl-item">
+                                <div class="rtn-stl-lhs">
+                                    <div class="rtn-stl-dot active"><i class="fas fa-search" style="font-size:.55rem;"></i></div>
+                                    <div class="rtn-stl-line"></div>
+                                </div>
+                                <div class="rtn-stl-rhs">
+                                    <div class="rtn-stl-label active">Under Review</div>
+                                    <div class="rtn-stl-date">Within 24–48 hours</div>
+                                </div>
+                            </div>
+                            <div class="rtn-stl-item">
+                                <div class="rtn-stl-lhs">
+                                    <div class="rtn-stl-dot pending">3</div>
+                                    <div class="rtn-stl-line"></div>
+                                </div>
+                                <div class="rtn-stl-rhs">
+                                    <div class="rtn-stl-label pending">Pickup Scheduled</div>
+                                    <div class="rtn-stl-date" style="color:#b0a060;">After approval</div>
+                                </div>
+                            </div>
+                            <div class="rtn-stl-item">
+                                <div class="rtn-stl-lhs">
+                                    <div class="rtn-stl-dot pending">4</div>
+                                    <div class="rtn-stl-line"></div>
+                                </div>
+                                <div class="rtn-stl-rhs">
+                                    <div class="rtn-stl-label pending">Item Received &amp; QC</div>
+                                    <div class="rtn-stl-date" style="color:#b0a060;">2–3 days after pickup</div>
+                                </div>
+                            </div>
+                            <div class="rtn-stl-item">
+                                <div class="rtn-stl-lhs">
+                                    <div class="rtn-stl-dot pending">5</div>
+                                    <div class="rtn-stl-line"></div>
+                                </div>
+                                <div class="rtn-stl-rhs">
+                                    <div class="rtn-stl-label pending">Refund Processing</div>
+                                    <div class="rtn-stl-date" style="color:#b0a060;">After QC pass</div>
+                                </div>
+                            </div>
+                            <div class="rtn-stl-item">
+                                <div class="rtn-stl-lhs">
+                                    <div class="rtn-stl-dot pending" style="background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:#fff;">🎉</div>
+                                </div>
+                                <div class="rtn-stl-rhs">
+                                    <div class="rtn-stl-label pending">Refund Completed</div>
+                                    <div class="rtn-stl-date" style="color:#b0a060;">3–7 business days</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="rtn-btn rtn-btn-outline" onclick="rtnReset()" style="max-width:280px;margin:0 auto;">
+                            <i class="fas fa-plus"></i> Submit Another Request
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /main col -->
+
+            <!-- ── Sidebar ──────────────────────── -->
+            <div class="rtn-sidebar">
+
+                <!-- Policy card (dark) -->
+                <div class="rtn-policy-card">
+                    <div class="rtn-policy-card-title">
+                        <i class="fas fa-shield-alt"></i> Return Eligibility
+                    </div>
+                    <div class="rtn-policy-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Within <strong style="color:var(--gold);">7 days</strong> of delivery</span>
+                    </div>
+                    <div class="rtn-policy-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Original packaging must be intact</span>
+                    </div>
+                    <div class="rtn-policy-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Authenticity certificate included</span>
+                    </div>
+                    <div class="rtn-policy-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>No customised or engraved jewellery</span>
+                    </div>
+                    <div class="rtn-policy-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Refunds <strong style="color:var(--gold);">free</strong> · Exchange ₹{{ return_exchange_fee|floatformat:0 }} fee</span>
+                    </div>
+                </div>
+
+                <!-- Process steps card -->
+                <div class="rtn-process-card">
+                    <div class="rtn-process-card-title">
+                        <i class="fas fa-route"></i> Return Journey
+                    </div>
+                    <div class="rtn-process-step">
+                        <div class="rtn-process-num done"><i class="fas fa-check" style="font-size:.55rem;"></i></div>
+                        <div class="rtn-process-text">
+                            <div class="rtn-process-label">Submit Request</div>
+                            <div class="rtn-process-sub">Fill the form here</div>
+                        </div>
+                    </div>
+                    <div class="rtn-process-step">
+                        <div class="rtn-process-num active">2</div>
+                        <div class="rtn-process-text">
+                            <div class="rtn-process-label">Admin Review</div>
+                            <div class="rtn-process-sub">24–48 hours</div>
+                        </div>
+                    </div>
+                    <div class="rtn-process-step">
+                        <div class="rtn-process-num">3</div>
+                        <div class="rtn-process-text">
+                            <div class="rtn-process-label">Pickup Scheduled</div>
+                            <div class="rtn-process-sub">Insured courier sent</div>
+                        </div>
+                    </div>
+                    <div class="rtn-process-step">
+                        <div class="rtn-process-num">4</div>
+                        <div class="rtn-process-text">
+                            <div class="rtn-process-label">Quality Check</div>
+                            <div class="rtn-process-sub">Item inspected at warehouse</div>
+                        </div>
+                    </div>
+                    <div class="rtn-process-step">
+                        <div class="rtn-process-num">5</div>
+                        <div class="rtn-process-text">
+                            <div class="rtn-process-label">Refund / Exchange</div>
+                            <div class="rtn-process-sub">Processed within 7 days</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support card (gold) -->
+                <div class="rtn-support">
+                    <div class="rtn-support-title">Need Assistance?</div>
+                    <a class="rtn-support-link" href="https://wa.me/919999999999" target="_blank">
+                        <div class="rtn-support-link-icon"><i class="fab fa-whatsapp"></i></div>
+                        WhatsApp Support
+                    </a>
+                    <a class="rtn-support-link" href="mailto:support@princessjewellery.com">
+                        <div class="rtn-support-link-icon"><i class="fas fa-envelope"></i></div>
+                        Email Support
+                    </a>
+                    <a class="rtn-support-link" href="tel:+919999999999">
+                        <div class="rtn-support-link-icon"><i class="fas fa-phone"></i></div>
+                        Call Support
+                    </a>
+                    <div class="rtn-support-resp">
+                        <i class="fas fa-clock"></i> Average response within 2 hours
+                    </div>
+                </div>
+
+            </div><!-- /sidebar -->
+
+        </div><!-- /grid -->
+    </div><!-- /container -->
+</div>
+
+<!-- Toast -->
+<div id="rtnToast" class="rtn-toast"></div>
+
+<script>
+const RTN_EXCHANGE_FEE = {{ return_exchange_fee }};
+const IS_LOGGED_IN = {{ user.is_authenticated|lower }};
+
+let _rtnOrderData    = null;
+let _rtnSelectedItem = null;
+let _rtnReturnType   = 'refund';
+let _rtnRefundMethod = 'original_payment';
+let _rtnCondition    = '';
+let _rtnFiles        = [];   /* stores File objects for upload */
+
+/* ── Convert File to compressed base64 data-URI ── */
+function rtnFileToBase64(file) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            /* Resize to max 800px to keep payload small */
+            const MAX = 800;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else       { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/jpeg', 0.78));
+        };
+        img.onerror = () => {
+            /* Non-image file (e.g. video) — skip encoding */
+            URL.revokeObjectURL(url);
+            resolve(null);
+        };
+        img.src = url;
+    });
+}
+
+async function rtnFilesToBase64(files) {
+    const results = await Promise.all(files.map(rtnFileToBase64));
+    return results.filter(Boolean);   /* drop nulls (videos etc.) */
+}
+
+/* ── Step navigation ── */
+function rtnSetStep(n) {
+    [1,2,3].forEach(i => {
+        const s = document.getElementById('rtnStep' + i);
+        if (s) s.style.display = i === n ? 'block' : 'none';
+        const dot = document.querySelector(`.rtn-step[data-step="${i}"]`);
+        if (dot) {
+            dot.classList.remove('active','done');
+            if (i < n)  dot.classList.add('done');
+            if (i === n) dot.classList.add('active');
+        }
+    });
+}
+
+/* ── Lookup order ── */
+async function rtnLookupOrder() {
+    const btn     = document.getElementById('rtnFindBtn');
+    const errEl   = document.getElementById('rtnLookupError');
+    const orderId = document.getElementById('rtnOrderId').value.trim();
+    const email   = document.getElementById('rtnEmail').value.trim();
+    const mobile  = document.getElementById('rtnMobile').value.trim();
+    errEl.classList.remove('visible');
+    if (!orderId) { errEl.textContent='Please enter your Order ID.'; errEl.classList.add('visible'); return; }
+    if (!IS_LOGGED_IN && !email && !mobile) { errEl.textContent='Please enter your email or mobile number.'; errEl.classList.add('visible'); return; }
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching…';
+    try {
+        const res = await fetch('/store/api/returns/lookup-order/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+            body: JSON.stringify({order_id:orderId, email, mobile}),
+        });
+        const data = await res.json();
+        if (data.success) {
+            _rtnOrderData = data.order;
+            rtnShowOrderForm(data.order);
+        } else {
+            errEl.textContent = data.error || 'Order not found.';
+            errEl.classList.add('visible');
+        }
+    } catch(e) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.classList.add('visible');
+    }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-search"></i> Find My Order';
+}
+
+function rtnShowOrderForm(order) {
+    const firstItem = order.items[0] || {};
+    document.getElementById('rtnOrderSummary').innerHTML = `
+        <div class="rtn-order-badge"><i class="fas fa-gem"></i></div>
+        <div style="flex:1;">
+            <div class="rtn-order-info-id">Order #${order.id}</div>
+            <div class="rtn-order-info-prod">${firstItem.product || 'Your Order'}</div>
+            <div class="rtn-order-info-meta">₹${Number(order.total).toLocaleString('en-IN')} · Delivered: ${order.delivered_at}</div>
+        </div>
+        <div class="rtn-eligible-badge"><i class="fas fa-check-circle"></i> Eligible</div>`;
+
+    document.getElementById('rtnPickupAddr').value = order.address || '';
+
+    if (order.items.length > 1) {
+        document.getElementById('rtnItemCard').style.display = 'block';
+        document.getElementById('rtnItemList').innerHTML = order.items.map(it => `
+            <label style="display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border:1.5px solid var(--border-c);border-radius:12px;margin-bottom:.5rem;cursor:pointer;background:#fffef7;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border-c)'">
+                <input type="radio" name="rtnItem" value="${it.item_id}" style="accent-color:var(--gold);" onchange="_rtnSelectedItem=${it.item_id}">
+                ${it.image ? `<img src="${it.image}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border-c);">` : '<div style="width:48px;height:48px;border-radius:10px;background:rgba(212,175,55,.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">💍</div>'}
+                <div>
+                    <div style="font-weight:700;font-size:.9rem;color:var(--dark);">${it.product}</div>
+                    <div style="font-size:.78rem;color:var(--mid);">₹${it.price.toLocaleString('en-IN')} × ${it.quantity}</div>
+                </div>
+            </label>`).join('');
+    }
+    rtnSetStep(2);
+}
+
+/* ── Return type selection ── */
+function rtnSelectType(el, type) {
+    _rtnReturnType = type;
+    ['rtnTypeRefund','rtnTypeExchange','rtnTypeCredit'].forEach(id => {
+        const card = document.getElementById(id);
+        if (card) card.classList.remove('selected');
+    });
+    el.classList.add('selected');
+    const fee = document.getElementById('rtnFeeNotice');
+    if (fee) fee.classList.toggle('show', type === 'exchange');
+    const methodCard = document.getElementById('rtnRefundMethodCard');
+    if (methodCard) methodCard.style.display = type === 'refund' ? 'block' : 'none';
+}
+
+/* ── Refund method ── */
+function rtnSelectMethod(el, method) {
+    _rtnRefundMethod = method;
+    document.querySelectorAll('.rtn-method-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('rtnBankFields').style.display = method === 'bank_transfer' ? 'block' : 'none';
+}
+
+/* ── Condition radio ── */
+function rtnSelectCondition(label, val) {
+    _rtnCondition = val;
+    document.querySelectorAll('.rtn-radio-label').forEach(l => l.classList.remove('selected'));
+    label.classList.add('selected');
+}
+
+/* ── Image preview + store files ── */
+function rtnPreviewImages(input) {
+    const preview = document.getElementById('rtnImagePreview');
+    _rtnFiles = Array.from(input.files).slice(0, 5);
+    preview.innerHTML = '';
+    _rtnFiles.forEach((f, idx) => {
+        if (f.type.startsWith('image')) {
+            const url = URL.createObjectURL(f);
+            preview.innerHTML += `
+                <div style="position:relative;display:inline-block;">
+                    <img src="${url}" class="rtn-preview-img" title="${f.name}">
+                    <div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.5);border-radius:4px;padding:1px 4px;font-size:.6rem;color:#fff;">${idx+1}</div>
+                </div>`;
+        } else {
+            preview.innerHTML += `<div class="rtn-preview-img" style="background:rgba(212,175,55,.08);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.2rem;">
+                <i class="fas fa-file-video" style="color:var(--gold);font-size:1.2rem;"></i>
+                <span style="font-size:.6rem;color:var(--mid);">Video</span>
+            </div>`;
+        }
+    });
+    if (_rtnFiles.length) {
+        preview.innerHTML += `<div style="font-size:.72rem;color:var(--mid);align-self:center;margin-left:.3rem;">${_rtnFiles.length} file${_rtnFiles.length>1?'s':''} selected</div>`;
+    }
+}
+
+/* ── Submit ── */
+async function rtnSubmit() {
+    if (!IS_LOGGED_IN) { rtnToast('Please log in to submit a return request.', 'error'); return; }
+    const btn   = document.getElementById('rtnSubmitBtn');
+    const errEl = document.getElementById('rtnSubmitError');
+    errEl.classList.remove('visible');
+
+    const reason = document.getElementById('rtnReason').value;
+    if (!reason) { errEl.textContent='Please select a return reason.'; errEl.classList.add('visible'); return; }
+    if (!document.getElementById('rtnChk1').checked || !document.getElementById('rtnChk2').checked || !document.getElementById('rtnChk3').checked) {
+        errEl.textContent='Please agree to all terms to proceed.'; errEl.classList.add('visible'); return;
+    }
+
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading & Submitting…';
+
+    /* Convert selected images to base64 (resize to ≤800px, JPEG 78%) */
+    let images = [];
+    if (_rtnFiles.length) {
+        try {
+            images = await rtnFilesToBase64(_rtnFiles);
+        } catch(e) {
+            images = [];
+        }
+    }
+
+    const payload = {
+        order_id:      _rtnOrderData.id,
+        item_id:       _rtnSelectedItem,
+        reason,
+        detail:        document.getElementById('rtnDetail').value,
+        return_type:   _rtnReturnType,
+        condition:     _rtnCondition,
+        refund_method: _rtnRefundMethod,
+        pickup_address: document.getElementById('rtnPickupAddr').value,
+        images,
+        account_holder_name: document.getElementById('rtnAccName')?.value || '',
+        account_number:      document.getElementById('rtnAccNo')?.value   || '',
+        ifsc_code:           document.getElementById('rtnIfsc')?.value    || '',
+        bank_name:           document.getElementById('rtnBankName')?.value|| '',
+    };
+
+    try {
+        const res = await fetch('/store/api/returns/submit/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('rtnRefId').textContent = data.rtn_id;
+            rtnSetStep(3);
+        } else {
+            errEl.textContent = data.error || 'Submission failed.';
+            errEl.classList.add('visible');
+        }
+    } catch(e) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.classList.add('visible');
+    }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Return Request';
+}
+
+function rtnGoBack() { rtnSetStep(1); }
+function rtnReset()   { _rtnOrderData=null; _rtnSelectedItem=null; rtnSetStep(1); }
+
+/* ── Load my requests ── */
+async function rtnLoadMyRequests() {
+    if (!IS_LOGGED_IN) return;
+    const el = document.getElementById('rtnMyRequests');
+    if (!el) return;
+    try {
+        const res  = await fetch('/store/api/returns/my-requests/');
+        const data = await res.json();
+        if (!data.success || !data.requests.length) {
+            el.innerHTML = `<div class="rtn-requests-empty">
+                <div class="rtn-requests-empty-icon"><i class="fas fa-inbox"></i></div>
+                <div style="font-size:.85rem;color:var(--mid);font-weight:600;">No return requests yet</div>
+                <div style="font-size:.76rem;color:#b0a060;margin-top:.25rem;">Your submitted requests will appear here</div>
+            </div>`;
+            return;
+        }
+        const STATUS_COLORS = {
+            requested:'#d97706',review:'#0e7490',approved:'#7c3aed',
+            pickup_scheduled:'#ca6180',received:'#0891b2',quality_check:'#9333ea',
+            refund_pending:'#dc2626',refund_completed:'#16a34a',rejected:'#6b7280',
+        };
+        const STATUS_LABELS = {
+            requested:'Requested',review:'Under Review',approved:'Approved',
+            pickup_scheduled:'Pickup Scheduled',received:'Received',quality_check:'QC Check',
+            refund_pending:'Refund Pending',refund_completed:'Refund Completed',rejected:'Rejected',
+        };
+        el.innerHTML = `<div style="overflow-x:auto;"><table class="rtn-track-table">
+            <thead><tr>
+                <th>RTN ID</th><th>Product</th><th>Type</th><th>Status</th><th>Date</th><th></th>
+            </tr></thead>
+            <tbody>${data.requests.map(r => {
+                const c = STATUS_COLORS[r.status] || '#999';
+                const l = STATUS_LABELS[r.status] || r.status;
+                const tl = JSON.stringify(r.timeline||[]).replace(/"/g,'&quot;');
+                return `<tr>
+                    <td><span class="rtn-rtn-id">${r.rtn_id}</span></td>
+                    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.product}</td>
+                    <td style="text-transform:capitalize;color:var(--mid);">${r.return_type}</td>
+                    <td><span class="rtn-status-badge" style="background:${c}18;color:${c};border:1px solid ${c}33;">
+                        <span style="width:6px;height:6px;border-radius:50%;background:${c};display:inline-block;"></span>${l}
+                    </span></td>
+                    <td style="color:var(--mid);white-space:nowrap;">${r.created_at}</td>
+                    <td><span class="rtn-expand-btn" onclick="rtnExpandTimeline(this,'${r.rtn_id}',${tl})"><i class="fas fa-chevron-down"></i></span></td>
+                </tr>
+                <tr id="rtn-tl-${r.rtn_id}" class="rtn-timeline-row" style="display:none;">
+                    <td colspan="6"><div class="rtn-timeline-inner"></div></td>
+                </tr>`;
+            }).join('')}</tbody>
+        </table></div>`;
+    } catch(e) {
+        el.innerHTML = `<div style="color:var(--error);padding:1rem;font-size:.85rem;text-align:center;"><i class="fas fa-exclamation-triangle"></i> Failed to load requests.</div>`;
+    }
+}
+
+function rtnExpandTimeline(btn, rtnId, timeline) {
+    const row = document.getElementById('rtn-tl-' + rtnId);
+    if (!row) return;
+    const isOpen = row.style.display !== 'none';
+    row.style.display = isOpen ? 'none' : '';
+    btn.innerHTML = isOpen ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
+    if (!isOpen) {
+        const STATUS_COLORS = {requested:'#d97706',review:'#0e7490',approved:'#7c3aed',pickup_scheduled:'#ca6180',received:'#0891b2',quality_check:'#9333ea',refund_pending:'#dc2626',refund_completed:'#16a34a',rejected:'#6b7280'};
+        const cell = row.querySelector('.rtn-timeline-inner');
+        if (!cell) return;
+        if (!timeline || !timeline.length) {
+            cell.innerHTML = '<div style="color:var(--mid);font-size:.82rem;text-align:center;padding:.5rem 0;">No history yet.</div>';
+            return;
+        }
+        cell.innerHTML = timeline.map((lg, i) => `
+            <div style="display:flex;gap:.85rem;align-items:flex-start;padding:.5rem 0;${i<timeline.length-1?'border-bottom:1px dashed rgba(212,175,55,.15);':''}">
+                <span style="width:10px;height:10px;border-radius:50%;background:${STATUS_COLORS[lg.stage]||'#D4AF37'};flex-shrink:0;margin-top:.35rem;box-shadow:0 0 0 3px ${STATUS_COLORS[lg.stage]||'#D4AF37'}22;"></span>
+                <div>
+                    <div style="font-size:.83rem;font-weight:700;color:var(--dark);text-transform:capitalize;">${lg.stage.replace(/_/g,' ')}</div>
+                    <div style="font-size:.74rem;color:var(--mid);">${lg.date}${lg.note?' · '+lg.note:''}</div>
+                </div>
+            </div>`).join('');
+    }
+}
+
+/* ── Toast ── */
+function rtnToast(msg, type='success') {
+    const el = document.getElementById('rtnToast');
+    el.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+    el.className = `rtn-toast ${type} show`;
+    setTimeout(() => el.classList.remove('show'), 4200);
+}
+
+/* ── CSRF ── */
+function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', () => {
+    rtnLoadMyRequests();
+
+    /* Auto-fill order ID from ?order= query param */
+    const urlParams  = new URLSearchParams(window.location.search);
+    const preOrderId = urlParams.get('order');
+    if (preOrderId) {
+        const inp = document.getElementById('rtnOrderId');
+        if (inp) {
+            inp.value = preOrderId.trim();
+            {% if user.is_authenticated %}
+            setTimeout(() => rtnLookupOrder(), 300);
+            {% endif %}
+        }
+    }
+});
+</script>
+{% endblock %}

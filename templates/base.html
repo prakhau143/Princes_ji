@@ -19,7 +19,6 @@
 
 /* ── Utility resets ── */
 .transition-all { transition: all 0.3s ease-in-out; }
-#mobile-menu { z-index: 40; }
 .dropdown:hover .dropdown-menu { display: block; }
 
 /* ════════════════════════════════
@@ -53,6 +52,36 @@ input, textarea, select, button, label {
 
 /* Links */
 a { text-decoration: none; transition: color 0.25s ease; }
+
+/* ════════════════════════════════
+   FULL-WIDTH SHELL — navbar + footer edge-to-edge
+════════════════════════════════ */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+#lux-navbar,
+footer {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+.lux-shell-inner {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-sizing: border-box;
+}
+@media (min-width: 640px) {
+    .lux-shell-inner { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+    .lux-shell-inner { padding-left: 2.5rem; padding-right: 2.5rem; }
+}
 
 /* ════════════════════════════════
    LUXURY NAVBAR — white glass
@@ -104,32 +133,109 @@ a { text-decoration: none; transition: color 0.25s ease; }
 .lux-cart-icon:hover { color: #a855f7 !important; transform: scale(1.1) !important; }
 #cart-badge { background: #ec4899 !important; color: #fff !important; font-weight: 800 !important; }
 
-/* Mobile menu — white glass */
-#mobile-menu > div {
-    background: rgba(255,255,255,0.97) !important;
-    border: 1px solid rgba(236,72,153,0.14) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 16px 48px rgba(236,72,153,0.14) !important;
+/* ── Mobile Menu Slide-In Panel ──
+   MUST be a direct child of <body>, NOT inside the <header>.
+   backdrop-filter on the navbar would otherwise become the
+   containing block for position:fixed and kill height:100vh.
+────────────────────────────────────────────────── */
+#mobile-menu {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    /* Cover the FULL viewport width — no right-side gap */
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;     /* dynamic viewport on mobile Safari */
+    background: #ffffff !important;
+    z-index: 9999 !important;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden;
+    box-shadow: 6px 0 40px rgba(0,0,0,0.15);
+    /* isolate from any stacking context above */
+    isolation: isolate;
 }
-#mobile-menu a { color: #374151 !important; }
-#mobile-menu a:hover { color: #ec4899 !important; background: rgba(236,72,153,0.05) !important; }
-#mobile-menu .lux-mobile-close { color: #ec4899 !important; }
-#mobile-menu .lux-mobile-btn {
-    background: linear-gradient(135deg, #ec4899, #a855f7) !important;
-    color: #fff !important;
-    -webkit-text-fill-color: #fff !important;
-    font-weight: 700 !important;
-    border-radius: 40px !important;
-    border: none !important;
+#mobile-menu.open {
+    transform: translateX(0) !important;
 }
-#mobile-menu .lux-mobile-login {
-    background: transparent !important;
-    border: 1.5px solid rgba(236,72,153,0.45) !important;
-    color: #ec4899 !important;
-    -webkit-text-fill-color: #ec4899 !important;
-    border-radius: 40px !important;
-    font-weight: 700 !important;
+#mobile-menu-overlay {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 9998 !important;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
+#mobile-menu-overlay.open {
+    display: block;
+    opacity: 1;
+}
+/* Category grid cards */
+.category-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 9px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #f0f0f0;
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+    gap: 6px;
+}
+.category-card:hover {
+    border-color: rgba(236,72,153,0.3);
+    background: #fff5f9;
+}
+.category-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2937;
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.3;
+    flex: 1;
+}
+.category-preview-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.category-preview-placeholder {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #fce7f3, #f3e8ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+/* Mobile bottom links */
+.mob-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    color: #374151;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s;
+    border-bottom: 1px solid #f9f0f5;
+}
+.mob-link:last-of-type { border-bottom: none; }
+.mob-link:hover { color: #ec4899; }
+.mob-link i { width: 20px; color: #9ca3af; font-size: 0.95rem; }
 
 /* ════════════════════════════════
    SECTION LAYOUT
@@ -298,6 +404,7 @@ footer .text-pink-400 { color: #f472b6 !important; }
 ════════════════════════════════ */
 .lux-reveal { opacity: 0; transform: translateY(40px); }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col">
 <!-- ── Gold Particles Canvas ── -->
@@ -308,8 +415,8 @@ footer .text-pink-400 { color: #f472b6 !important; }
   <!-- =================================================================== -->
   <!-- RESPONSIVE HEADER                                                 -->
   <!-- =================================================================== -->
- <header id="lux-navbar" class="sticky top-0 z-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <header id="lux-navbar" class="sticky top-0 z-50 w-full">
+  <div class="lux-shell-inner">
     <div class="flex items-center justify-between h-20">
       
       <!-- Logo -->
@@ -327,6 +434,17 @@ footer .text-pink-400 { color: #f472b6 !important; }
           <a href="{% url 'collections_list' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">Collections</a>
           <a href="{% url 'profile' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">Profile</a>
           <a href="{% url 'order_history' %}" class="font-medium tracking-wide transition-all" style="font-family:'Poppins',sans-serif;">My Orders</a>
+          <!-- Notification Bell (desktop) -->
+          {% if user.is_authenticated %}
+          <button id="desktopNotifBtn" onclick="toggleNotificationPanel()" class="relative focus:outline-none"
+              style="background:none; border:none; cursor:pointer; color:#374151; position:relative;" aria-label="Notifications">
+            <i class="far fa-bell" style="font-size:1.25rem;"></i>
+            <span id="desktopNotifBadge" style="display:none; position:absolute; top:-6px; right:-6px;
+                background:#ec4899; color:#fff; font-size:9px; font-weight:700; border-radius:50%;
+                min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 2px; line-height:1;">0</span>
+          </button>
+          {% endif %}
+
           <button onclick="openCartPanel()" class="lux-cart-icon relative focus:outline-none" aria-label="Open cart">
             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
             <span id="cart-badge" class="absolute -top-1 -right-1 text-xs rounded-full w-4 h-4 flex items-center justify-center hidden" style="font-size:.6rem;">0</span>
@@ -353,49 +471,126 @@ footer .text-pink-400 { color: #f472b6 !important; }
     </div>
   </div>
 
-  <!-- Mobile Menu (Hidden by default) -->
-  <div id="mobile-menu" class="hidden md:hidden absolute top-0 inset-x-0 p-2 transition transform origin-top-right">
-    <div class="rounded-2xl shadow-2xl divide-y" style="background:rgba(255,255,255,0.97);border:1px solid rgba(236,72,153,0.14);">
-      <div class="pt-5 pb-6 px-5">
-        <div class="flex items-center justify-between">
-          <a href="/" class="flex items-center space-x-3">
-            <img src="{% static 'images/logo.png' %}" alt="Princess Logo" class="h-10 w-auto rounded-full"/>
-            <span class="lux-logo-text text-2xl font-bold">Princess</span>
-          </a>
-          <button id="mobile-menu-close" class="lux-mobile-close" style="color:#ec4899;">
-            <svg class="h-7 w-7" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NOTIFICATION PANEL — slide-in from right
+═══════════════════════════════════════════════════════════ -->
+{% if user.is_authenticated %}
+<div id="notifOverlay" onclick="closeNotificationPanel()"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:9990;"></div>
+
+<div id="notificationPanel"
+    style="position:fixed; top:0; right:0; width:100%; max-width:360px; height:100vh;
+           background:#fff; z-index:9991; transform:translateX(100%);
+           transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+           display:flex; flex-direction:column; box-shadow:-8px 0 32px rgba(0,0,0,0.12);">
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between;
+         padding:1rem 1.25rem; border-bottom:1px solid #f3f4f6; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+            <i class="far fa-bell" style="color:#ec4899; font-size:1.1rem;"></i>
+            <span style="font-weight:700; font-size:1rem; color:#111827;">Notifications</span>
+            <span id="notifPanelCount" style="display:none; background:#ec4899; color:#fff; font-size:0.7rem;
+                font-weight:700; border-radius:20px; padding:1px 7px;">0</span>
         </div>
-        <div class="mt-6">
-          <nav class="grid gap-y-2">
-            {% if user.is_authenticated %}
-              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">✦ Collections</a>
-              <a href="{% url 'product_list' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">💍 Jewelry</a>
-              <a href="{% url 'profile' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">👤 Profile</a>
-              <a href="{% url 'order_history' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">📦 My Orders</a>
-              <button onclick="openCartPanel();document.getElementById('mobile-menu').classList.add('hidden')" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all w-full text-left" style="color:#ec4899;font-family:'Poppins',sans-serif;background:none;border:none;cursor:pointer;">🛒 Cart</button>
-            {% else %}
-              <a href="{% url 'collections_list' %}" class="flex items-center p-3 -m-3 text-base font-medium rounded-lg transition-all" style="color:#d6d6d6;font-family:'Poppins',sans-serif;">✦ Collections</a>
-            {% endif %}
-          </nav>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+            <button onclick="markAllNotifsRead()"
+                style="font-size:0.75rem; color:#ec4899; background:none; border:none; cursor:pointer; font-weight:600;">
+                Mark all read
+            </button>
+            <button onclick="closeNotificationPanel()"
+                style="background:none; border:none; cursor:pointer; color:#6b7280; font-size:1.1rem; line-height:1;">
+                &times;
+            </button>
         </div>
-      </div>
-      <div class="py-6 px-5 space-y-4" style="border-color:rgba(236,72,153,0.1);">
-        {% if user.is_authenticated %}
-          <form action="{% url 'logout' %}" method="post" class="w-full">
-            {% csrf_token %}
-            <button type="submit" class="w-full flex items-center justify-center px-4 py-3 text-base font-bold lux-mobile-btn" style="border-radius:40px;">Logout</button>
-          </form>
-        {% else %}
-          <a href="{% url 'register' %}" class="w-full flex items-center justify-center px-4 py-3 text-base font-bold lux-mobile-btn" style="border-radius:40px;display:flex;">Register</a>
-          <p class="text-center text-sm" style="color:#888;">
-            Existing customer? <a href="{% url 'login' %}" class="lux-mobile-login" style="padding:6px 18px;display:inline-block;">Login</a>
-          </p>
-        {% endif %}
+    </div>
+    <!-- List -->
+    <div id="notifList" style="flex:1; overflow-y:auto; padding:0.5rem 0;">
+        <div style="text-align:center; padding:2rem; color:#9ca3af; font-size:0.9rem;">Loading…</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     MOBILE MENU — must live OUTSIDE <header> so backdrop-filter
+     on the navbar does NOT become the containing block for
+     position:fixed children.
+═══════════════════════════════════════════════════════════ -->
+
+<!-- Dim overlay -->
+<div id="mobile-menu-overlay"></div>
+
+<!-- Slide-in panel -->
+<div id="mobile-menu">
+
+  <!-- ── Header Row ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1.5px solid #f3e8ff;flex-shrink:0;background:#fff;">
+    <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+      <img src="{% static 'images/logo.png' %}" alt="Princess" style="height:38px;width:auto;border-radius:50%;">
+      <span class="lux-logo-text" style="font-size:1.2rem;font-weight:700;">Princess</span>
+    </a>
+    <div style="display:flex;align-items:center;gap:20px;">
+      <!-- Wishlist icon + count badge -->
+      <a href="{% url 'wishlist' %}" style="position:relative;text-decoration:none;line-height:1;" aria-label="Wishlist">
+        <i class="far fa-heart" style="font-size:1.3rem;color:#374151;display:block;"></i>
+        <span id="mobileWishlistCount" style="position:absolute;top:-7px;right:-9px;background:#ec4899;color:#fff;font-size:9px;font-weight:700;border-radius:50%;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 2px;line-height:1;">{{ wishlist_count|default:0 }}</span>
+      </a>
+      <!-- Notification bell (mobile) -->
+      <button onclick="closeMenu(); toggleNotificationPanel();" style="position:relative;background:none;border:none;cursor:pointer;padding:0;line-height:1;" aria-label="Notifications">
+        <i class="far fa-bell" style="font-size:1.3rem;color:#374151;display:block;"></i>
+        <span id="mobileNotifBadge" style="display:none;position:absolute;top:-7px;right:-9px;background:#ec4899;color:#fff;font-size:9px;font-weight:700;border-radius:50%;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 2px;line-height:1;">0</span>
+      </button>
+      <!-- Profile icon -->
+      <a href="{% url 'profile' %}" style="text-decoration:none;line-height:1;" aria-label="Profile">
+        <i class="far fa-user-circle" style="font-size:1.3rem;color:#374151;display:block;"></i>
+      </a>
+      <!-- Close ✕ -->
+      <button id="mobile-menu-close" aria-label="Close" style="background:none;border:none;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;color:#6b7280;">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Categories Grid ── -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;background:#fff;">
+    <p style="font-family:'Cinzel',serif;color:#a855f7;font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px;font-weight:600;">Shop by Category</p>
+    <div id="mobileCategoriesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="grid-column:span 2;text-align:center;padding:24px 0;color:#9ca3af;font-size:0.85rem;">
+        <i class="fas fa-spinner fa-spin" style="margin-right:6px;color:#ec4899;"></i>Loading categories…
       </div>
     </div>
   </div>
-</header>
+
+  <!-- ── Bottom Links ── -->
+  <div style="padding:14px 16px 24px;border-top:1.5px solid #f3e8ff;flex-shrink:0;background:#fff;">
+    <a href="{% url 'order_history' %}" class="mob-link">
+      <i class="fas fa-truck-fast"></i><span>Track Order</span>
+    </a>
+    <a href="{% url 'order_history' %}" class="mob-link">
+      <i class="fas fa-shopping-bag"></i><span>Your Orders</span>
+    </a>
+    <a href="{% url 'cart' %}" class="mob-link" style="border-bottom:none;margin-bottom:14px;">
+      <i class="fas fa-shopping-cart"></i><span>Your Cart</span>
+    </a>
+    {% if user.is_authenticated %}
+    <form action="{% url 'logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;background:#fff5f5;color:#dc2626;border:1px solid #fecaca;border-radius:12px;font-family:'Poppins',sans-serif;font-weight:600;font-size:0.9rem;cursor:pointer;margin-top:4px;">
+        <i class="fas fa-sign-out-alt"></i>Logout
+      </button>
+    </form>
+    {% else %}
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <a href="{% url 'login' %}" style="flex:1;text-align:center;padding:12px;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;border-radius:12px;font-family:'Poppins',sans-serif;font-weight:600;font-size:0.88rem;text-decoration:none;">Login</a>
+      <a href="{% url 'register' %}" style="flex:1;text-align:center;padding:12px;background:#f3f4f6;color:#374151;border-radius:12px;font-family:'Poppins',sans-serif;font-weight:600;font-size:0.88rem;text-decoration:none;">Register</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
 
   <!-- =================================================================== -->
   <!-- ANNOUNCEMENT BAR (Admin Controlled)                                -->
@@ -440,7 +635,7 @@ footer .text-pink-400 { color: #f472b6 !important; }
   <!-- RESPONSIVE FOOTER                                                 -->
   <!-- =================================================================== -->
   <footer class="bg-gray-800 text-white w-full">
-    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="lux-shell-inner py-12">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
 
         <!-- Brand Section -->
@@ -881,21 +1076,223 @@ footer .text-pink-400 { color: #f472b6 !important; }
     </div>
   </div>
 
-  <!-- JavaScript for Mobile Menu -->
-
+  <!-- Mobile Menu JavaScript -->
   <script>
-    const menuButton = document.getElementById('mobile-menu-button');
-    const closeButton = document.getElementById('mobile-menu-close');
-    const mobileMenu = document.getElementById('mobile-menu');
+  (function () {
+    const menuBtn   = document.getElementById('mobile-menu-button');
+    const closeBtn  = document.getElementById('mobile-menu-close');
+    const panel     = document.getElementById('mobile-menu');
+    const overlay   = document.getElementById('mobile-menu-overlay');
+    let categoriesLoaded = false;
 
-    menuButton.addEventListener('click', () => {
-      mobileMenu.classList.remove('hidden');
-    });
+    function openMenu() {
+      panel.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (!categoriesLoaded) {
+        loadMobileCategories();
+        categoriesLoaded = true;
+      }
+    }
 
-    closeButton.addEventListener('click', () => {
-      mobileMenu.classList.add('hidden');
-    });
+    function closeMenu() {
+      panel.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    menuBtn?.addEventListener('click', openMenu);
+    closeBtn?.addEventListener('click', closeMenu);
+    overlay?.addEventListener('click', closeMenu);
+
+    // ── Load categories with preview images ──────────────────────────
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+
+    function loadMobileCategories() {
+      const grid = document.getElementById('mobileCategoriesGrid');
+      if (!grid) return;
+
+      fetch('/store/api/categories-with-previews/')
+        .then(r => r.json())
+        .then(function(cats) {
+          if (!cats.length) {
+            grid.innerHTML = '<div style="grid-column:span 2;text-align:center;color:#9ca3af;padding:16px 0;font-size:0.85rem;">No categories found</div>';
+            return;
+          }
+          grid.innerHTML = cats.map(function(cat) {
+            const img = cat.preview_image
+              ? `<img src="${escapeHtml(cat.preview_image)}" class="category-preview-img" alt="${escapeHtml(cat.name)}" loading="lazy">`
+              : `<div class="category-preview-placeholder"><i class="fas fa-gem" style="color:#d1aed8;font-size:13px;"></i></div>`;
+            return `<a href="${escapeHtml(cat.url)}" class="category-card">
+                      <span class="category-name">${escapeHtml(cat.name)}</span>
+                      ${img}
+                    </a>`;
+          }).join('');
+        })
+        .catch(function() {
+          const grid = document.getElementById('mobileCategoriesGrid');
+          if (grid) grid.innerHTML = '<div style="grid-column:span 2;text-align:center;color:#9ca3af;padding:16px 0;font-size:0.85rem;">Unable to load categories</div>';
+        });
+    }
+
+    // ── Keep wishlist count in sync ───────────────────────────────────
+    window.updateMobileWishlistCount = function(count) {
+      const badge = document.getElementById('mobileWishlistCount');
+      if (badge) badge.textContent = count;
+    };
+  })();
   </script>
+
+  {% if user.is_authenticated %}
+  <!-- User Notification Panel JS -->
+  <script>
+  (function () {
+    const NOTIF_ICONS = {
+      order_placed:    { icon: 'fa-shopping-bag',  color: '#22c55e' },
+      order_updated:   { icon: 'fa-edit',           color: '#3b82f6' },
+      order_shipped:   { icon: 'fa-shipping-fast',  color: '#06b6d4' },
+      order_delivered: { icon: 'fa-check-circle',   color: '#22c55e' },
+      order_cancelled: { icon: 'fa-times-circle',   color: '#ef4444' },
+      manual_order:    { icon: 'fa-user-edit',       color: '#8b5cf6' },
+      general:         { icon: 'fa-bell',            color: '#ec4899' },
+    };
+
+    let _panelOpen = false;
+
+    window.toggleNotificationPanel = function () {
+      _panelOpen ? closeNotificationPanel() : openNotifPanel();
+    };
+
+    function openNotifPanel() {
+      _panelOpen = true;
+      const panel   = document.getElementById('notificationPanel');
+      const overlay = document.getElementById('notifOverlay');
+      if (panel)   { panel.style.transform   = 'translateX(0)'; }
+      if (overlay) { overlay.style.display   = 'block'; }
+      document.body.style.overflow = 'hidden';
+      loadUserNotifications();
+    }
+
+    window.closeNotificationPanel = function () {
+      _panelOpen = false;
+      const panel   = document.getElementById('notificationPanel');
+      const overlay = document.getElementById('notifOverlay');
+      if (panel)   panel.style.transform  = 'translateX(100%)';
+      if (overlay) overlay.style.display  = 'none';
+      document.body.style.overflow = '';
+    };
+
+    async function loadUserNotifications() {
+      try {
+        const res  = await fetch('/store/api/notifications/');
+        const data = await res.json();
+        updateNotifBadge(data.unread_count);
+        renderNotifList(data.notifications);
+      } catch (e) {
+        const list = document.getElementById('notifList');
+        if (list) list.innerHTML = '<div style="text-align:center;padding:2rem;color:#9ca3af;">Could not load notifications</div>';
+      }
+    }
+
+    function updateNotifBadge(count) {
+      ['desktopNotifBadge','mobileNotifBadge'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (count > 0) {
+          el.textContent = count > 99 ? '99+' : count;
+          el.style.display = 'flex';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+      const cnt = document.getElementById('notifPanelCount');
+      if (cnt) {
+        cnt.textContent = count;
+        cnt.style.display = count > 0 ? 'inline' : 'none';
+      }
+    }
+
+    function renderNotifList(notifications) {
+      const list = document.getElementById('notifList');
+      if (!list) return;
+      if (!notifications || !notifications.length) {
+        list.innerHTML = `
+          <div style="text-align:center; padding:3rem 1rem;">
+            <i class="far fa-bell-slash" style="font-size:2rem; color:#d1d5db; display:block; margin-bottom:0.75rem;"></i>
+            <div style="color:#9ca3af; font-size:0.9rem;">No notifications yet</div>
+          </div>`;
+        return;
+      }
+      list.innerHTML = notifications.map(n => {
+        const ic = NOTIF_ICONS[n.notif_type] || NOTIF_ICONS.general;
+        return `
+          <div id="notif-${n.id}" onclick="markNotifRead(${n.id})" style="
+              display:flex; gap:0.75rem; padding:0.85rem 1.25rem; cursor:pointer;
+              border-bottom:1px solid #f9fafb; transition:background 0.15s;
+              background:${n.is_read ? '#fff' : '#fdf2f8'};"
+              onmouseover="this.style.background='#fef7ff'"
+              onmouseout="this.style.background='${n.is_read ? '#fff' : '#fdf2f8'}'">
+            <div style="width:36px; height:36px; border-radius:50%; background:${ic.color}18;
+                 display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <i class="fas ${ic.icon}" style="color:${ic.color}; font-size:0.9rem;"></i>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:${n.is_read ? 500 : 700}; font-size:0.88rem; color:#111827;
+                   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeNotifHtml(n.title)}</div>
+              <div style="font-size:0.78rem; color:#6b7280; margin-top:2px; line-height:1.4;">${escapeNotifHtml(n.message)}</div>
+              <div style="font-size:0.72rem; color:#9ca3af; margin-top:4px;">${n.time}</div>
+            </div>
+            ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#ec4899;flex-shrink:0;margin-top:4px;"></div>' : ''}
+          </div>`;
+      }).join('');
+    }
+
+    window.markNotifRead = async function (notifId) {
+      await fetch(`/store/api/notifications/${notifId}/read/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken() },
+      });
+      const row = document.getElementById(`notif-${notifId}`);
+      if (row) {
+        row.style.background = '#fff';
+        const dot = row.querySelector('[style*="background:#ec4899"]');
+        if (dot) dot.remove();
+      }
+      loadUserNotifications(); // refresh badge
+    };
+
+    window.markAllNotifsRead = async function () {
+      await fetch('/store/api/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken() },
+      });
+      loadUserNotifications();
+    };
+
+    function getCsrfToken() {
+      const m = document.cookie.match(/csrftoken=([^;]+)/);
+      return m ? m[1] : '';
+    }
+
+    function escapeNotifHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Initial badge load on page load (if authenticated)
+    window.addEventListener('load', () => {
+      fetch('/store/api/notifications/')
+        .then(r => r.json())
+        .then(d => updateNotifBadge(d.unread_count))
+        .catch(() => {});
+    });
+  })();
+  </script>
+  {% endif %}
 
   <!-- Cart Panel JS -->
   <script>
@@ -1119,7 +1516,7 @@ footer .text-pink-400 { color: #f472b6 !important; }
       .then(r => r.json())
       .then(data => {
         if (!data.ok) { window.location.href = '/store/cart/add/' + productId + '/'; return; }
-        if (buynow) { window.location.href = '/store/checkout/'; return; }
+        if (buynow) { if (typeof openCheckoutModal === 'function') openCheckoutModal(); return; }
         // Update badge immediately
         const badge = document.getElementById('cart-badge');
         if (badge) { badge.textContent = data.item_count; badge.classList.remove('hidden'); }

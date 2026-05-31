@@ -316,8 +316,12 @@
   background: rgba(147,51,234,.15);
   backdrop-filter: blur(6px);
   z-index: 10000;
-  align-items: center; justify-content: center;
+  align-items: flex-start;      /* start from top so tall content stays scrollable */
+  justify-content: center;
   padding: 1rem;
+  overflow-y: auto;             /* THE FIX: overlay itself scrolls on mobile */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 #ohTrackModal.open { display: flex; }
 .ohtm-box {
@@ -325,9 +329,9 @@
   border: 1.5px solid #f3e8ff;
   border-radius: 24px;
   width: min(600px, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
+  margin: auto 0;               /* vertical centering when content fits; top-aligned when it doesn't */
   box-shadow: 0 20px 60px rgba(236,72,153,.14), 0 8px 24px rgba(0,0,0,.07);
+  /* No max-height — the overlay scrolls instead */
 }
 .ohtm-head {
   padding: 1.2rem 1.6rem;
@@ -409,6 +413,111 @@
 .ohtm-item-name { font-size: .82rem; font-weight: 600; color: #1e293b; }
 .ohtm-item-meta { font-size: .71rem; color: #94a3b8; }
 
+/* Return stage styles */
+.ohtm-return-divider {
+  display: flex; align-items: center; gap: .6rem;
+  margin: .6rem 0 1rem 0;
+  font-size: .72rem; font-weight: 700; color: #b45309;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.ohtm-return-divider::before,.ohtm-return-divider::after {
+  content: ''; flex: 1; height: 1.5px;
+  background: linear-gradient(90deg, transparent, #f59e0b55);
+}
+.ohtm-return-divider::after { background: linear-gradient(90deg, #f59e0b55, transparent); }
+.ohtm-dot.rtn-done {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: #f59e0b; color: #fff;
+  box-shadow: 0 4px 12px rgba(245,158,11,.35);
+}
+.ohtm-dot.rtn-rejected {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444; color: #fff;
+  box-shadow: 0 4px 12px rgba(239,68,68,.3);
+}
+.ohtm-dot.rtn-pending {
+  border-color: #fcd34d; background: #fffbeb; color: #d97706;
+}
+.ohtm-vline.rtn-done { background: linear-gradient(#f59e0b, #d97706); }
+.ohtm-step-label.rtn { color: #92400e; }
+.ohtm-step-label.rtn.muted { color: #fcd34d; }
+.ohtm-step-date.rtn { color: #b45309; }
+.ohtm-step-est.rtn { color: #d97706; }
+
+/* ═══════════════════════════════════════════
+   MINI RETURN TIMELINE STRIP
+═══════════════════════════════════════════ */
+.oh-rtn-strip {
+  margin: 0 1.6rem .6rem;
+  padding: .7rem 1.1rem .65rem;
+  background: linear-gradient(135deg, #fffbeb, #fef9e7);
+  border: 1.5px solid #fde68a;
+  border-radius: 14px;
+}
+.oh-rtn-strip-hdr {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: .55rem;
+}
+.oh-rtn-strip-title {
+  font-size: .64rem; font-weight: 800; color: #92400e;
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.oh-rtn-strip-lnk {
+  font-size: .62rem; font-weight: 700; color: #d97706;
+  text-decoration: underline; text-underline-offset: 2px;
+  cursor: pointer; background: none; border: none; padding: 0;
+}
+.oh-rtn-strip-lnk:hover { color: #b45309; }
+
+/* Horizontal mini step row */
+.oh-rtn-tl { display: flex; align-items: flex-start; }
+.oh-rtn-tl-step {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+/* Connector line from this step's center to the next step's center */
+.oh-rtn-tl-step:not(:last-child)::after {
+  content: ''; position: absolute;
+  top: 9px; left: 50%; width: 100%; height: 2px;
+  background: #fde68a; z-index: 0;
+}
+.oh-rtn-tl-step.rtn-step-done:not(:last-child)::after {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+/* Dots */
+.oh-rtn-tl-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #fde68a; background: #fff8e1;
+  font-size: .6rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1; position: relative; flex-shrink: 0;
+  transition: all .25s;
+  color: #d97706;
+}
+.oh-rtn-tl-dot.rtn-done {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 2px 8px rgba(245,158,11,.4);
+}
+.oh-rtn-tl-dot.rtn-active {
+  border-color: #f59e0b; background: #fff; color: #d97706;
+  box-shadow: 0 0 0 3px rgba(245,158,11,.18);
+  animation: rtnDotPulse 1.6s ease-in-out infinite;
+}
+.oh-rtn-tl-dot.rtn-rej {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: transparent; color: #fff;
+}
+@keyframes rtnDotPulse {
+  0%,100% { box-shadow: 0 0 0 3px rgba(245,158,11,.18); }
+  50%      { box-shadow: 0 0 0 5px rgba(245,158,11,.08); }
+}
+/* Labels */
+.oh-rtn-tl-lbl {
+  font-size: .56rem; font-weight: 600; color: #78350f;
+  text-align: center; margin-top: .28rem; line-height: 1.2; max-width: 54px;
+}
+.oh-rtn-tl-lbl.rtn-lbl-dim { color: #d97706; opacity: .5; }
+
 /* ── Empty state ── */
 .oh-empty { text-align: center; padding: 5rem 1rem; }
 .oh-empty-icon  { font-size: 4rem; margin-bottom: 1rem; opacity: .4; }
@@ -477,7 +586,12 @@
           <span class="oh-status-pill st-{{ order.status }}">{{ order.get_status_display }}</span>
           {% if order.status == 'delivered' %}
             <div class="oh-exp-del">✅ {{ order.delivered_at|date:"M d, Y" }}</div>
-          {% elif order.status not in 'cancelled,rto,returned,refund_pending,refund_completed' %}
+          {% elif order.status in 'returned,refund_pending,refund_completed' %}
+            <button class="oh-track-btn" onclick="ohOpenTrack({{ order.id }})" style="background:linear-gradient(135deg,#d97706,#f59e0b);border-color:#d97706;color:#fff;">↩ Track Return</button>
+          {% elif order.status == 'rto' %}
+            <div class="oh-exp-del" style="color:#dc2626;">📦 Returned to Origin</div>
+            <button class="oh-track-btn" onclick="ohOpenTrack({{ order.id }})">🔍 Track Order</button>
+          {% elif order.status != 'cancelled' %}
             <div class="oh-exp-del">📦 Expected {{ row.exp_delivery|date:"M d" }}</div>
             <button class="oh-track-btn" onclick="ohOpenTrack({{ order.id }})">🔍 Track Order</button>
           {% endif %}
@@ -503,6 +617,51 @@
       </div>
       {% endfor %}
     </div>
+
+    <!-- Mini Return Progress Strip -->
+    {% if row.has_return %}
+    <div class="oh-rtn-strip">
+      <div class="oh-rtn-strip-hdr">
+        <span class="oh-rtn-strip-title">↩ Return &amp; Refund Progress</span>
+        <button class="oh-rtn-strip-lnk" onclick="ohOpenTrack({{ order.id }})">View Full Timeline →</button>
+      </div>
+      <div class="oh-rtn-tl">
+        {% with p=row.rtn_phase %}
+
+        {# Step 1 — Requested (always done) #}
+        <div class="oh-rtn-tl-step rtn-step-done">
+          <div class="oh-rtn-tl-dot rtn-done">↩</div>
+          <div class="oh-rtn-tl-lbl">Requested</div>
+        </div>
+
+        {# Step 2 — Under Review #}
+        <div class="oh-rtn-tl-step{% if p >= 2 %} rtn-step-done{% endif %}">
+          <div class="oh-rtn-tl-dot{% if p >= 2 %} rtn-done{% elif p == 1 %} rtn-active{% elif p == -1 %} rtn-rej{% endif %}">🔍</div>
+          <div class="oh-rtn-tl-lbl{% if p < 2 and p != -1 %} rtn-lbl-dim{% endif %}">{% if p == -1 %}Rejected{% else %}Reviewing{% endif %}</div>
+        </div>
+
+        {# Step 3 — Approved #}
+        <div class="oh-rtn-tl-step{% if p >= 3 %} rtn-step-done{% endif %}">
+          <div class="oh-rtn-tl-dot{% if p >= 3 %} rtn-done{% elif p == 2 %} rtn-active{% elif p == -1 %} rtn-rej{% endif %}">{% if p == -1 %}❌{% else %}✅{% endif %}</div>
+          <div class="oh-rtn-tl-lbl{% if p < 3 and p != -1 %} rtn-lbl-dim{% endif %}">{% if p == -1 %}Rejected{% else %}Approved{% endif %}</div>
+        </div>
+
+        {# Step 4 — Pickup & QC #}
+        <div class="oh-rtn-tl-step{% if p >= 4 %} rtn-step-done{% endif %}">
+          <div class="oh-rtn-tl-dot{% if p >= 4 %} rtn-done{% elif p == 3 %} rtn-active{% endif %}">🚚</div>
+          <div class="oh-rtn-tl-lbl{% if p < 4 %} rtn-lbl-dim{% endif %}">Pickup &amp; QC</div>
+        </div>
+
+        {# Step 5 — Refunded #}
+        <div class="oh-rtn-tl-step">
+          <div class="oh-rtn-tl-dot{% if p >= 5 %} rtn-done{% elif p == 4 %} rtn-active{% endif %}">{% if p >= 5 %}🎉{% else %}💳{% endif %}</div>
+          <div class="oh-rtn-tl-lbl{% if p < 5 %} rtn-lbl-dim{% endif %}">{% if p >= 5 %}Refunded!{% else %}Refund{% endif %}</div>
+        </div>
+
+        {% endwith %}
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Footer -->
     <div class="oh-card-foot">
@@ -556,7 +715,7 @@
   <div class="ohtm-box">
     <div class="ohtm-head">
       <div>
-        <h3>📦 Track Order</h3>
+        <h3 id="ohtm-title">📦 Track Order</h3>
         <div class="ohtm-conf" id="ohtm-conf"></div>
       </div>
       <button class="ohtm-close" onclick="ohCloseTrack()">✕</button>
@@ -680,9 +839,7 @@ async function ohConfirmCancel() {
 
 /* ══════════ RETURN REQUEST ══════════ */
 function ohReturn(orderId) {
-  if (confirm('Submit a return/refund request for this order?\n\nOur team will contact you within 24 hours.')) {
-    alert('↩ Return request submitted! We\'ll reach out soon. 💖');
-  }
+  window.location.href = '/store/returns/?order=' + orderId;
 }
 
 /* ══════════ TRACK ORDER MODAL ══════════ */
@@ -691,12 +848,18 @@ async function ohOpenTrack(orderId) {
   const body  = document.getElementById('ohtm-body');
   const conf  = document.getElementById('ohtm-conf');
   body.innerHTML = '<div style="text-align:center;padding:2.5rem;color:#94a3b8;">Loading…</div>';
+  document.body.style.overflow = 'hidden'; // prevent body from scrolling behind modal
   modal.classList.add('open');
   try {
     const r = await fetch(`/store/api/orders/${orderId}/timeline/`, {credentials:'same-origin'});
     const d = await r.json();
     if (!d.ok) { body.innerHTML='<p style="color:#f87171;text-align:center;padding:2rem;">Error loading data.</p>'; return; }
     conf.textContent = d.conf;
+    // Update modal title based on order type
+    const titleEl = document.getElementById('ohtm-title');
+    if (titleEl) {
+      titleEl.textContent = d.has_return ? '↩ Return & Refund Journey' : '📦 Track Order';
+    }
     body.innerHTML = buildTrackHTML(d);
     // Animate progress bar after render
     requestAnimationFrame(() => {
@@ -709,25 +872,29 @@ async function ohOpenTrack(orderId) {
 }
 function ohCloseTrack() {
   document.getElementById('ohTrackModal').classList.remove('open');
+  document.body.style.overflow = ''; // restore body scroll
 }
 document.getElementById('ohTrackModal').addEventListener('click', e => {
   if (e.target === document.getElementById('ohTrackModal')) ohCloseTrack();
 });
 
 function buildTrackHTML(d) {
-  // Status label
   const STATUS_COLORS = {
-    pending:'#d97706',processing:'#1d4ed8',packed:'#6d28d9',
-    shipped:'#166534',out_for_delivery:'#c2410c',delivered:'#065f46',
+    pending:'#d97706', processing:'#1d4ed8', packed:'#6d28d9',
+    shipped:'#166534', out_for_delivery:'#c2410c', delivered:'#065f46',
     cancelled:'#991b1b',
+    returned:'#b45309', refund_pending:'#c2410c', refund_completed:'#065f46', rto:'#991b1b',
   };
   const STATUS_BG = {
-    pending:'#fef9c3',processing:'#dbeafe',packed:'#ede9fe',
-    shipped:'#dcfce7',out_for_delivery:'#ffedd5',delivered:'#d1fae5',
+    pending:'#fef9c3', processing:'#dbeafe', packed:'#ede9fe',
+    shipped:'#dcfce7', out_for_delivery:'#ffedd5', delivered:'#d1fae5',
     cancelled:'#fee2e2',
+    returned:'#fef3c7', refund_pending:'#ffedd5', refund_completed:'#d1fae5', rto:'#fee2e2',
   };
-  const sc = STATUS_COLORS[d.status_key] || '#1e293b';
-  const sbg = STATUS_BG[d.status_key] || '#f3f0ff';
+
+  const sc  = STATUS_COLORS[d.status_key] || '#1e293b';
+  const sbg = STATUS_BG[d.status_key]    || '#f3f0ff';
+
   let html = `
     <div style="font-size:.82rem;font-weight:700;margin-bottom:1rem;">
       Status: <span style="background:${sbg};color:${sc};padding:.2rem .7rem;border-radius:12px;">${d.status}</span>
@@ -737,31 +904,70 @@ function buildTrackHTML(d) {
     </div>
     <div class="ohtm-steps">`;
 
-  d.steps.forEach((s, i) => {
-    const isLast = i === d.steps.length - 1;
-    const dotCls = s.done ? 'done' : '';
-    const lineCls = s.done ? 'done' : '';
-    const labelCls = s.done ? '' : 'muted';
-    const dateHTML = s.done
-      ? `<div class="ohtm-step-date">${s.date_fmt || 'Completed'}</div>`
-      : `<div class="ohtm-step-est">~${s.est || 'Estimated'}</div>`;
-    html += `
+  /* Split delivery vs return steps */
+  const deliverySteps = d.steps.filter(s => !s.is_return);
+  const returnSteps   = d.steps.filter(s =>  s.is_return);
+
+  /* Helper: render one step row */
+  function renderStep(s, idx, total, isRtn) {
+    const isLast = idx === total - 1;
+    let dotCls, lineCls, labelCls;
+
+    if (isRtn) {
+      dotCls  = s.is_rejected ? 'rtn-rejected' : (s.done ? 'rtn-done' : 'rtn-pending');
+      lineCls = s.done ? 'rtn-done' : '';
+      labelCls = 'rtn' + (s.done ? '' : ' muted');
+    } else {
+      dotCls  = s.done ? 'done' : '';
+      lineCls = s.done ? 'done' : '';
+      labelCls = s.done ? '' : 'muted';
+    }
+
+    let dateHTML;
+    if (s.done && s.date_fmt) {
+      dateHTML = `<div class="ohtm-step-date ${isRtn ? 'rtn' : ''}">${s.date_fmt}</div>`;
+    } else if (s.done) {
+      dateHTML = `<div class="ohtm-step-date ${isRtn ? 'rtn' : ''}">Completed</div>`;
+    } else if (s.est) {
+      dateHTML = `<div class="ohtm-step-est ${isRtn ? 'rtn' : ''}">~${s.est}</div>`;
+    } else {
+      dateHTML = `<div class="ohtm-step-est ${isRtn ? 'rtn' : ''}">Pending</div>`;
+    }
+
+    const stepNum = isRtn ? s.icon : (s.done ? '✓' : (idx + 1));
+    return `
       <div class="ohtm-step">
         <div class="ohtm-step-lhs">
-          <div class="ohtm-dot ${dotCls}">${s.done ? '✓' : (i+1)}</div>
+          <div class="ohtm-dot ${dotCls}">${stepNum}</div>
           ${!isLast ? `<div class="ohtm-vline ${lineCls}"></div>` : ''}
         </div>
         <div class="ohtm-step-rhs">
-          <div class="ohtm-step-label ${labelCls}">${s.icon || ''} ${s.label}</div>
+          <div class="ohtm-step-label ${labelCls}">${!isRtn ? (s.icon || '') + ' ' : ''}${s.label}</div>
           ${dateHTML}
         </div>
       </div>`;
+  }
+
+  /* Render delivery steps */
+  deliverySteps.forEach((s, i) => {
+    html += renderStep(s, i, deliverySteps.length, false);
   });
+
+  /* Render return steps (if any) with a divider */
+  if (returnSteps.length) {
+    /* Close the steps div, insert divider, reopen */
+    html += `</div>
+    <div class="ohtm-return-divider">↩ Return &amp; Refund Journey</div>
+    <div class="ohtm-steps">`;
+    returnSteps.forEach((s, i) => {
+      html += renderStep(s, i, returnSteps.length, true);
+    });
+  }
 
   html += `</div>`;
 
-  // Items section
-  if (d.items.length) {
+  /* Items section */
+  if (d.items && d.items.length) {
     html += `<div class="ohtm-items"><div class="ohtm-items-title">Order Items</div>`;
     d.items.forEach(item => {
       html += `
