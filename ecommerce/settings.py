@@ -164,3 +164,9 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Allow larger JSON payloads for base64-encoded return images (5 images × ~200KB each ≈ 10MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
+
+# ── API Credentials Encryption ────────────────────────────────────────────────
+# Fernet symmetric key used to encrypt/decrypt API keys stored in APISetting model.
+# Generate once:  from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())
+# IMPORTANT: Keep this secret — changing it will make existing encrypted values unreadable.
+API_ENCRYPTION_KEY = '_NtoNk6UF97JJs5HkzGkG5QsSj86mdBgFotBvEa_Ltk='

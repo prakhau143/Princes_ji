@@ -920,6 +920,7 @@ def recommended_products_api(request):
 			'mrp': float(p.mrp) if p.mrp else float(p.price),
 			'image': p.image.url if p.image else '',
 			'rating': float(p.rating) if p.rating else 0,
+			'url': f'/store/products/{p.id}/',
 		})
 	return JsonResponse({'ok': True, 'products': data})
 

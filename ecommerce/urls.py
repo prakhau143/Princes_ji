@@ -129,6 +129,24 @@ from store.admin_api import (
     return_save_qc_api,
     return_process_refund_api,
     return_add_note_api,
+    # Marketing Intelligence
+    campaigns_list_api,
+    campaign_create_api,
+    campaign_update_api,
+    campaign_delete_api,
+    campaign_send_api,
+    campaign_generate_ai_api,
+    marketing_analytics_api,
+    automation_config_api,
+    automation_config_save_api,
+    # Finance Intelligence
+    finance_overview_api,
+    finance_inventory_api,
+    finance_copilot_api,
+    # API Settings
+    api_settings_list_api,
+    api_setting_save_api,
+    api_setting_delete_api,
 )
 from store.auth_views import login_view, register_view, logout_view, forgot_password_view, verify_otp_view, reset_password_view, resend_otp
 
@@ -237,6 +255,25 @@ urlpatterns = [
     path('admin-dashboard/api/orders-trend/', orders_trend_api, name='orders_trend_api'),
     path('admin-dashboard/api/lifecycle-analytics/', lifecycle_analytics_api, name='lifecycle_analytics_api'),
     path('admin-dashboard/api/orders/<int:order_id>/cancel/', admin_cancel_order_api, name='admin_cancel_order_api'),
+
+    # ── Marketing Intelligence ───────────────────────────────────
+    path('admin-dashboard/api/campaigns/', campaigns_list_api, name='campaigns_list_api'),
+    path('admin-dashboard/api/campaigns/create/', campaign_create_api, name='campaign_create_api'),
+    path('admin-dashboard/api/campaigns/<int:campaign_id>/update/', campaign_update_api, name='campaign_update_api'),
+    path('admin-dashboard/api/campaigns/<int:campaign_id>/delete/', campaign_delete_api, name='campaign_delete_api'),
+    path('admin-dashboard/api/campaigns/<int:campaign_id>/send/', campaign_send_api, name='campaign_send_api'),
+    path('admin-dashboard/api/campaigns/generate-ai/', campaign_generate_ai_api, name='campaign_generate_ai_api'),
+    path('admin-dashboard/api/marketing-analytics/', marketing_analytics_api, name='marketing_analytics_api'),
+    path('admin-dashboard/api/automation-config/', automation_config_api, name='automation_config_api'),
+    path('admin-dashboard/api/automation-config/save/', automation_config_save_api, name='automation_config_save_api'),
+    # ── Finance Intelligence ──────────────────────────────────────
+    path('admin-dashboard/api/finance-overview/', finance_overview_api, name='finance_overview_api'),
+    path('admin-dashboard/api/finance-inventory/', finance_inventory_api, name='finance_inventory_api'),
+    path('admin-dashboard/api/finance-copilot/', finance_copilot_api, name='finance_copilot_api'),
+    # ── API Settings (Misc Management) ───────────────────────────
+    path('admin-dashboard/api/api-settings/', api_settings_list_api, name='api_settings_list_api'),
+    path('admin-dashboard/api/api-settings/save/', api_setting_save_api, name='api_setting_save_api'),
+    path('admin-dashboard/api/api-settings/<str:key>/delete/', api_setting_delete_api, name='api_setting_delete_api'),
 
     # Return & Refund Management
     path('admin-dashboard/api/returns/', returns_list_api, name='returns_list_api'),

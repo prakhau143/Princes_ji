@@ -810,13 +810,15 @@ class AdminUserProfile(models.Model):
 	Superusers always have full access regardless of this profile.
 	"""
 	FEATURE_CHOICES = [
-		('dashboard',         'Dashboard & Analytics'),
-		('orders',            'Order Management'),
-		('products',          'Product Management'),
-		('homepage',          'Homepage Management'),
-		('marketing',         'Marketing & Trust'),
-		('customers',         'Customer Management'),
-		('website_frontend',  'Website User-side Functionality'),
+		('dashboard',              'Dashboard & Analytics'),
+		('orders',                 'Order Management'),
+		('products',               'Product Management'),
+		('homepage',               'Homepage Management'),
+		('marketing',              'Marketing & Trust'),
+		('customers',              'Customer Management'),
+		('website_frontend',       'Website User-side Functionality'),
+		('marketing_intelligence', 'Marketing Intelligence Center'),
+		('finance_intelligence',   'Finance Intelligence Center'),
 	]
 
 	user            = models.OneToOneField(
@@ -841,6 +843,141 @@ class AdminUserProfile(models.Model):
 	def __str__(self):
 		name = self.user.get_full_name() or self.user.username
 		return f"{name} — {self.designation or 'Staff'}"
+
+
+# ──────────────────────────────────────────────────────────
+#  MARKETING INTELLIGENCE — CAMPAIGN MANAGEMENT
+# ──────────────────────────────────────────────────────────
+
+class Campaign(models.Model):
+	TYPE_CHOICES = [
+		('email',     'Email Only'),
+		('whatsapp',  'WhatsApp Only'),
+		('both',      'Both Email & WhatsApp'),
+	]
+	STATUS_CHOICES = [
+		('draft',     'Draft'),
+		('scheduled', 'Scheduled'),
+		('sent',      'Sent'),
+		('failed',    'Failed'),
+	]
+	AUDIENCE_CHOICES = [
+		('all',        'All Customers'),
+		('vip',        'VIP Customers (₹15k+ spent)'),
+		('repeat',     'Repeat Buyers (2+ orders)'),
+		('high_value', 'High Value Buyers (₹10k+ order)'),
+		('inactive',   'Inactive (60+ days)'),
+		('new',        'New Customers (1 order)'),
+	]
+	name             = models.CharField(max_length=200)
+	campaign_type    = models.CharField(max_length=10, choices=TYPE_CHOICES)
+	audience         = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default='all')
+	email_subject    = models.CharField(max_length=300, blank=True)
+	email_body_html  = models.TextField(blank=True)
+	whatsapp_message = models.TextField(blank=True)
+	scheduled_at     = models.DateTimeField(null=True, blank=True)
+	status           = models.CharField(max_length=20, default='draft')
+	sent_count       = models.IntegerField(default=0)
+	opened_count     = models.IntegerField(default=0)
+	clicked_count    = models.IntegerField(default=0)
+	created_at       = models.DateTimeField(auto_now_add=True)
+	updated_at       = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering        = ['-created_at']
+		verbose_name    = 'Campaign'
+		verbose_name_plural = '📣 Campaigns'
+
+	def __str__(self):
+		return self.name
+
+
+class AutomationConfig(models.Model):
+	"""Singleton: stores on/off config for all marketing automations."""
+	abandoned_cart_enabled     = models.BooleanField(default=False)
+	abandoned_cart_delay_hours = models.IntegerField(default=1)
+	abandoned_cart_msg         = models.TextField(blank=True, default='Hi {name}, you left items in your cart! Complete your order now: {link}')
+	first_purchase_enabled     = models.BooleanField(default=False)
+	first_purchase_msg         = models.TextField(blank=True, default='Welcome {name}! Your first order is confirmed. Track it here: {link}')
+	birthday_enabled           = models.BooleanField(default=False)
+	birthday_discount          = models.IntegerField(default=10, help_text='Birthday discount %')
+	vip_enabled                = models.BooleanField(default=False)
+	vip_threshold              = models.DecimalField(max_digits=10, decimal_places=2, default=15000, help_text='Total spend to become VIP ₹')
+	winback_enabled            = models.BooleanField(default=False)
+	winback_days               = models.IntegerField(default=60)
+	winback_msg                = models.TextField(blank=True, default='We miss you {name}! Here\'s 15% off to welcome you back.')
+	updated_at                 = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		verbose_name        = 'Automation Config'
+		verbose_name_plural = '⚙️ Automation Config'
+
+	def __str__(self):
+		return 'Automation Config'
+
+
+# ──────────────────────────────────────────────────────────
+#  API SETTINGS — DYNAMIC CREDENTIAL STORE
+# ──────────────────────────────────────────────────────────
+
+class APISetting(models.Model):
+	CATEGORY_CHOICES = [
+		('whatsapp', 'WhatsApp'),
+		('email',    'Email / SMTP'),
+		('ai',       'AI (OpenAI)'),
+		('analytics','Analytics'),
+		('payment',  'Payment'),
+		('other',    'Other'),
+	]
+	key         = models.CharField(max_length=100, unique=True)
+	value       = models.TextField(blank=True)
+	category    = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+	is_secret   = models.BooleanField(default=True)
+	description = models.CharField(max_length=255, blank=True)
+	updated_at  = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering        = ['category', 'key']
+		verbose_name    = 'API Setting'
+		verbose_name_plural = '🔑 API Settings'
+
+	def get_value(self):
+		"""Return decrypted value, or raw value if encryption not configured."""
+		if not self.is_secret or not self.value:
+			return self.value
+		try:
+			from cryptography.fernet import Fernet
+			key = getattr(settings, 'API_ENCRYPTION_KEY', None)
+			if not key:
+				return self.value
+			cipher = Fernet(key.encode() if isinstance(key, str) else key)
+			return cipher.decrypt(self.value.encode()).decode()
+		except Exception:
+			return self.value
+
+	def set_value(self, raw):
+		"""Encrypt and store value if is_secret."""
+		if self.is_secret and raw:
+			try:
+				from cryptography.fernet import Fernet
+				key = getattr(settings, 'API_ENCRYPTION_KEY', None)
+				if key:
+					cipher = Fernet(key.encode() if isinstance(key, str) else key)
+					self.value = cipher.encrypt(raw.encode()).decode()
+					return
+			except Exception:
+				pass
+		self.value = raw or ''
+
+	@classmethod
+	def get_setting(cls, key, default=''):
+		try:
+			return cls.objects.get(key=key).get_value() or default
+		except cls.DoesNotExist:
+			return default
+
+	def __str__(self):
+		return self.key
 
 
 # ──────────────────────────────────────────────────────────

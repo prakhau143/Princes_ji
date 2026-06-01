@@ -38,6 +38,9 @@ from .models import (
 	AdminUserProfile,
 	ReturnRequest,
 	ReturnStageLog,
+	Campaign,
+	AutomationConfig,
+	APISetting,
 )
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -3457,11 +3460,6 @@ def returns_analytics_api(request):
 
     # ── Smart Alerts ────────────────────────────────────────
     alerts = []
-    hv = ReturnRequest.objects.filter(
-        is_high_value_calculated=False, order_amount__gte=10000,
-        status__in=["requested", "review"]
-    ).count()
-    # Simpler query without property:
     hv = ReturnRequest.objects.filter(order_amount__gte=10000, status__in=["requested", "review"]).count()
     if hv:
         alerts.append({"type": "high_value",  "msg": f"{hv} High-Value Return{'s' if hv>1 else ''} Awaiting Review",  "count": hv, "severity": "warning"})
@@ -3705,3 +3703,669 @@ def return_add_note_api(request, return_id):
         note=f"[Note] {note}", changed_by=request.user,
     )
     return JsonResponse({"success": True, "message": "Note added."})
+
+
+# ════════════════════════════════════════════════════════════════════
+#  MARKETING INTELLIGENCE — CAMPAIGN CRUD
+# ════════════════════════════════════════════════════════════════════
+
+def _serialize_campaign(c):
+    return {
+        "id":              c.id,
+        "name":            c.name,
+        "campaign_type":   c.campaign_type,
+        "campaign_type_display": c.get_campaign_type_display(),
+        "audience":        c.audience,
+        "audience_display": c.get_audience_display(),
+        "email_subject":   c.email_subject,
+        "email_body_html": c.email_body_html,
+        "whatsapp_message":c.whatsapp_message,
+        "scheduled_at":    c.scheduled_at.isoformat() if c.scheduled_at else None,
+        "status":          c.status,
+        "sent_count":      c.sent_count,
+        "opened_count":    c.opened_count,
+        "clicked_count":   c.clicked_count,
+        "created_at":      c.created_at.strftime("%b %d, %Y"),
+    }
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def campaigns_list_api(request):
+    campaigns = Campaign.objects.all()
+    return JsonResponse({"success": True, "campaigns": [_serialize_campaign(c) for c in campaigns]})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def campaign_create_api(request):
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    name = (data.get("name") or "").strip()
+    if not name:
+        return JsonResponse({"success": False, "error": "Campaign name is required."}, status=400)
+
+    from django.utils.dateparse import parse_datetime
+    sched = None
+    if data.get("scheduled_at"):
+        sched = parse_datetime(data["scheduled_at"])
+
+    c = Campaign.objects.create(
+        name            = name,
+        campaign_type   = data.get("campaign_type", "email"),
+        audience        = data.get("audience", "all"),
+        email_subject   = data.get("email_subject", ""),
+        email_body_html = data.get("email_body_html", ""),
+        whatsapp_message= data.get("whatsapp_message", ""),
+        scheduled_at    = sched,
+        status          = "scheduled" if sched else "draft",
+    )
+    return JsonResponse({"success": True, "campaign": _serialize_campaign(c)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def campaign_update_api(request, campaign_id):
+    c = get_object_or_404(Campaign, id=campaign_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    from django.utils.dateparse import parse_datetime
+    sched = None
+    if data.get("scheduled_at"):
+        sched = parse_datetime(data["scheduled_at"])
+
+    c.name             = (data.get("name") or c.name).strip()
+    c.campaign_type    = data.get("campaign_type", c.campaign_type)
+    c.audience         = data.get("audience", c.audience)
+    c.email_subject    = data.get("email_subject", c.email_subject)
+    c.email_body_html  = data.get("email_body_html", c.email_body_html)
+    c.whatsapp_message = data.get("whatsapp_message", c.whatsapp_message)
+    c.scheduled_at     = sched
+    if c.status == "draft" and sched:
+        c.status = "scheduled"
+    c.save()
+    return JsonResponse({"success": True, "campaign": _serialize_campaign(c)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def campaign_delete_api(request, campaign_id):
+    c = get_object_or_404(Campaign, id=campaign_id)
+    c.delete()
+    return JsonResponse({"success": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def campaign_send_api(request, campaign_id):
+    """Send campaign immediately to the target audience."""
+    c = get_object_or_404(Campaign, id=campaign_id)
+    if c.status == "sent":
+        return JsonResponse({"success": False, "error": "Campaign already sent."}, status=400)
+
+    sent_email = 0
+    sent_wa    = 0
+    errors     = []
+
+    # Resolve audience → queryset of users with email/phone
+    from django.contrib.auth import get_user_model
+    U = get_user_model()
+    qs = U.objects.filter(is_active=True)
+
+    if c.audience == "vip":
+        vip_ids = Order.objects.filter(status="delivered").values("user_id").annotate(
+            t=Sum("total")).filter(t__gte=15000).values_list("user_id", flat=True)
+        qs = qs.filter(id__in=vip_ids)
+    elif c.audience == "repeat":
+        repeat_ids = Order.objects.values("user_id").annotate(cnt=Count("id")).filter(
+            cnt__gte=2).values_list("user_id", flat=True)
+        qs = qs.filter(id__in=repeat_ids)
+    elif c.audience == "high_value":
+        hv_ids = Order.objects.filter(total__gte=10000).values_list("user_id", flat=True).distinct()
+        qs = qs.filter(id__in=hv_ids)
+    elif c.audience == "inactive":
+        cutoff = timezone.now() - timedelta(days=60)
+        active_ids = Order.objects.filter(created_at__gte=cutoff).values_list("user_id", flat=True).distinct()
+        qs = qs.exclude(id__in=active_ids)
+    elif c.audience == "new":
+        new_ids = Order.objects.values("user_id").annotate(cnt=Count("id")).filter(
+            cnt=1).values_list("user_id", flat=True)
+        qs = qs.filter(id__in=new_ids)
+
+    # Email sending
+    if c.campaign_type in ["email", "both"] and c.email_subject and c.email_body_html:
+        try:
+            from django.core.mail import EmailMessage
+            from django.core.mail.backends.smtp import EmailBackend
+            email_host     = APISetting.get_setting("EMAIL_HOST", "smtp.gmail.com")
+            email_port     = int(APISetting.get_setting("EMAIL_PORT", "587") or 587)
+            email_user     = APISetting.get_setting("EMAIL_HOST_USER", "")
+            email_pass     = APISetting.get_setting("EMAIL_HOST_PASSWORD", "")
+            email_from     = APISetting.get_setting("DEFAULT_FROM_EMAIL", email_user)
+            if email_user and email_pass:
+                conn = EmailBackend(
+                    host=email_host, port=email_port,
+                    username=email_user, password=email_pass,
+                    use_tls=True, fail_silently=True,
+                )
+                for user in qs.exclude(email=""):
+                    try:
+                        msg = EmailMessage(
+                            subject=c.email_subject,
+                            body=c.email_body_html,
+                            from_email=email_from,
+                            to=[user.email],
+                            connection=conn,
+                        )
+                        msg.content_subtype = "html"
+                        msg.send()
+                        sent_email += 1
+                    except Exception as e:
+                        errors.append(f"Email to {user.email}: {str(e)[:60]}")
+        except Exception as e:
+            errors.append(f"Email backend setup failed: {str(e)[:80]}")
+
+    # WhatsApp sending via Twilio
+    if c.campaign_type in ["whatsapp", "both"] and c.whatsapp_message:
+        try:
+            account_sid = APISetting.get_setting("TWILIO_ACCOUNT_SID", "")
+            auth_token  = APISetting.get_setting("TWILIO_AUTH_TOKEN", "")
+            from_number = APISetting.get_setting("TWILIO_WHATSAPP_FROM", "+14155238886")
+            if account_sid and auth_token:
+                from twilio.rest import Client as TwilioClient
+                twilio = TwilioClient(account_sid, auth_token)
+                for user in qs:
+                    phone = getattr(user, "phone_number", None) or getattr(
+                        user, "customerprofile", None) and user.customerprofile.phone
+                    if not phone:
+                        continue
+                    try:
+                        twilio.messages.create(
+                            body=c.whatsapp_message,
+                            from_=f"whatsapp:{from_number}",
+                            to=f"whatsapp:{phone}",
+                        )
+                        sent_wa += 1
+                    except Exception as e:
+                        errors.append(f"WA to {phone}: {str(e)[:60]}")
+        except ImportError:
+            errors.append("Twilio not installed. Run: pip install twilio")
+        except Exception as e:
+            errors.append(f"WhatsApp error: {str(e)[:80]}")
+
+    c.status     = "sent"
+    c.sent_count = sent_email + sent_wa
+    c.save()
+
+    return JsonResponse({
+        "success":     True,
+        "sent_email":  sent_email,
+        "sent_wa":     sent_wa,
+        "errors":      errors[:5],   # show first 5 errors only
+        "total_sent":  sent_email + sent_wa,
+    })
+
+
+# ── AI Content Generation ────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["POST"])
+def campaign_generate_ai_api(request):
+    """Generate email subject/body + WhatsApp message using OpenAI."""
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    product  = (data.get("product") or "Jewellery Collection").strip()
+    audience = (data.get("audience") or "All Customers").strip()
+    tone     = (data.get("tone") or "premium").strip()
+
+    api_key = APISetting.get_setting("OPENAI_API_KEY", "")
+    if not api_key:
+        # Return smart template-based fallback if no OpenAI key
+        return JsonResponse({
+            "success": True,
+            "ai_used": False,
+            "subject": f"✨ Exclusive Offer on {product} — Limited Time!",
+            "email_body": (
+                f"<p>Dear Valued Customer,</p>"
+                f"<p>We are delighted to present our exquisite <strong>{product}</strong> — "
+                f"crafted with precision and designed to make every moment special.</p>"
+                f"<p>As one of our valued {audience}, we are offering you an exclusive priority access. "
+                f"Don't miss this chance to own a piece of timeless elegance.</p>"
+                f"<p><a href='#' style='background:#c4a35a;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;'>Shop Now</a></p>"
+                f"<p>Warm regards,<br/>Princess Jewellery Team</p>"
+            ),
+            "whatsapp": f"✨ Exclusive offer on {product} — just for you! Shop now before it's gone. Reply STOP to unsubscribe.",
+        })
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        model = APISetting.get_setting("OPENAI_MODEL", "gpt-3.5-turbo")
+
+        prompt = (
+            f"You are a marketing expert for a luxury Indian jewellery brand called Princess Jewellery.\n"
+            f"Create a marketing campaign for:\n"
+            f"  Product: {product}\n"
+            f"  Audience: {audience}\n"
+            f"  Tone: {tone}\n\n"
+            f"Respond ONLY in this exact JSON format (no extra text):\n"
+            f'{{"subject":"...","email_body":"<p>...</p>","whatsapp":"..."}}'
+        )
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.75,
+            max_tokens=600,
+        )
+        raw = resp.choices[0].message.content.strip()
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        result = json.loads(raw)
+        return JsonResponse({
+            "success":    True,
+            "ai_used":    True,
+            "subject":    result.get("subject", ""),
+            "email_body": result.get("email_body", ""),
+            "whatsapp":   result.get("whatsapp", ""),
+        })
+    except Exception:
+        pass  # Fall through to template fallback below
+
+    # Template-based fallback (OpenAI unavailable or quota exceeded)
+    tone_greet = {"luxury": "We are delighted to present", "casual": "Hey! Check out", "urgent": "⚡ Last chance for"}.get(tone, "We are pleased to present")
+    return JsonResponse({
+        "success": True,
+        "ai_used": False,
+        "subject": f"✨ Exclusive Offer on {product} — Limited Time!",
+        "email_body": (
+            f"<p>Dear Valued Customer,</p>"
+            f"<p>{tone_greet} our exquisite <strong>{product}</strong> — "
+            f"crafted with precision and designed to make every moment special.</p>"
+            f"<p>As one of our valued {audience} customers, we are offering you exclusive priority access. "
+            f"Don't miss this chance to own a piece of timeless elegance.</p>"
+            f"<p><a href='#' style='background:#c4a35a;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;'>Shop Now</a></p>"
+            f"<p>Warm regards,<br/>Princess Jewellery Team</p>"
+        ),
+        "whatsapp": f"✨ Exclusive offer on {product} — just for you! Shop now before it's gone. Reply STOP to unsubscribe.",
+    })
+
+
+# ── Marketing Analytics ──────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET"])
+def marketing_analytics_api(request):
+    """Campaign stats + audience size breakdown."""
+    campaigns = Campaign.objects.all()
+
+    # Campaign performance table
+    rows = [_serialize_campaign(c) for c in campaigns]
+
+    # Audience size stats
+    from django.contrib.auth import get_user_model
+    U = get_user_model()
+    total_users = U.objects.filter(is_active=True).count()
+
+    vip_ids = Order.objects.filter(status="delivered").values("user_id").annotate(
+        t=Sum("total")).filter(t__gte=15000).values_list("user_id", flat=True)
+    repeat_ids = Order.objects.values("user_id").annotate(cnt=Count("id")).filter(
+        cnt__gte=2).values_list("user_id", flat=True)
+
+    cutoff = timezone.now() - timedelta(days=60)
+    active_ids = Order.objects.filter(created_at__gte=cutoff).values_list("user_id", flat=True).distinct()
+
+    audience_sizes = {
+        "all":        total_users,
+        "vip":        len(set(vip_ids)),
+        "repeat":     len(set(repeat_ids)),
+        "high_value": Order.objects.filter(total__gte=10000).values("user_id").distinct().count(),
+        "inactive":   U.objects.filter(is_active=True).exclude(id__in=active_ids).count(),
+        "new":        Order.objects.values("user_id").annotate(cnt=Count("id")).filter(cnt=1).count(),
+    }
+
+    total_sent    = Campaign.objects.filter(status="sent").aggregate(t=Sum("sent_count"))["t"] or 0
+    total_opened  = Campaign.objects.filter(status="sent").aggregate(t=Sum("opened_count"))["t"] or 0
+    total_clicked = Campaign.objects.filter(status="sent").aggregate(t=Sum("clicked_count"))["t"] or 0
+    sent_30d      = Campaign.objects.filter(status="sent", updated_at__gte=timezone.now()-timedelta(days=30)).count()
+
+    return JsonResponse({
+        "success":       True,
+        "campaigns":     rows,
+        "audience_sizes":audience_sizes,
+        "kpis": {
+            "total_campaigns":  campaigns.count(),
+            "sent_campaigns":   campaigns.filter(status="sent").count(),
+            "draft_campaigns":  campaigns.filter(status="draft").count(),
+            "total_sent":       total_sent,
+            "total_opened":     total_opened,
+            "total_clicked":    total_clicked,
+            "sent_30d":         sent_30d,
+            "open_rate":        round(total_opened / total_sent * 100, 1) if total_sent else 0,
+        },
+    })
+
+
+# ── Automation Config ────────────────────────────────────
+
+@staff_member_required
+@require_http_methods(["GET"])
+def automation_config_api(request):
+    cfg, _ = AutomationConfig.objects.get_or_create(id=1)
+    return JsonResponse({"success": True, "config": {
+        "abandoned_cart_enabled":     cfg.abandoned_cart_enabled,
+        "abandoned_cart_delay_hours": cfg.abandoned_cart_delay_hours,
+        "abandoned_cart_msg":         cfg.abandoned_cart_msg,
+        "first_purchase_enabled":     cfg.first_purchase_enabled,
+        "first_purchase_msg":         cfg.first_purchase_msg,
+        "birthday_enabled":           cfg.birthday_enabled,
+        "birthday_discount":          cfg.birthday_discount,
+        "vip_enabled":                cfg.vip_enabled,
+        "vip_threshold":              float(cfg.vip_threshold),
+        "winback_enabled":            cfg.winback_enabled,
+        "winback_days":               cfg.winback_days,
+        "winback_msg":                cfg.winback_msg,
+    }})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def automation_config_save_api(request):
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    cfg, _ = AutomationConfig.objects.get_or_create(id=1)
+    fields = [
+        "abandoned_cart_enabled", "abandoned_cart_delay_hours", "abandoned_cart_msg",
+        "first_purchase_enabled", "first_purchase_msg",
+        "birthday_enabled", "birthday_discount",
+        "vip_enabled", "vip_threshold",
+        "winback_enabled", "winback_days", "winback_msg",
+    ]
+    for f in fields:
+        if f in data:
+            setattr(cfg, f, data[f])
+    cfg.save()
+    return JsonResponse({"success": True})
+
+
+# ════════════════════════════════════════════════════════════════════
+#  FINANCE INTELLIGENCE — OVERVIEW & INVENTORY
+# ════════════════════════════════════════════════════════════════════
+
+@staff_member_required
+@require_http_methods(["GET"])
+def finance_overview_api(request):
+    """Executive finance overview KPIs."""
+    today = timezone.now().date()
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    year_start  = timezone.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    today_rev  = Order.objects.filter(created_at__date=today, status__in=["delivered","processing","packed","shipped","out_for_delivery"]).aggregate(t=Sum("total"))["t"] or 0
+    month_rev  = Order.objects.filter(created_at__gte=month_start, status__in=["delivered","processing","packed","shipped","out_for_delivery"]).aggregate(t=Sum("total"))["t"] or 0
+    year_rev   = Order.objects.filter(created_at__gte=year_start,  status__in=["delivered","processing","packed","shipped","out_for_delivery"]).aggregate(t=Sum("total"))["t"] or 0
+    total_rev  = Order.objects.filter(status__in=["delivered","processing","packed","shipped","out_for_delivery"]).aggregate(t=Sum("total"))["t"] or 0
+
+    pending_refunds = ReturnRequest.objects.filter(status="refund_pending").aggregate(t=Sum("final_refund_amount"))["t"] or 0
+    refunded_month  = ReturnRequest.objects.filter(status="refund_completed", refunded_at__gte=month_start).aggregate(t=Sum("final_refund_amount"))["t"] or 0
+    total_orders    = Order.objects.count()
+    delivered_cnt   = Order.objects.filter(status="delivered").count()
+    cancelled_cnt   = Order.objects.filter(status="cancelled").count()
+    from django.db.models import Avg, Max
+    avg_order_val   = Order.objects.filter(status="delivered").aggregate(a=Avg("total"))["a"] or 0
+
+    # Monthly revenue last 6 months for chart
+    monthly = []
+    try:
+        from dateutil.relativedelta import relativedelta as _rd
+        _has_rd = True
+    except ImportError:
+        _has_rd = False
+    for i in range(5, -1, -1):
+        if _has_rd:
+            m_start = (timezone.now() - _rd(months=i)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            m_end   = m_start + _rd(months=1)
+        else:
+            # Fallback: just use current month
+            m_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            m_end   = timezone.now()
+        rev = Order.objects.filter(
+            created_at__gte=m_start, created_at__lt=m_end,
+            status__in=["delivered","processing","packed","shipped","out_for_delivery"]
+        ).aggregate(t=Sum("total"))["t"] or 0
+        monthly.append({"label": m_start.strftime("%b %Y"), "revenue": float(rev)})
+
+    return JsonResponse({
+        "success": True,
+        "kpis": {
+            "today_revenue":    float(today_rev),
+            "month_revenue":    float(month_rev),
+            "year_revenue":     float(year_rev),
+            "total_revenue":    float(total_rev),
+            "pending_refunds":  float(pending_refunds),
+            "refunded_month":   float(refunded_month),
+            "total_orders":     total_orders,
+            "delivered_orders": delivered_cnt,
+            "cancelled_orders": cancelled_cnt,
+            "avg_order_value":  float(avg_order_val),
+        },
+        "monthly_revenue": monthly,
+    })
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def finance_inventory_api(request):
+    """Jewellery inventory value analysis (product-category based)."""
+    # High-value orders
+    hv_orders = list(
+        Order.objects.filter(total__gte=10000, status__in=["delivered","processing","packed","shipped"])
+        .select_related("user")
+        .order_by("-total")[:10]
+        .values("id", "total", "status", "created_at", "user__first_name", "user__last_name", "user__email")
+    )
+    for o in hv_orders:
+        o["total_amount"]  = float(o.pop("total", 0))
+        o["created_at"]    = o["created_at"].strftime("%b %d, %Y") if o["created_at"] else ""
+        o["customer_name"] = f"{o.pop('user__first_name','')} {o.pop('user__last_name','')}".strip() or o.pop("user__email","")
+        o.pop("user__email", None)
+
+    # Category revenue breakdown
+    cat_breakdown = list(
+        OrderItem.objects.select_related("product__category")
+        .values("product__category__name")
+        .annotate(
+            total_qty = Count("id"),
+            total_val = Sum(F("price") * F("quantity"))
+        )
+        .order_by("-total_val")[:8]
+    )
+    for row in cat_breakdown:
+        row["total_val"] = float(row["total_val"] or 0)
+
+    # Slow-moving products (ordered before, not since 90 days)
+    cutoff_90 = timezone.now() - timedelta(days=90)
+    from django.db.models import Max as DMax
+    slow_prods = list(
+        Product.objects.filter(is_active=True)
+        .annotate(last_order=DMax("orderitem__order__created_at"))
+        .filter(Q(last_order__lt=cutoff_90) | Q(last_order=None))
+        .values("name", "last_order", "price")
+        .order_by("last_order")[:8]
+    )
+    for p in slow_prods:
+        p["price"]      = float(p["price"] or 0)
+        p["last_order"] = p["last_order"].strftime("%b %d, %Y") if p["last_order"] else "Never sold"
+
+    # Total inventory value (all active products × their price)
+    inv_value = Product.objects.filter(is_active=True).aggregate(
+        t=Sum("price"), cnt=Count("id")
+    )
+
+    return JsonResponse({
+        "success":           True,
+        "inventory_value":   float(inv_value["t"] or 0),
+        "active_products":   inv_value["cnt"] or 0,
+        "high_value_orders": hv_orders,
+        "category_breakdown":cat_breakdown,
+        "slow_movers":       slow_prods,
+    })
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def finance_copilot_api(request):
+    """AI-generated business insights based on real data."""
+    # Compute real metrics to base insights on
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    prev_start  = (month_start - timedelta(days=1)).replace(day=1)
+
+    cur_rev  = float(Order.objects.filter(created_at__gte=month_start, status="delivered").aggregate(t=Sum("total"))["t"] or 0)
+    prev_rev = float(Order.objects.filter(created_at__gte=prev_start, created_at__lt=month_start, status="delivered").aggregate(t=Sum("total"))["t"] or 0)
+    rev_chg  = round((cur_rev - prev_rev) / prev_rev * 100, 1) if prev_rev else 0
+
+    return_rate = 0
+    total_del = Order.objects.filter(status="delivered").count()
+    total_ret = ReturnRequest.objects.count()
+    if total_del:
+        return_rate = round(total_ret / total_del * 100, 1)
+
+    top_cat = (
+        OrderItem.objects.values("product__category__name")
+        .annotate(v=Sum(F("price") * F("quantity")))
+        .order_by("-v").first()
+    )
+    top_cat_name = top_cat["product__category__name"] if top_cat else "N/A"
+
+    low_stock = Product.objects.filter(is_active=True, stock__lte=5).count()
+
+    api_key = APISetting.get_setting("OPENAI_API_KEY", "")
+    insights = []
+
+    if api_key:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            prompt = (
+                f"You are a business analyst for Princess Jewellery (Indian luxury jewellery brand).\n"
+                f"Current month revenue: ₹{cur_rev:,.0f} ({rev_chg:+.1f}% vs last month)\n"
+                f"Return rate: {return_rate}%\n"
+                f"Top category: {top_cat_name}\n"
+                f"Low stock products: {low_stock}\n\n"
+                f"Generate 4 actionable business insights as JSON array:\n"
+                f'[{{"icon":"📈","title":"...","detail":"...","action":"..."}}]'
+            )
+            resp = client.chat.completions.create(
+                model=APISetting.get_setting("OPENAI_MODEL", "gpt-3.5-turbo"),
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=500,
+            )
+            raw = resp.choices[0].message.content.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            insights = json.loads(raw)
+        except Exception:
+            pass
+
+    # Fallback rule-based insights
+    if not insights:
+        insights = []
+        if rev_chg > 0:
+            insights.append({"icon": "📈", "title": f"Revenue Up {rev_chg}% This Month", "detail": f"Current month: ₹{cur_rev:,.0f} vs ₹{prev_rev:,.0f} last month.", "action": "Analyse top SKUs driving growth"})
+        elif rev_chg < 0:
+            insights.append({"icon": "📉", "title": f"Revenue Down {abs(rev_chg)}% This Month", "detail": f"From ₹{prev_rev:,.0f} to ₹{cur_rev:,.0f}.", "action": "Review pricing & run a campaign"})
+        if return_rate > 10:
+            insights.append({"icon": "↩️", "title": f"High Return Rate: {return_rate}%", "detail": "Above 10% return rate — common causes: size issues, quality concerns.", "action": "Improve size guide & QC process"})
+        if low_stock > 0:
+            insights.append({"icon": "⚠️", "title": f"{low_stock} Products Low on Stock", "detail": "These products may miss sales opportunities.", "action": "Restock before running campaigns"})
+        if top_cat_name != "N/A":
+            insights.append({"icon": "💎", "title": f"Top Category: {top_cat_name}", "detail": "This category is your strongest revenue driver this month.", "action": f"Increase {top_cat_name} inventory & ad spend"})
+        insights.append({"icon": "🎯", "title": "Launch a VIP Campaign", "detail": "VIP customers typically generate 40-60% of revenue.", "action": "Use Campaign Builder → Audience: VIP"})
+
+    health_score = min(100, max(0, 60 + min(rev_chg, 20) - max(return_rate - 5, 0) * 2))
+
+    return JsonResponse({
+        "success":       True,
+        "insights":      insights[:5],
+        "health_score":  round(health_score),
+        "metrics": {
+            "cur_revenue":    cur_rev,
+            "prev_revenue":   prev_rev,
+            "rev_change_pct": rev_chg,
+            "return_rate":    return_rate,
+            "top_category":   top_cat_name,
+            "low_stock_count":low_stock,
+        },
+    })
+
+
+# ════════════════════════════════════════════════════════════════════
+#  API SETTINGS MANAGEMENT
+# ════════════════════════════════════════════════════════════════════
+
+@staff_member_required
+@require_http_methods(["GET"])
+def api_settings_list_api(request):
+    items = APISetting.objects.all()
+    return JsonResponse({"success": True, "settings": [{
+        "key":         s.key,
+        "category":    s.category,
+        "is_secret":   s.is_secret,
+        "description": s.description,
+        "has_value":   bool(s.value),
+        "updated_at":  s.updated_at.strftime("%b %d, %Y %H:%M"),
+        # Never send the actual secret value to frontend
+        "display_value": "••••••••" if s.is_secret and s.value else (s.value[:30] if s.value else "—"),
+    } for s in items]})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def api_setting_save_api(request):
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    key = (data.get("key") or "").strip().upper().replace(" ", "_")
+    if not key:
+        return JsonResponse({"success": False, "error": "Key is required."}, status=400)
+
+    raw_value   = data.get("value", "")
+    category    = data.get("category", "other")
+    is_secret   = bool(data.get("is_secret", True))
+    description = (data.get("description") or "").strip()
+
+    obj, created = APISetting.objects.get_or_create(key=key)
+    obj.category    = category
+    obj.is_secret   = is_secret
+    obj.description = description
+    # Only update value if a new one was provided (empty = keep existing)
+    if raw_value:
+        obj.set_value(raw_value)
+    obj.save()
+
+    return JsonResponse({"success": True, "created": created})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def api_setting_delete_api(request, key):
+    APISetting.objects.filter(key=key).delete()
+    return JsonResponse({"success": True})

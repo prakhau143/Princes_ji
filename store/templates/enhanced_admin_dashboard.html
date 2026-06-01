@@ -567,8 +567,8 @@
                 <div id="dashboard-analytics-dropdown" class="dropdown-content" style="display: none;">
                     <a href="#" class="dropdown-item" onclick="showSection('dashboard')">Dashboard Home</a>
                     <a href="#" class="dropdown-item" onclick="showSection('analytics')">Analytics & Reports</a>
-                    <a href="#" class="dropdown-item" onclick="showSection('india-map')">India Order Map</a>
-                    <a href="#" class="dropdown-item" onclick="showSection('finance')">Marketing & Finance</a>
+                    {% comment %} <a href="#" class="dropdown-item" onclick="showSection('india-map')">India Order Map</a> {% endcomment %}
+                    {% comment %} <a href="#" class="dropdown-item" onclick="showSection('finance')">Marketing & Finance</a> {% endcomment %}
                 </div>
             </div>
             <!-- ORDER MANAGEMENT -->
@@ -635,6 +635,32 @@
                     <a href="#" class="dropdown-item" onclick="showSection('messages')">Messages</a>
                 </div>
             </div>
+            <!-- MARKETING INTELLIGENCE -->
+            <div class="sidebar-dropdown" data-feature="marketing_intelligence">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'mkt-intel-dropdown')">
+                    <i class="fas fa-rocket"></i> Marketing Intelligence
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="mkt-intel-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('mkt-campaigns')"><i class="fas fa-bullhorn"></i> Campaign Builder</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('mkt-automations')"><i class="fas fa-robot"></i> Automations</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('mkt-integrations')"><i class="fas fa-plug"></i> Integrations</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('mkt-analytics')"><i class="fas fa-chart-bar"></i> Analytics</a>
+                </div>
+            </div>
+            <!-- FINANCE INTELLIGENCE -->
+            <div class="sidebar-dropdown" data-feature="finance_intelligence">
+                <a href="#" class="nav-item" onclick="toggleDropdown(event, 'fin-intel-dropdown')">
+                    <i class="fas fa-coins"></i> Finance Intelligence
+                    <i class="fas fa-chevron-down dropdown-arrow" style="margin-left: auto; transition: transform 0.2s;"></i>
+                </a>
+                <div id="fin-intel-dropdown" class="dropdown-content" style="display: none;">
+                    <a href="#" class="dropdown-item" onclick="showSection('fin-overview')"><i class="fas fa-tachometer-alt"></i> Executive Overview</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('fin-dashboard')"><i class="fas fa-chart-line"></i> Advanced Dashboard</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('fin-inventory')"><i class="fas fa-gem"></i> Inventory & High-Value</a>
+                    <a href="#" class="dropdown-item" onclick="showSection('fin-copilot')"><i class="fas fa-brain"></i> Business Copilot</a>
+                </div>
+            </div>
             <!-- MANAGEMENT (superuser only) -->
             <div class="sidebar-dropdown" data-feature="user_management" id="um-sidebar-item">
                 <a href="#" class="nav-item" onclick="toggleDropdown(event, 'management-dropdown')" style="gap:0.6rem;">
@@ -647,6 +673,9 @@
                     </a>
                     <a href="#" class="dropdown-item" onclick="showSection('misc-management')">
                         <i class="fas fa-sliders-h"></i> Miscellaneous
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="showSection('api-credentials')">
+                        <i class="fas fa-key"></i> API Credentials
                     </a>
                 </div>
             </div>
@@ -3216,6 +3245,314 @@
 
         </div><!-- /misc-management-section -->
 
+        <!-- ══════════════════════════════════════════════════
+             API CREDENTIALS SECTION
+        ═════════════════════════════════════════════════= -->
+        <div id="api-credentials-section" class="dashboard-content" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;">
+                <div>
+                    <h2 style="margin:0;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-key" style="color:var(--primary);margin-right:.5rem;"></i>API Credentials</h2>
+                    <p style="margin:.3rem 0 0;font-size:.83rem;color:var(--subtext);">Manage API keys for WhatsApp, Email, AI & integrations. All secrets are encrypted in the database.</p>
+                </div>
+                <button class="btn btn-primary" onclick="openApiCredModal()"><i class="fas fa-plus"></i> Add Key</button>
+            </div>
+
+            <div id="apiCredAlert" style="display:none;padding:.8rem 1.2rem;border-radius:10px;margin-bottom:1rem;font-size:.9rem;font-weight:500;"></div>
+
+            <!-- Preset key groups -->
+            <div id="apiCredSections" style="display:flex;flex-direction:column;gap:1.25rem;">
+                <div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+            </div>
+
+            <!-- Modal: Add/Edit API Key -->
+            <div id="apiCredModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:10100;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+              <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:24px;width:min(520px,100%);margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:1.75rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+                    <h3 id="apiCredModalTitle" style="margin:0;font-size:1.05rem;font-weight:800;color:var(--text);">Add API Key</h3>
+                    <button onclick="closeApiCredModal()" style="background:none;border:none;font-size:1.3rem;color:var(--subtext);cursor:pointer;">✕</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.9rem;">
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Key Name *</label>
+                        <input id="apiCredKey" type="text" placeholder="e.g. OPENAI_API_KEY" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Value / Secret</label>
+                        <input id="apiCredValue" type="password" placeholder="Enter value (leave blank to keep existing)" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
+                        <small style="color:var(--subtext);font-size:.75rem;">Leave blank when editing to keep existing value.</small>
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Category</label>
+                        <select id="apiCredCategory" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);">
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="email">Email / SMTP</option>
+                            <option value="ai">AI (OpenAI)</option>
+                            <option value="analytics">Analytics</option>
+                            <option value="payment">Payment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Description</label>
+                        <input id="apiCredDesc" type="text" placeholder="e.g. OpenAI API Key for campaign AI" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
+                    </div>
+                    <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.87rem;color:var(--text);">
+                        <input id="apiCredIsSecret" type="checkbox" checked style="accent-color:var(--primary);width:15px;height:15px;">
+                        Encrypt this value in database (recommended for passwords/keys)
+                    </label>
+                    <div id="apiCredModalErr" style="display:none;color:#dc2626;font-size:.82rem;padding:.5rem .8rem;background:#fee2e2;border-radius:8px;"></div>
+                </div>
+                <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+                    <button onclick="closeApiCredModal()" class="btn btn-outline">Cancel</button>
+                    <button onclick="saveApiCred()" class="btn btn-primary" id="apiCredSaveBtn">Save Key</button>
+                </div>
+              </div>
+            </div>
+        </div><!-- /api-credentials-section -->
+
+        <!-- ══════════════════════════════════════════════════
+             MARKETING INTELLIGENCE SECTIONS
+        ═════════════════════════════════════════════════= -->
+
+        <!-- ── Campaign Builder ── -->
+        <div id="mkt-campaigns-section" class="dashboard-content" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;">
+                <div>
+                    <h2 style="margin:0;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-bullhorn" style="color:var(--primary);margin-right:.5rem;"></i>Campaign Builder</h2>
+                    <p style="margin:.3rem 0 0;font-size:.83rem;color:var(--subtext);">Create, schedule and send Email & WhatsApp campaigns to your customers.</p>
+                </div>
+                <button class="btn btn-primary" onclick="openCampaignModal()"><i class="fas fa-plus"></i> New Campaign</button>
+            </div>
+
+            <!-- KPI strip -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem;" id="mktCampKpis">
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:var(--primary);" id="mktKpiTotal">—</div><div style="font-size:.78rem;color:var(--subtext);">Total Campaigns</div></div>
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:#16a34a;" id="mktKpiSent">—</div><div style="font-size:.78rem;color:var(--subtext);">Sent</div></div>
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:#d97706;" id="mktKpiDraft">—</div><div style="font-size:.78rem;color:var(--subtext);">Draft</div></div>
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:#7c3aed;" id="mktKpiTotalSent">—</div><div style="font-size:.78rem;color:var(--subtext);">Total Sent</div></div>
+            </div>
+
+            <!-- Campaigns table -->
+            <div class="stat-card" style="padding:0;overflow:hidden;">
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead><tr style="background:var(--primary-50);">
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Campaign</th>
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Type</th>
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Audience</th>
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Status</th>
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Sent/Opened</th>
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Created</th>
+                            <th style="padding:.8rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;text-transform:uppercase;">Actions</th>
+                        </tr></thead>
+                        <tbody id="mktCampTable"><tr><td colspan="7" style="padding:3rem;text-align:center;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Campaign Modal (Create/Edit) -->
+            <div id="campaignModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:10100;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:1rem;">
+              <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:24px;width:min(660px,100%);margin:0 auto 1rem;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:1.75rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+                    <h3 id="campModalTitle" style="margin:0;font-size:1.05rem;font-weight:800;color:var(--text);">New Campaign</h3>
+                    <button onclick="closeCampaignModal()" style="background:none;border:none;font-size:1.3rem;color:var(--subtext);cursor:pointer;">✕</button>
+                </div>
+                <input type="hidden" id="campEditId">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem;">
+                    <div style="grid-column:1/-1;">
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Campaign Name *</label>
+                        <input id="campName" type="text" placeholder="e.g. Diwali Sale Campaign 2025" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Channel</label>
+                        <select id="campType" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);">
+                            <option value="email">📧 Email Only</option>
+                            <option value="whatsapp">💬 WhatsApp Only</option>
+                            <option value="both">📧💬 Both</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Target Audience</label>
+                        <select id="campAudience" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);">
+                            <option value="all">👥 All Customers</option>
+                            <option value="vip">⭐ VIP (₹15k+ spent)</option>
+                            <option value="repeat">🔁 Repeat Buyers</option>
+                            <option value="high_value">💎 High Value (₹10k+ order)</option>
+                            <option value="inactive">😴 Inactive (60+ days)</option>
+                            <option value="new">🆕 New Customers</option>
+                        </select>
+                    </div>
+                    <div style="grid-column:1/-1;display:flex;align-items:flex-end;gap:.75rem;">
+                        <div style="flex:1;">
+                            <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Email Subject</label>
+                            <input id="campSubject" type="text" placeholder="Subject line…" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
+                        </div>
+                        <button onclick="runAiGenerate()" id="aiGenBtn" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:.62rem 1rem;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;white-space:nowrap;">
+                            ✨ AI Generate
+                        </button>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Email Body (HTML)</label>
+                        <textarea id="campEmailBody" rows="6" placeholder="HTML email content…" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:monospace;background:var(--bg);color:var(--text);outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">WhatsApp Message</label>
+                        <textarea id="campWaMsg" rows="3" placeholder="Short WhatsApp message (plain text)…" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;">Schedule (optional)</label>
+                        <input id="campSchedule" type="datetime-local" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;">
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.82rem;color:var(--subtext);background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:.6rem;">
+                        <i class="fas fa-info-circle"></i> Leave schedule blank to save as draft
+                    </div>
+                </div>
+                <div id="campModalErr" style="display:none;color:#dc2626;font-size:.82rem;padding:.5rem .8rem;background:#fee2e2;border-radius:8px;margin-top:.75rem;"></div>
+                <div id="aiGenStatus" style="display:none;padding:.5rem .8rem;background:#f5f3ff;border-radius:8px;margin-top:.75rem;font-size:.82rem;color:#7c3aed;"></div>
+                <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+                    <button onclick="closeCampaignModal()" class="btn btn-outline">Cancel</button>
+                    <button onclick="saveCampaign(false)" class="btn btn-outline"><i class="fas fa-save"></i> Save Draft</button>
+                    <button onclick="saveCampaign(true)" class="btn btn-primary" id="campSendNowBtn"><i class="fas fa-paper-plane"></i> Save & Send Now</button>
+                </div>
+              </div>
+            </div>
+        </div><!-- /mkt-campaigns-section -->
+
+        <!-- ── Marketing Automations ── -->
+        <div id="mkt-automations-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-robot" style="color:var(--primary);margin-right:.5rem;"></i>Marketing Automations</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">Configure automatic WhatsApp & Email triggers. Requires WhatsApp API keys set in API Credentials.</p>
+            <div id="mktAutoContent" style="display:flex;flex-direction:column;gap:1.25rem;">
+                <div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:1.5rem;">
+                <button class="btn btn-primary" onclick="saveAutomations()"><i class="fas fa-save"></i> Save Automation Settings</button>
+            </div>
+        </div><!-- /mkt-automations-section -->
+
+        <!-- ── Integrations Center ── -->
+        <div id="mkt-integrations-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-plug" style="color:var(--primary);margin-right:.5rem;"></i>Integrations Center</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">Configure 3rd-party integrations. API keys are stored encrypted in <a href="#" onclick="showSection('api-credentials');return false;" style="color:var(--primary);">API Credentials</a>.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;">
+                <!-- WhatsApp -->
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;">💬</div>
+                        <div><div style="font-weight:700;color:var(--text);">WhatsApp (Twilio)</div><div style="font-size:.75rem;color:var(--subtext);">Business messaging</div></div>
+                    </div>
+                    <div id="intWaStatus" style="font-size:.82rem;color:var(--subtext);margin-bottom:.75rem;">Checking…</div>
+                    <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem;color:var(--subtext);">
+                        <div>• Set <code>TWILIO_ACCOUNT_SID</code></div>
+                        <div>• Set <code>TWILIO_AUTH_TOKEN</code></div>
+                        <div>• Set <code>TWILIO_WHATSAPP_FROM</code></div>
+                    </div>
+                    <button onclick="showSection('api-credentials')" class="btn btn-outline" style="margin-top:1rem;width:100%;font-size:.82rem;"><i class="fas fa-key"></i> Manage Keys</button>
+                </div>
+                <!-- Email SMTP -->
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#ea4335,#c62828);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;">📧</div>
+                        <div><div style="font-weight:700;color:var(--text);">Email SMTP</div><div style="font-size:.75rem;color:var(--subtext);">Campaign emails</div></div>
+                    </div>
+                    <div id="intEmailStatus" style="font-size:.82rem;color:var(--subtext);margin-bottom:.75rem;">Checking…</div>
+                    <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem;color:var(--subtext);">
+                        <div>• Set <code>EMAIL_HOST</code> (smtp.gmail.com)</div>
+                        <div>• Set <code>EMAIL_HOST_USER</code></div>
+                        <div>• Set <code>EMAIL_HOST_PASSWORD</code></div>
+                    </div>
+                    <button onclick="showSection('api-credentials')" class="btn btn-outline" style="margin-top:1rem;width:100%;font-size:.82rem;"><i class="fas fa-key"></i> Manage Keys</button>
+                </div>
+                <!-- OpenAI -->
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#10a37f,#0d8c6d);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;">🤖</div>
+                        <div><div style="font-weight:700;color:var(--text);">OpenAI</div><div style="font-size:.75rem;color:var(--subtext);">AI content generation</div></div>
+                    </div>
+                    <div id="intAiStatus" style="font-size:.82rem;color:var(--subtext);margin-bottom:.75rem;">Checking…</div>
+                    <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem;color:var(--subtext);">
+                        <div>• Set <code>OPENAI_API_KEY</code></div>
+                        <div>• Set <code>OPENAI_MODEL</code> (optional)</div>
+                    </div>
+                    <button onclick="showSection('api-credentials')" class="btn btn-outline" style="margin-top:1rem;width:100%;font-size:.82rem;"><i class="fas fa-key"></i> Manage Keys</button>
+                </div>
+            </div>
+        </div><!-- /mkt-integrations-section -->
+
+        <!-- ── Marketing Analytics ── -->
+        <div id="mkt-analytics-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:.5rem;"></i>Marketing Analytics</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">Campaign performance & audience reach overview.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;" id="mktAnKpis">
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--primary);" id="mktAnTotal">—</div><div style="font-size:.78rem;color:var(--subtext);">Campaigns</div></div>
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#16a34a;" id="mktAnSent">—</div><div style="font-size:.78rem;color:var(--subtext);">Total Sent</div></div>
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#2563eb;" id="mktAnOpen">—%</div><div style="font-size:.78rem;color:var(--subtext);">Open Rate</div></div>
+                <div class="stat-card" style="padding:1rem;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#7c3aed;" id="mktAnMonth">—</div><div style="font-size:.78rem;color:var(--subtext);">Sent This Month</div></div>
+            </div>
+            <!-- Audience sizes -->
+            <div class="stat-card" style="padding:1.25rem;margin-bottom:1.25rem;">
+                <div style="font-weight:700;color:var(--text);margin-bottom:1rem;font-size:.95rem;"><i class="fas fa-users" style="color:var(--primary);margin-right:.4rem;"></i>Audience Segment Sizes</div>
+                <div id="mktAnAudience" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;">
+                    <div style="text-align:center;padding:1.5rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i></div>
+                </div>
+            </div>
+            <!-- Recent campaigns -->
+            <div class="stat-card" style="padding:0;overflow:hidden;">
+                <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);font-weight:700;color:var(--text);font-size:.95rem;"><i class="fas fa-history" style="color:var(--primary);margin-right:.4rem;"></i>Recent Campaigns</div>
+                <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;" id="mktAnTable">
+                    <thead><tr style="background:var(--primary-50);">
+                        <th style="padding:.75rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;">Campaign</th>
+                        <th style="padding:.75rem 1rem;text-align:center;font-size:.78rem;color:var(--subtext);font-weight:600;">Type</th>
+                        <th style="padding:.75rem 1rem;text-align:center;font-size:.78rem;color:var(--subtext);font-weight:600;">Sent</th>
+                        <th style="padding:.75rem 1rem;text-align:center;font-size:.78rem;color:var(--subtext);font-weight:600;">Opened</th>
+                        <th style="padding:.75rem 1rem;text-align:center;font-size:.78rem;color:var(--subtext);font-weight:600;">Clicked</th>
+                        <th style="padding:.75rem 1rem;text-align:center;font-size:.78rem;color:var(--subtext);font-weight:600;">Status</th>
+                    </tr></thead>
+                    <tbody><tr><td colspan="6" style="padding:2.5rem;text-align:center;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+                </table></div>
+            </div>
+        </div><!-- /mkt-analytics-section -->
+
+        <!-- ══════════════════════════════════════════════════
+             FINANCE INTELLIGENCE SECTIONS
+        ═════════════════════════════════════════════════= -->
+
+        <!-- ── Finance Executive Overview ── -->
+        <div id="fin-overview-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-tachometer-alt" style="color:var(--primary);margin-right:.5rem;"></i>Finance Executive Overview</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">Real-time financial performance dashboard for Princess Jewellery.</p>
+            <div id="finOvContent">
+                <div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+            </div>
+        </div><!-- /fin-overview-section -->
+
+        <!-- ── Finance Advanced Dashboard ── -->
+        <div id="fin-dashboard-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-chart-line" style="color:var(--primary);margin-right:.5rem;"></i>Advanced Finance Dashboard</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">Revenue waterfall, monthly trends and refund liability.</p>
+            <div id="finDashContent">
+                <div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+            </div>
+        </div><!-- /fin-dashboard-section -->
+
+        <!-- ── Inventory & High-Value ── -->
+        <div id="fin-inventory-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-gem" style="color:var(--primary);margin-right:.5rem;"></i>Jewellery Inventory & High-Value Orders</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">Inventory value, slow-movers, category breakdown and high-value order tracking.</p>
+            <div id="finInvContent">
+                <div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+            </div>
+        </div><!-- /fin-inventory-section -->
+
+        <!-- ── Business AI Copilot ── -->
+        <div id="fin-copilot-section" class="dashboard-content" style="display:none;">
+            <h2 style="margin:0 0 .3rem;font-size:1.3rem;font-weight:800;color:var(--text);"><i class="fas fa-brain" style="color:var(--primary);margin-right:.5rem;"></i>Business AI Copilot</h2>
+            <p style="margin:0 0 1.5rem;font-size:.83rem;color:var(--subtext);">AI-generated strategic insights based on your live business data. Add <code>OPENAI_API_KEY</code> in API Credentials for AI-powered insights.</p>
+            <div id="finCopilotContent">
+                <div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+            </div>
+        </div><!-- /fin-copilot-section -->
+
     </div>
 
     <script>
@@ -3232,8 +3569,16 @@
             'collections':'homepage','collection-rows':'homepage','zoom-carousel':'homepage','editorial':'homepage',
             'reels':'marketing','reviews':'marketing','trust':'marketing','coupons':'marketing',
             'customers':'customers','subscribers':'customers','messages':'customers',
+            // Marketing Intelligence
+            'mkt-campaigns':'marketing_intelligence','mkt-automations':'marketing_intelligence',
+            'mkt-integrations':'marketing_intelligence','mkt-analytics':'marketing_intelligence',
+            // Finance Intelligence
+            'fin-overview':'finance_intelligence','fin-dashboard':'finance_intelligence',
+            'fin-inventory':'finance_intelligence','fin-copilot':'finance_intelligence',
+            // Management
             'user-management':'user_management',
             'misc-management':'user_management',
+            'api-credentials':'user_management',
         };
 
         function showSection(sectionName) {
@@ -3289,6 +3634,11 @@
                     'trust':'Trust Badges','coupons':'Coupons & Offers','customers':'Customers',
                     'subscribers':'Subscribers','messages':'Messages',
                     'user-management':'User Manager','misc-management':'Miscellaneous Settings',
+                    'mkt-campaigns':'Campaign Builder','mkt-automations':'Marketing Automations',
+                    'mkt-integrations':'Integrations Center','mkt-analytics':'Marketing Analytics',
+                    'fin-overview':'Finance Executive Overview','fin-dashboard':'Advanced Finance Dashboard',
+                    'fin-inventory':'Inventory & High-Value Orders','fin-copilot':'Business AI Copilot',
+                    'api-credentials':'API Credentials',
                 };
                 pageTitle.textContent = titleMap[sectionName] || (sectionName.charAt(0).toUpperCase() + sectionName.slice(1));
             }
@@ -3322,6 +3672,15 @@
             if (sectionName === 'customers') { loadCustomers(); loadCustCategoryChart(); loadTopCustomers(); }
             if (sectionName === 'user-management') loadUserManagement();
             if (sectionName === 'misc-management') loadMiscManagement();
+            if (sectionName === 'api-credentials')  loadApiCredentials();
+            if (sectionName === 'mkt-campaigns')   loadMktCampaigns();
+            if (sectionName === 'mkt-automations') loadMktAutomations();
+            if (sectionName === 'mkt-integrations')loadMktIntegrations();
+            if (sectionName === 'mkt-analytics')   loadMktAnalytics();
+            if (sectionName === 'fin-overview')    loadFinOverview();
+            if (sectionName === 'fin-dashboard')   loadFinDashboard();
+            if (sectionName === 'fin-inventory')   loadFinInventory();
+            if (sectionName === 'fin-copilot')     loadFinCopilot();
             if (sectionName === 'returns') { loadRtnList(); loadRtnAnalytics(); }
         }
 
@@ -7861,8 +8220,25 @@
 
         /* ═══ LOAD ANALYTICS ═════════════════════════════════ */
         async function loadRtnAnalytics() {
-            const res = await apiFetchJson('/admin-dashboard/api/returns/analytics/');
-            if (!res.success) return;
+            // Show loading spinners in chart containers right away
+            const chartIds = ['rtnFunnelChart','rtnReasonChart','rtnTrendChart','rtnProductChart','rtnRecoveryChart'];
+            const spinHtml = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--subtext);font-size:.82rem;"><i class="fas fa-spinner fa-spin" style="margin-right:.4rem;"></i>Loading…</div>';
+            chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = spinHtml; });
+
+            let res;
+            try {
+                res = await apiFetchJson('/admin-dashboard/api/returns/analytics/');
+            } catch(e) {
+                console.error('RTN analytics fetch error:', e);
+                const errHtml = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#dc2626;font-size:.8rem;"><i class="fas fa-exclamation-circle" style="margin-right:.4rem;"></i>Failed to load</div>';
+                chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = errHtml; });
+                return;
+            }
+            if (!res || !res.success) {
+                const errHtml = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#dc2626;font-size:.8rem;"><i class="fas fa-exclamation-circle" style="margin-right:.4rem;"></i>Failed to load</div>';
+                chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = errHtml; });
+                return;
+            }
             _rtnAnalytics = res;
             renderRtnKPIs(res.kpis);
             renderRtnAlerts(res.alerts || []);
@@ -8457,7 +8833,8 @@
             if (ready(funnelEl)) {
                 try {
                     const rows = Object.entries(data.stage_counts || {})
-                        .map(([k, v]) => [RTN_STAGE_CFG[k]?.label || k, v.count || 0]);
+                        .map(([k, v]) => [RTN_STAGE_CFG[k]?.label || k, v.count || 0])
+                        .filter(r => r[1] > 0);        // only show stages that have data
                     if (rows.length === 0) {
                         funnelEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--subtext);font-size:.8rem;">No return data yet</div>';
                     } else {
@@ -8656,18 +9033,21 @@
     (function(){
         /* ── Constants ── */
         const UM_FEATURE_LABELS = {
-            dashboard:        'Dashboard & Analytics',
-            orders:           'Order Management',
-            products:         'Product Management',
-            homepage:         'Homepage Management',
-            marketing:        'Marketing & Trust',
-            customers:        'Customer Management',
-            website_frontend: 'Website User-side',
+            dashboard:              'Dashboard & Analytics',
+            orders:                 'Order Management',
+            products:               'Product Management',
+            homepage:               'Homepage Management',
+            marketing:              'Marketing & Trust',
+            customers:              'Customer Management',
+            website_frontend:       'Website User-side',
+            marketing_intelligence: 'Marketing Intelligence',
+            finance_intelligence:   'Finance Intelligence',
         };
         const UM_FEATURE_ICONS = {
             dashboard:'fa-chart-line', orders:'fa-shopping-cart', products:'fa-box',
             homepage:'fa-home', marketing:'fa-bullhorn', customers:'fa-users',
             website_frontend:'fa-globe',
+            marketing_intelligence:'fa-rocket', finance_intelligence:'fa-coins',
         };
 
         let _umCache = [];
@@ -9118,6 +9498,894 @@
         window.loadMiscManagement = loadMiscManagement;
         window.saveMiscSettings   = saveMiscSettings;
         window.miscToggleSecret   = miscToggleSecret;
+    })();
+    </script>
+
+    <!-- ══════════════════════════════════════════════════════
+         MARKETING & FINANCE INTELLIGENCE — JAVASCRIPT
+    ═══════════════════════════════════════════════════════ -->
+    <script>
+    (() => {
+    'use strict';
+
+    // ══════════════════════════════════════════════════════
+    //  API CREDENTIALS
+    // ══════════════════════════════════════════════════════
+    const API_PRESET_GROUPS = [
+        { label:'💬 WhatsApp (Twilio)', cat:'whatsapp', keys:[
+            { key:'TWILIO_ACCOUNT_SID',    desc:'Twilio Account SID' },
+            { key:'TWILIO_AUTH_TOKEN',     desc:'Twilio Auth Token (secret)' },
+            { key:'TWILIO_WHATSAPP_FROM',  desc:'Sender number e.g. +14155238886', secret:false },
+        ]},
+        { label:'📧 Email / SMTP', cat:'email', keys:[
+            { key:'EMAIL_HOST',         desc:'SMTP host e.g. smtp.gmail.com', secret:false },
+            { key:'EMAIL_PORT',         desc:'SMTP port e.g. 587', secret:false },
+            { key:'EMAIL_HOST_USER',    desc:'Your email address', secret:false },
+            { key:'EMAIL_HOST_PASSWORD',desc:'Email password or App Password' },
+            { key:'DEFAULT_FROM_EMAIL', desc:'Sender name e.g. Princess Jewellery <info@example.com>', secret:false },
+        ]},
+        { label:'🤖 AI (OpenAI)', cat:'ai', keys:[
+            { key:'OPENAI_API_KEY', desc:'OpenAI API Key (sk-...)' },
+            { key:'OPENAI_MODEL',   desc:'Model name e.g. gpt-3.5-turbo', secret:false },
+        ]},
+        { label:'📊 Analytics', cat:'analytics', keys:[
+            { key:'GOOGLE_ANALYTICS_ID', desc:'GA4 Measurement ID (G-XXXXXXXXXX)', secret:false },
+            { key:'META_PIXEL_ID',       desc:'Meta Pixel ID', secret:false },
+        ]},
+    ];
+
+    let _apiCredCache = [];
+
+    async function loadApiCredentials() {
+        const container = document.getElementById('apiCredSections');
+        if (!container) return;
+        const res = await apiFetchJson('/admin-dashboard/api/api-settings/');
+        if (!res.success) { container.innerHTML = `<p style="color:#dc2626;">Failed to load.</p>`; return; }
+        _apiCredCache = res.settings || [];
+        renderApiCredSections();
+    }
+
+    function renderApiCredSections() {
+        const container = document.getElementById('apiCredSections');
+        if (!container) return;
+        const existing = {};
+        _apiCredCache.forEach(s => { existing[s.key] = s; });
+
+        container.innerHTML = API_PRESET_GROUPS.map(group => {
+            const rows = group.keys.map(preset => {
+                const s = existing[preset.key];
+                const configured = s && s.has_value;
+                return `<div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;border-bottom:1px solid var(--border);">
+                    <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:${configured ? '#16a34a' : '#d1d5db'};"></div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-family:monospace;font-size:.85rem;font-weight:600;color:var(--text);">${escapeHtml(preset.key)}</div>
+                        <div style="font-size:.75rem;color:var(--subtext);">${escapeHtml(s ? s.description || preset.desc : preset.desc)}</div>
+                    </div>
+                    <div style="font-size:.8rem;color:${configured ? '#16a34a' : 'var(--subtext)'};">${configured ? s.display_value : 'Not set'}</div>
+                    <button onclick="openApiCredModalFor('${escapeAttr(preset.key)}','${escapeAttr(group.cat)}','${escapeAttr(preset.desc)}',${!preset.secret})"
+                        style="background:var(--primary-50);border:none;color:var(--primary);padding:.35rem .65rem;border-radius:6px;cursor:pointer;font-size:.8rem;flex-shrink:0;">
+                        ${configured ? 'Edit' : 'Set'}
+                    </button>
+                    ${configured ? `<button onclick="deleteApiCred('${escapeAttr(preset.key)}')"
+                        style="background:#fee2e2;border:none;color:#dc2626;padding:.35rem .65rem;border-radius:6px;cursor:pointer;font-size:.8rem;flex-shrink:0;">
+                        <i class="fas fa-trash"></i></button>` : ''}
+                </div>`;
+            }).join('');
+
+            // Custom keys in this category
+            const custom = _apiCredCache.filter(s => s.category === group.cat && !group.keys.some(k => k.key === s.key));
+            const customRows = custom.map(s => `<div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;border-bottom:1px solid var(--border);">
+                <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:#16a34a;"></div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-family:monospace;font-size:.85rem;font-weight:600;color:var(--text);">${escapeHtml(s.key)}</div>
+                    <div style="font-size:.75rem;color:var(--subtext);">${escapeHtml(s.description || 'Custom key')}</div>
+                </div>
+                <div style="font-size:.8rem;color:#16a34a;">${escapeHtml(s.display_value)}</div>
+                <button onclick="openApiCredModalFor('${escapeAttr(s.key)}','${escapeAttr(s.category)}','${escapeAttr(s.description)}',${!s.is_secret})"
+                    style="background:var(--primary-50);border:none;color:var(--primary);padding:.35rem .65rem;border-radius:6px;cursor:pointer;font-size:.8rem;">Edit</button>
+                <button onclick="deleteApiCred('${escapeAttr(s.key)}')"
+                    style="background:#fee2e2;border:none;color:#dc2626;padding:.35rem .65rem;border-radius:6px;cursor:pointer;font-size:.8rem;"><i class="fas fa-trash"></i></button>
+            </div>`).join('');
+
+            return `<div class="stat-card" style="padding:0;overflow:hidden;">
+                <div style="padding:1rem 1.25rem;background:var(--primary-50);border-bottom:1px solid var(--border);font-weight:700;color:var(--text);font-size:.9rem;">${escapeHtml(group.label)}</div>
+                ${rows}${customRows}
+            </div>`;
+        }).join('');
+
+        // Other category custom keys
+        const otherKeys = _apiCredCache.filter(s => !API_PRESET_GROUPS.some(g => g.cat === s.category));
+        if (otherKeys.length) {
+            container.innerHTML += `<div class="stat-card" style="padding:0;overflow:hidden;">
+                <div style="padding:1rem 1.25rem;background:var(--primary-50);border-bottom:1px solid var(--border);font-weight:700;color:var(--text);font-size:.9rem;">🔧 Other</div>
+                ${otherKeys.map(s => `<div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;border-bottom:1px solid var(--border);">
+                    <div style="font-family:monospace;font-size:.85rem;font-weight:600;color:var(--text);flex:1;">${escapeHtml(s.key)}</div>
+                    <div style="font-size:.8rem;color:#16a34a;">${escapeHtml(s.display_value)}</div>
+                    <button onclick="openApiCredModalFor('${escapeAttr(s.key)}','${escapeAttr(s.category)}','${escapeAttr(s.description)}',${!s.is_secret})"
+                        style="background:var(--primary-50);border:none;color:var(--primary);padding:.35rem .65rem;border-radius:6px;cursor:pointer;font-size:.8rem;">Edit</button>
+                    <button onclick="deleteApiCred('${escapeAttr(s.key)}')"
+                        style="background:#fee2e2;border:none;color:#dc2626;padding:.35rem .65rem;border-radius:6px;cursor:pointer;font-size:.8rem;"><i class="fas fa-trash"></i></button>
+                </div>`).join('')}
+            </div>`;
+        }
+    }
+
+    function openApiCredModal() {
+        document.getElementById('apiCredKey').value = '';
+        document.getElementById('apiCredValue').value = '';
+        document.getElementById('apiCredCategory').value = 'other';
+        document.getElementById('apiCredDesc').value = '';
+        document.getElementById('apiCredIsSecret').checked = true;
+        document.getElementById('apiCredKey').removeAttribute('readonly');
+        document.getElementById('apiCredModalTitle').textContent = 'Add API Key';
+        document.getElementById('apiCredModalErr').style.display = 'none';
+        document.getElementById('apiCredModal').style.display = 'flex';
+    }
+
+    function openApiCredModalFor(key, cat, desc, notSecret) {
+        document.getElementById('apiCredKey').value = key;
+        document.getElementById('apiCredKey').setAttribute('readonly', true);
+        document.getElementById('apiCredValue').value = '';
+        document.getElementById('apiCredCategory').value = cat || 'other';
+        document.getElementById('apiCredDesc').value = desc || '';
+        document.getElementById('apiCredIsSecret').checked = !notSecret;
+        document.getElementById('apiCredModalTitle').textContent = `Edit: ${key}`;
+        document.getElementById('apiCredModalErr').style.display = 'none';
+        document.getElementById('apiCredModal').style.display = 'flex';
+    }
+
+    function closeApiCredModal() {
+        document.getElementById('apiCredModal').style.display = 'none';
+    }
+
+    async function saveApiCred() {
+        const key   = document.getElementById('apiCredKey').value.trim().toUpperCase().replace(/\s+/g,'_');
+        const value = document.getElementById('apiCredValue').value;
+        const cat   = document.getElementById('apiCredCategory').value;
+        const desc  = document.getElementById('apiCredDesc').value.trim();
+        const isSecret = document.getElementById('apiCredIsSecret').checked;
+        const errEl = document.getElementById('apiCredModalErr');
+
+        if (!key) { errEl.textContent = 'Key name is required.'; errEl.style.display = 'block'; return; }
+
+        const btn = document.getElementById('apiCredSaveBtn');
+        btn.disabled = true; btn.textContent = 'Saving…';
+
+        const res = await apiFetchJson('/admin-dashboard/api/api-settings/save/', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ key, value, category:cat, description:desc, is_secret:isSecret }),
+        });
+        btn.disabled = false; btn.textContent = 'Save Key';
+
+        if (!res.success) { errEl.textContent = res.error || 'Save failed.'; errEl.style.display = 'block'; return; }
+        closeApiCredModal();
+        showNotification(`Key "${key}" saved successfully.`, 'success');
+        loadApiCredentials();
+    }
+
+    async function deleteApiCred(key) {
+        if (!confirm(`Delete API key "${key}"? This cannot be undone.`)) return;
+        const res = await apiFetchJson(`/admin-dashboard/api/api-settings/${encodeURIComponent(key)}/delete/`, { method:'POST' });
+        if (res.success) { showNotification(`"${key}" deleted.`, 'success'); loadApiCredentials(); }
+        else showNotification('Delete failed.', 'error');
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  CAMPAIGN BUILDER
+    // ══════════════════════════════════════════════════════
+    let _campCache = [];
+
+    async function loadMktCampaigns() {
+        const tbody = document.getElementById('mktCampTable');
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:2.5rem;text-align:center;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i></td></tr>`;
+        let res;
+        try { res = await apiFetchJson('/admin-dashboard/api/marketing-analytics/'); }
+        catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="padding:2rem;text-align:center;color:#dc2626;">Failed to load</td></tr>`; return; }
+        if (!res.success) { tbody.innerHTML = `<tr><td colspan="7" style="padding:2rem;text-align:center;color:#dc2626;">${escapeHtml(res.error||'Error')}</td></tr>`; return; }
+
+        _campCache = res.campaigns || [];
+        // KPIs
+        const k = res.kpis || {};
+        document.getElementById('mktKpiTotal').textContent    = k.total_campaigns || 0;
+        document.getElementById('mktKpiSent').textContent     = k.sent_campaigns || 0;
+        document.getElementById('mktKpiDraft').textContent    = k.draft_campaigns || 0;
+        document.getElementById('mktKpiTotalSent').textContent= k.total_sent || 0;
+
+        if (!_campCache.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding:3rem;text-align:center;color:var(--subtext);">No campaigns yet. Click <strong>+ New Campaign</strong> to create one.</td></tr>`;
+            return;
+        }
+        const STATUS_COLORS = { draft:'#d97706', scheduled:'#2563eb', sent:'#16a34a', failed:'#dc2626' };
+        tbody.innerHTML = _campCache.map(c => {
+            const sc = STATUS_COLORS[c.status] || '#6b7280';
+            const canSend = c.status === 'draft' || c.status === 'scheduled';
+            return `<tr style="border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
+                <td style="padding:.8rem 1rem;font-weight:600;color:var(--text);font-size:.875rem;">${escapeHtml(c.name)}</td>
+                <td style="padding:.8rem 1rem;font-size:.82rem;">${escapeHtml(c.campaign_type_display)}</td>
+                <td style="padding:.8rem 1rem;font-size:.82rem;color:var(--subtext);">${escapeHtml(c.audience_display)}</td>
+                <td style="padding:.8rem 1rem;"><span style="background:${sc}22;color:${sc};padding:.2rem .55rem;border-radius:20px;font-size:.75rem;font-weight:700;">${c.status}</span></td>
+                <td style="padding:.8rem 1rem;font-size:.82rem;color:var(--subtext);">${c.sent_count} / ${c.opened_count}</td>
+                <td style="padding:.8rem 1rem;font-size:.78rem;color:var(--subtext);">${escapeHtml(c.created_at)}</td>
+                <td style="padding:.8rem 1rem;">
+                    <div style="display:flex;gap:.35rem;">
+                        <button onclick="openCampaignModal(${c.id})" style="background:var(--primary-50);border:none;color:var(--primary);padding:.35rem .6rem;border-radius:6px;cursor:pointer;font-size:.8rem;" title="Edit"><i class="fas fa-edit"></i></button>
+                        ${canSend ? `<button onclick="sendCampaignNow(${c.id},'${escapeAttr(c.name)}')" style="background:#dcfce7;border:none;color:#16a34a;padding:.35rem .6rem;border-radius:6px;cursor:pointer;font-size:.8rem;" title="Send Now"><i class="fas fa-paper-plane"></i></button>` : ''}
+                        <button onclick="deleteCampaign(${c.id},'${escapeAttr(c.name)}')" style="background:#fee2e2;border:none;color:#dc2626;padding:.35rem .6rem;border-radius:6px;cursor:pointer;font-size:.8rem;" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function openCampaignModal(id) {
+        document.getElementById('campModalErr').style.display = 'none';
+        document.getElementById('aiGenStatus').style.display = 'none';
+        if (!id) {
+            // New campaign
+            document.getElementById('campEditId').value = '';
+            document.getElementById('campModalTitle').textContent = 'New Campaign';
+            document.getElementById('campName').value = '';
+            document.getElementById('campType').value = 'email';
+            document.getElementById('campAudience').value = 'all';
+            document.getElementById('campSubject').value = '';
+            document.getElementById('campEmailBody').value = '';
+            document.getElementById('campWaMsg').value = '';
+            document.getElementById('campSchedule').value = '';
+        } else {
+            const c = _campCache.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById('campEditId').value = id;
+            document.getElementById('campModalTitle').textContent = 'Edit Campaign';
+            document.getElementById('campName').value = c.name;
+            document.getElementById('campType').value = c.campaign_type;
+            document.getElementById('campAudience').value = c.audience;
+            document.getElementById('campSubject').value = c.email_subject || '';
+            document.getElementById('campEmailBody').value = c.email_body_html || '';
+            document.getElementById('campWaMsg').value = c.whatsapp_message || '';
+            document.getElementById('campSchedule').value = c.scheduled_at ? c.scheduled_at.slice(0,16) : '';
+        }
+        document.body.style.overflow = 'hidden';
+        document.getElementById('campaignModal').style.display = 'block';
+        document.getElementById('campaignModal').scrollTop = 0;
+    }
+
+    function closeCampaignModal() {
+        document.getElementById('campaignModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    async function saveCampaign(sendNow) {
+        const errEl = document.getElementById('campModalErr');
+        const name  = document.getElementById('campName').value.trim();
+        if (!name) { errEl.textContent = 'Campaign name is required.'; errEl.style.display = 'block'; return; }
+
+        const editId = document.getElementById('campEditId').value;
+        const payload = {
+            name,
+            campaign_type:    document.getElementById('campType').value,
+            audience:         document.getElementById('campAudience').value,
+            email_subject:    document.getElementById('campSubject').value.trim(),
+            email_body_html:  document.getElementById('campEmailBody').value,
+            whatsapp_message: document.getElementById('campWaMsg').value.trim(),
+            scheduled_at:     document.getElementById('campSchedule').value || null,
+        };
+
+        const btn = document.getElementById('campSendNowBtn');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+        let url = editId
+            ? `/admin-dashboard/api/campaigns/${editId}/update/`
+            : '/admin-dashboard/api/campaigns/create/';
+        const res = await apiFetchJson(url, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload),
+        });
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send Now';
+
+        if (!res.success) { errEl.textContent = res.error || 'Save failed.'; errEl.style.display = 'block'; return; }
+
+        const savedId = res.campaign.id;
+        closeCampaignModal();
+
+        if (sendNow) {
+            await sendCampaignNow(savedId, name);
+        } else {
+            showNotification(`Campaign "${name}" saved.`, 'success');
+            loadMktCampaigns();
+        }
+    }
+
+    async function sendCampaignNow(id, name) {
+        if (!confirm(`Send campaign "${name}" now? This will immediately contact your audience via Email/WhatsApp.`)) return;
+        showNotification('Sending campaign… please wait.', 'success');
+        const res = await apiFetchJson(`/admin-dashboard/api/campaigns/${id}/send/`, { method:'POST' });
+        if (res.success) {
+            let msg = `Campaign sent! Email: ${res.sent_email}, WhatsApp: ${res.sent_wa}`;
+            if (res.errors && res.errors.length) msg += ` | ${res.errors.length} error(s): ${res.errors[0]}`;
+            showNotification(msg, 'success');
+        } else {
+            showNotification(res.error || 'Send failed.', 'error');
+        }
+        loadMktCampaigns();
+    }
+
+    async function deleteCampaign(id, name) {
+        if (!confirm(`Delete campaign "${name}"?`)) return;
+        const res = await apiFetchJson(`/admin-dashboard/api/campaigns/${id}/delete/`, { method:'POST' });
+        if (res.success) { showNotification(`"${name}" deleted.`, 'success'); loadMktCampaigns(); }
+        else showNotification('Delete failed.', 'error');
+    }
+
+    async function runAiGenerate() {
+        const statusEl = document.getElementById('aiGenStatus');
+        const btn      = document.getElementById('aiGenBtn');
+        const product  = prompt('Enter product/collection name for AI content:', 'Princess Jewellery Collection');
+        if (!product) return;
+        const audience = document.getElementById('campAudience').options[document.getElementById('campAudience').selectedIndex].text;
+        btn.disabled = true; btn.textContent = '✨ Generating…';
+        statusEl.style.display = 'block'; statusEl.textContent = 'AI is generating your campaign content…';
+        const res = await apiFetchJson('/admin-dashboard/api/campaigns/generate-ai/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ product, audience, tone:'premium' }),
+        });
+        btn.disabled = false; btn.textContent = '✨ AI Generate';
+        if (res.success) {
+            document.getElementById('campSubject').value    = res.subject   || '';
+            document.getElementById('campEmailBody').value  = res.email_body|| '';
+            document.getElementById('campWaMsg').value      = res.whatsapp  || '';
+            statusEl.textContent = res.ai_used ? '✅ Content generated by OpenAI GPT!' : '✅ Content generated using smart templates (Add OPENAI_API_KEY for AI-powered content).';
+            statusEl.style.color = '#16a34a';
+        } else {
+            statusEl.textContent = '❌ ' + (res.error || 'Generation failed.');
+            statusEl.style.color = '#dc2626';
+        }
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  MARKETING AUTOMATIONS
+    // ══════════════════════════════════════════════════════
+    let _autoConfig = {};
+
+    async function loadMktAutomations() {
+        const container = document.getElementById('mktAutoContent');
+        if (!container) return;
+        const res = await apiFetchJson('/admin-dashboard/api/automation-config/');
+        if (!res.success) { container.innerHTML = '<p style="color:#dc2626;">Failed to load automations.</p>'; return; }
+        _autoConfig = res.config || {};
+        renderAutomations();
+    }
+
+    function renderAutomations() {
+        const c = _autoConfig;
+        const container = document.getElementById('mktAutoContent');
+        if (!container) return;
+
+        const makeToggle = (key, enabled) => `
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+                <input type="checkbox" id="auto_${key}" ${enabled ? 'checked' : ''} onchange="_autoConfig['${key}']=this.checked"
+                    style="accent-color:var(--primary);width:18px;height:18px;">
+                <span style="font-size:.85rem;color:var(--text);">Enabled</span>
+            </label>`;
+
+        const makeInput = (key, val, label, type='number', min=0) => `
+            <div style="margin-top:.6rem;">
+                <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.25rem;">${label}</label>
+                <input type="${type}" id="auto_${key}" value="${escapeHtml(String(val||''))}"
+                    onchange="_autoConfig['${key}']=this.type==='number'?Number(this.value):this.value"
+                    ${type==='number' ? `min="${min}"` : ''}
+                    style="width:100%;max-width:220px;padding:.5rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;background:var(--bg);color:var(--text);">
+            </div>`;
+
+        const makeTextarea = (key, val, label) => `
+            <div style="margin-top:.6rem;">
+                <label style="font-size:.78rem;font-weight:600;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.25rem;">${label}</label>
+                <textarea id="auto_${key}" rows="2" onchange="_autoConfig['${key}']=this.value"
+                    style="width:100%;padding:.5rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--bg);color:var(--text);resize:vertical;">${escapeHtml(String(val||''))}</textarea>
+                <small style="color:var(--subtext);font-size:.73rem;">Use {name}, {link}, {discount} placeholders</small>
+            </div>`;
+
+        const automations = [
+            {
+                icon:'🛒', title:'Abandoned Cart Recovery',
+                desc:'Send WhatsApp/Email reminder when customer adds to cart but doesn\'t checkout.',
+                content: makeToggle('abandoned_cart_enabled', c.abandoned_cart_enabled)
+                    + makeInput('abandoned_cart_delay_hours', c.abandoned_cart_delay_hours, 'Send after (hours)', 'number', 0)
+                    + makeTextarea('abandoned_cart_msg', c.abandoned_cart_msg, 'Message Template'),
+            },
+            {
+                icon:'🎉', title:'First Purchase Welcome',
+                desc:'Automatically send a welcome message after a customer\'s very first order.',
+                content: makeToggle('first_purchase_enabled', c.first_purchase_enabled)
+                    + makeTextarea('first_purchase_msg', c.first_purchase_msg, 'Welcome Message'),
+            },
+            {
+                icon:'🎂', title:'Birthday Discount',
+                desc:'Send a birthday discount coupon to customers on their birthday (requires DOB in profile).',
+                content: makeToggle('birthday_enabled', c.birthday_enabled)
+                    + makeInput('birthday_discount', c.birthday_discount, 'Discount %', 'number', 1),
+            },
+            {
+                icon:'👑', title:'VIP Customer Recognition',
+                desc:'Automatically tag customers as VIP when they reach the spending threshold.',
+                content: makeToggle('vip_enabled', c.vip_enabled)
+                    + makeInput('vip_threshold', c.vip_threshold, 'VIP Threshold (₹ total spend)', 'number', 1000),
+            },
+            {
+                icon:'🔄', title:'Win-Back Inactive Customers',
+                desc:'Re-engage customers who haven\'t ordered in a while with a special offer.',
+                content: makeToggle('winback_enabled', c.winback_enabled)
+                    + makeInput('winback_days', c.winback_days, 'Days since last order', 'number', 7)
+                    + makeTextarea('winback_msg', c.winback_msg, 'Win-Back Message'),
+            },
+        ];
+
+        container.innerHTML = automations.map(a => `
+            <div class="stat-card" style="padding:1.25rem;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:.25rem;">${a.icon} ${escapeHtml(a.title)}</div>
+                        <div style="font-size:.82rem;color:var(--subtext);margin-bottom:.75rem;">${escapeHtml(a.desc)}</div>
+                        ${a.content}
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    async function saveAutomations() {
+        // Read all current values from DOM inputs
+        const cfg = {..._autoConfig};
+        [
+            'abandoned_cart_delay_hours','birthday_discount','vip_threshold','winback_days'
+        ].forEach(k => {
+            const el = document.getElementById('auto_' + k);
+            if (el) cfg[k] = Number(el.value);
+        });
+        ['abandoned_cart_msg','first_purchase_msg','winback_msg'].forEach(k => {
+            const el = document.getElementById('auto_' + k);
+            if (el) cfg[k] = el.value;
+        });
+
+        const res = await apiFetchJson('/admin-dashboard/api/automation-config/save/', {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg),
+        });
+        if (res.success) showNotification('Automation settings saved!', 'success');
+        else showNotification('Save failed: ' + (res.error||''), 'error');
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  MARKETING INTEGRATIONS
+    // ══════════════════════════════════════════════════════
+    async function loadMktIntegrations() {
+        // Check which integrations have keys configured
+        const res = await apiFetchJson('/admin-dashboard/api/api-settings/');
+        if (!res.success) return;
+        const keys = (res.settings || []).reduce((acc, s) => { acc[s.key] = s.has_value; return acc; }, {});
+
+        const makeStatus = (configured, keys_needed) => {
+            const configured_count = keys_needed.filter(k => keys[k]).length;
+            if (configured_count === keys_needed.length) return '<span style="color:#16a34a;font-weight:600;">✅ Configured</span>';
+            if (configured_count > 0) return `<span style="color:#d97706;font-weight:600;">⚠️ Partial (${configured_count}/${keys_needed.length} keys)</span>`;
+            return '<span style="color:#dc2626;font-weight:600;">❌ Not configured</span>';
+        };
+
+        const waStatus = makeStatus(true, ['TWILIO_ACCOUNT_SID','TWILIO_AUTH_TOKEN','TWILIO_WHATSAPP_FROM']);
+        const emailStatus = makeStatus(true, ['EMAIL_HOST_USER','EMAIL_HOST_PASSWORD']);
+        const aiStatus = makeStatus(true, ['OPENAI_API_KEY']);
+
+        const el = document.getElementById('intWaStatus');
+        if (el) el.innerHTML = waStatus;
+        const el2 = document.getElementById('intEmailStatus');
+        if (el2) el2.innerHTML = emailStatus;
+        const el3 = document.getElementById('intAiStatus');
+        if (el3) el3.innerHTML = aiStatus;
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  MARKETING ANALYTICS
+    // ══════════════════════════════════════════════════════
+    async function loadMktAnalytics() {
+        const res = await apiFetchJson('/admin-dashboard/api/marketing-analytics/');
+        if (!res.success) return;
+        const k = res.kpis || {};
+        const setEl = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+        setEl('mktAnTotal', k.total_campaigns || 0);
+        setEl('mktAnSent',  k.total_sent || 0);
+        setEl('mktAnOpen',  (k.open_rate || 0) + '%');
+        setEl('mktAnMonth', k.sent_30d || 0);
+
+        // Audience sizes
+        const audEl = document.getElementById('mktAnAudience');
+        if (audEl) {
+            const sizes = res.audience_sizes || {};
+            const labels = {all:'All Customers', vip:'VIP', repeat:'Repeat Buyers', high_value:'High Value', inactive:'Inactive', new:'New'};
+            const colors  = {all:'#7c3aed', vip:'#d97706', repeat:'#2563eb', high_value:'#c4a35a', inactive:'#6b7280', new:'#16a34a'};
+            audEl.innerHTML = Object.entries(sizes).map(([k, v]) =>
+                `<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:${colors[k]||'var(--primary)'};">${v}</div>
+                    <div style="font-size:.78rem;color:var(--subtext);">${escapeHtml(labels[k]||k)}</div>
+                </div>`
+            ).join('');
+        }
+
+        // Table
+        const tableEl = document.querySelector('#mktAnTable tbody');
+        if (tableEl) {
+            const camps = res.campaigns || [];
+            if (!camps.length) {
+                tableEl.innerHTML = `<tr><td colspan="6" style="padding:2.5rem;text-align:center;color:var(--subtext);">No campaigns yet.</td></tr>`;
+            } else {
+                const SC = { draft:'#d97706', scheduled:'#2563eb', sent:'#16a34a', failed:'#dc2626' };
+                tableEl.innerHTML = camps.map(c => `
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:.75rem 1rem;font-weight:600;color:var(--text);font-size:.875rem;">${escapeHtml(c.name)}</td>
+                        <td style="padding:.75rem 1rem;text-align:center;font-size:.82rem;">${escapeHtml(c.campaign_type_display)}</td>
+                        <td style="padding:.75rem 1rem;text-align:center;font-weight:600;color:var(--primary);">${c.sent_count}</td>
+                        <td style="padding:.75rem 1rem;text-align:center;color:#2563eb;">${c.opened_count}</td>
+                        <td style="padding:.75rem 1rem;text-align:center;color:#16a34a;">${c.clicked_count}</td>
+                        <td style="padding:.75rem 1rem;text-align:center;"><span style="background:${(SC[c.status]||'#6b7280')}22;color:${SC[c.status]||'#6b7280'};padding:.2rem .5rem;border-radius:12px;font-size:.75rem;font-weight:700;">${c.status}</span></td>
+                    </tr>`).join('');
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  FINANCE — EXECUTIVE OVERVIEW
+    // ══════════════════════════════════════════════════════
+    async function loadFinOverview() {
+        const container = document.getElementById('finOvContent');
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>`;
+        let res;
+        try { res = await apiFetchJson('/admin-dashboard/api/finance-overview/'); }
+        catch(e) { container.innerHTML = '<p style="color:#dc2626;">Failed to load.</p>'; return; }
+        if (!res.success) { container.innerHTML = '<p style="color:#dc2626;">Failed to load.</p>'; return; }
+        const k = res.kpis;
+        const fmt = v => '₹' + (v||0).toLocaleString('en-IN', {maximumFractionDigits:0});
+        container.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+                ${[
+                    {label:"Today's Revenue",    val:fmt(k.today_revenue),    color:'#7c3aed', icon:'fa-coins'},
+                    {label:"This Month Revenue",  val:fmt(k.month_revenue),    color:'#2563eb', icon:'fa-chart-line'},
+                    {label:"This Year Revenue",   val:fmt(k.year_revenue),     color:'#16a34a', icon:'fa-calendar'},
+                    {label:"Total Revenue",       val:fmt(k.total_revenue),    color:'#c4a35a', icon:'fa-gem'},
+                    {label:"Pending Refunds",     val:fmt(k.pending_refunds),  color:'#dc2626', icon:'fa-undo'},
+                    {label:"Refunded This Month", val:fmt(k.refunded_month),   color:'#d97706', icon:'fa-receipt'},
+                    {label:"Total Orders",        val:k.total_orders,          color:'#7c3aed', icon:'fa-shopping-cart'},
+                    {label:"Delivered Orders",    val:k.delivered_orders,      color:'#16a34a', icon:'fa-check-circle'},
+                    {label:"Cancelled Orders",    val:k.cancelled_orders,      color:'#dc2626', icon:'fa-times-circle'},
+                    {label:"Avg Order Value",     val:fmt(k.avg_order_value),  color:'#2563eb', icon:'fa-tag'},
+                ].map(item => `<div class="stat-card" style="padding:1.1rem;">
+                    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+                        <div style="width:36px;height:36px;border-radius:10px;background:${item.color}22;display:flex;align-items:center;justify-content:center;">
+                            <i class="fas ${item.icon}" style="color:${item.color};font-size:.9rem;"></i>
+                        </div>
+                        <div style="font-size:.78rem;color:var(--subtext);font-weight:600;">${escapeHtml(item.label)}</div>
+                    </div>
+                    <div style="font-size:1.4rem;font-weight:800;color:${item.color};">${escapeHtml(String(item.val))}</div>
+                </div>`).join('')}
+            </div>
+            <!-- Monthly Revenue Chart -->
+            <div class="stat-card" style="padding:1.25rem;">
+                <div style="font-weight:700;color:var(--text);margin-bottom:1rem;font-size:.95rem;"><i class="fas fa-chart-area" style="color:var(--primary);margin-right:.4rem;"></i>Monthly Revenue (Last 6 Months)</div>
+                <div id="finOvMonthChart" style="height:240px;width:100%;min-width:0;"></div>
+            </div>`;
+
+        // Draw chart after render
+        setTimeout(() => {
+            const monthly = res.monthly_revenue || [];
+            const el = document.getElementById('finOvMonthChart');
+            if (!el || !monthly.length || !window.google || !google.visualization) return;
+            try {
+                const dt = new google.visualization.DataTable();
+                dt.addColumn('string', 'Month');
+                dt.addColumn('number', 'Revenue ₹');
+                dt.addRows(monthly.map(m => [m.label, m.revenue]));
+                new google.visualization.AreaChart(el).draw(dt, {
+                    legend:{position:'none'}, colors:['#c4a35a'],
+                    backgroundColor:'transparent',
+                    chartArea:{left:70,top:10,width:'80%',height:'80%'},
+                    hAxis:{textStyle:{color:'#8f5e71',fontSize:10}},
+                    vAxis:{textStyle:{color:'#8f5e71'},gridlines:{color:'#f3d6df'},baselineColor:'#f3d6df'},
+                    areaOpacity:.2,
+                });
+            } catch(e) { console.warn('Finance chart error:', e); }
+        }, 300);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  FINANCE — ADVANCED DASHBOARD
+    // ══════════════════════════════════════════════════════
+    async function loadFinDashboard() {
+        // Reuse the finance overview data for the advanced charts
+        const container = document.getElementById('finDashContent');
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i></div>`;
+        let res;
+        try { res = await apiFetchJson('/admin-dashboard/api/finance-overview/'); }
+        catch(e) { container.innerHTML = '<p style="color:#dc2626;">Failed.</p>'; return; }
+        if (!res.success) { container.innerHTML = '<p style="color:#dc2626;">Failed.</p>'; return; }
+        const k = res.kpis;
+        const fmt = v => '₹' + (v||0).toLocaleString('en-IN', {maximumFractionDigits:0});
+
+        // Waterfall: gross revenue → refunds → net revenue
+        const gross  = k.total_revenue || 0;
+        const refs   = k.refunded_month || 0;
+        const pend   = k.pending_refunds || 0;
+        const cog    = gross * 0.55;   // estimated 55% cost
+        const net    = gross - refs;
+        const profit = net - cog;
+
+        container.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="font-weight:700;color:var(--text);margin-bottom:1rem;font-size:.95rem;"><i class="fas fa-water" style="color:var(--primary);margin-right:.4rem;"></i>Revenue Waterfall</div>
+                    <div id="finWaterfallChart" style="height:220px;width:100%;min-width:0;"></div>
+                </div>
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="font-weight:700;color:var(--text);margin-bottom:1rem;font-size:.95rem;"><i class="fas fa-chart-area" style="color:var(--primary);margin-right:.4rem;"></i>Monthly Revenue Trend</div>
+                    <div id="finTrendChart" style="height:220px;width:100%;min-width:0;"></div>
+                </div>
+            </div>
+            <div class="stat-card" style="padding:1.25rem;">
+                <div style="font-weight:700;color:var(--text);margin-bottom:1rem;font-size:.95rem;"><i class="fas fa-exclamation-triangle" style="color:#dc2626;margin-right:.4rem;"></i>Refund Liability Summary</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+                        <div style="font-size:1.4rem;font-weight:800;color:#dc2626;">${fmt(pend)}</div>
+                        <div style="font-size:.78rem;color:var(--subtext);">Pending Refunds (liability)</div>
+                    </div>
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+                        <div style="font-size:1.4rem;font-weight:800;color:#d97706;">${fmt(refs)}</div>
+                        <div style="font-size:.78rem;color:var(--subtext);">Refunded This Month</div>
+                    </div>
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+                        <div style="font-size:1.4rem;font-weight:800;color:#16a34a;">${fmt(profit)}</div>
+                        <div style="font-size:.78rem;color:var(--subtext);">Est. Profit (after 55% COGS)</div>
+                    </div>
+                </div>
+            </div>`;
+
+        setTimeout(() => {
+            if (!window.google || !google.visualization) return;
+            try {
+                // Waterfall bar chart
+                const wEl = document.getElementById('finWaterfallChart');
+                if (wEl) {
+                    const wDt = new google.visualization.DataTable();
+                    wDt.addColumn('string', 'Category');
+                    wDt.addColumn('number', 'Amount ₹');
+                    wDt.addRows([
+                        ['Gross Revenue', gross],
+                        ['Refunds',       -(refs)],
+                        ['Net Revenue',   net],
+                        ['COGS (est)',    -(cog)],
+                        ['Profit',        profit],
+                    ].filter(r => r[1] !== 0));
+                    new google.visualization.BarChart(wEl).draw(wDt, {
+                        legend:{position:'none'},
+                        colors: ['#16a34a','#dc2626','#2563eb','#d97706','#c4a35a'],
+                        backgroundColor:'transparent',
+                        chartArea:{left:90,top:10,width:'55%',height:'85%'},
+                        hAxis:{textStyle:{color:'#8f5e71'},gridlines:{color:'#f3d6df'},baselineColor:'#f3d6df'},
+                        vAxis:{textStyle:{color:'#8f5e71',fontSize:10}},
+                    });
+                }
+                // Trend chart
+                const tEl = document.getElementById('finTrendChart');
+                const monthly = res.monthly_revenue || [];
+                if (tEl && monthly.length) {
+                    const tDt = new google.visualization.DataTable();
+                    tDt.addColumn('string', 'Month');
+                    tDt.addColumn('number', 'Revenue ₹');
+                    tDt.addRows(monthly.map(m => [m.label, m.revenue]));
+                    new google.visualization.LineChart(tEl).draw(tDt, {
+                        legend:{position:'none'}, colors:['#c4a35a'],
+                        backgroundColor:'transparent',
+                        chartArea:{left:60,top:10,width:'78%',height:'80%'},
+                        hAxis:{textStyle:{color:'#8f5e71',fontSize:9}},
+                        vAxis:{textStyle:{color:'#8f5e71'},gridlines:{color:'#f3d6df'},baselineColor:'#f3d6df'},
+                        pointSize:5, lineWidth:2.5,
+                    });
+                }
+            } catch(e) { console.warn('Fin dashboard chart error:', e); }
+        }, 300);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  FINANCE — INVENTORY & HIGH-VALUE ORDERS
+    // ══════════════════════════════════════════════════════
+    async function loadFinInventory() {
+        const container = document.getElementById('finInvContent');
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i></div>`;
+        let res;
+        try { res = await apiFetchJson('/admin-dashboard/api/finance-inventory/'); }
+        catch(e) { container.innerHTML = '<p style="color:#dc2626;">Failed.</p>'; return; }
+        if (!res.success) { container.innerHTML = '<p style="color:#dc2626;">Failed.</p>'; return; }
+
+        const fmt = v => '₹' + (v||0).toLocaleString('en-IN', {maximumFractionDigits:0});
+
+        container.innerHTML = `
+            <!-- KPI row -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+                <div class="stat-card" style="padding:1.1rem;text-align:center;">
+                    <div style="font-size:1.5rem;font-weight:800;color:#c4a35a;">${fmt(res.inventory_value)}</div>
+                    <div style="font-size:.78rem;color:var(--subtext);">Total Active Inventory Value</div>
+                </div>
+                <div class="stat-card" style="padding:1.1rem;text-align:center;">
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">${res.active_products || 0}</div>
+                    <div style="font-size:.78rem;color:var(--subtext);">Active Products</div>
+                </div>
+                <div class="stat-card" style="padding:1.1rem;text-align:center;">
+                    <div style="font-size:1.5rem;font-weight:800;color:#dc2626;">${(res.slow_movers||[]).length}</div>
+                    <div style="font-size:.78rem;color:var(--subtext);">Slow Movers (90+ days)</div>
+                </div>
+                <div class="stat-card" style="padding:1.1rem;text-align:center;">
+                    <div style="font-size:1.5rem;font-weight:800;color:#16a34a;">${(res.high_value_orders||[]).length}</div>
+                    <div style="font-size:.78rem;color:var(--subtext);">High-Value Orders (₹10k+)</div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+                <!-- Category Breakdown -->
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="font-weight:700;color:var(--text);margin-bottom:.75rem;font-size:.95rem;"><i class="fas fa-layer-group" style="color:var(--primary);margin-right:.4rem;"></i>Category Revenue Breakdown</div>
+                    <div id="finCatChart" style="height:220px;width:100%;min-width:0;"></div>
+                </div>
+                <!-- Slow Movers -->
+                <div class="stat-card" style="padding:1.25rem;">
+                    <div style="font-weight:700;color:var(--text);margin-bottom:.75rem;font-size:.95rem;"><i class="fas fa-exclamation-triangle" style="color:#d97706;margin-right:.4rem;"></i>Slow Movers / Dead Stock</div>
+                    ${(res.slow_movers||[]).length ? `
+                    <div style="display:flex;flex-direction:column;gap:.5rem;max-height:200px;overflow-y:auto;">
+                        ${(res.slow_movers||[]).map(p => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+                            <div>
+                                <div style="font-weight:600;font-size:.83rem;color:var(--text);">${escapeHtml(p.name||'')}</div>
+                                <div style="font-size:.74rem;color:var(--subtext);">Last sold: ${escapeHtml(p.last_order||'Never')}</div>
+                            </div>
+                            <div style="font-weight:700;color:#c4a35a;font-size:.82rem;">${fmt(p.price)}</div>
+                        </div>`).join('')}
+                    </div>` : '<div style="color:var(--subtext);font-size:.85rem;padding:2rem;text-align:center;">No slow movers 🎉</div>'}
+                </div>
+            </div>
+            <!-- High Value Orders -->
+            <div class="stat-card" style="padding:0;overflow:hidden;">
+                <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);font-weight:700;color:var(--text);font-size:.95rem;"><i class="fas fa-crown" style="color:#d97706;margin-right:.4rem;"></i>High-Value Orders (₹10,000+)</div>
+                <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+                    <thead><tr style="background:var(--primary-50);">
+                        <th style="padding:.75rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;">Order #</th>
+                        <th style="padding:.75rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;">Customer</th>
+                        <th style="padding:.75rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;">Amount</th>
+                        <th style="padding:.75rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;">Status</th>
+                        <th style="padding:.75rem 1rem;text-align:left;font-size:.78rem;color:var(--subtext);font-weight:600;">Date</th>
+                    </tr></thead>
+                    <tbody>${(res.high_value_orders||[]).length ? (res.high_value_orders||[]).map(o =>
+                        `<tr style="border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
+                            <td style="padding:.75rem 1rem;font-weight:600;color:var(--text);">#${o.id}</td>
+                            <td style="padding:.75rem 1rem;font-size:.875rem;">${escapeHtml(o.customer_name||'—')}</td>
+                            <td style="padding:.75rem 1rem;font-weight:700;color:#c4a35a;">${fmt(o.total_amount)}</td>
+                            <td style="padding:.75rem 1rem;"><span style="background:var(--primary-50);color:var(--primary);padding:.2rem .5rem;border-radius:12px;font-size:.75rem;font-weight:600;">${escapeHtml(o.status)}</span></td>
+                            <td style="padding:.75rem 1rem;font-size:.8rem;color:var(--subtext);">${escapeHtml(o.created_at)}</td>
+                        </tr>`).join('') : `<tr><td colspan="5" style="padding:2.5rem;text-align:center;color:var(--subtext);">No high-value orders yet.</td></tr>`}
+                    </tbody>
+                </table></div>
+            </div>`;
+
+        // Category pie chart
+        setTimeout(() => {
+            if (!window.google || !google.visualization) return;
+            const catEl = document.getElementById('finCatChart');
+            const cats  = (res.category_breakdown || []).filter(c => c.total_val > 0);
+            if (catEl && cats.length) {
+                try {
+                    const dt = new google.visualization.DataTable();
+                    dt.addColumn('string', 'Category');
+                    dt.addColumn('number', 'Revenue ₹');
+                    dt.addRows(cats.map(c => [c.product__category__name || 'Uncategorised', c.total_val]));
+                    new google.visualization.PieChart(catEl).draw(dt, {
+                        legend:{position:'right',textStyle:{color:'var(--text)',fontSize:11}},
+                        backgroundColor:'transparent',
+                        chartArea:{left:10,top:10,width:'55%',height:'88%'},
+                        colors:['#c4a35a','#ca6180','#9ed3dc','#fefd99','#fca5a5','#a7f3d0','#c4b5fd'],
+                        pieHole:.38, pieSliceBorderColor:'var(--surface)',
+                    });
+                } catch(e) { console.warn(e); }
+            } else if (catEl) {
+                catEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--subtext);font-size:.8rem;">No category data yet</div>';
+            }
+        }, 300);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  FINANCE — BUSINESS AI COPILOT
+    // ══════════════════════════════════════════════════════
+    async function loadFinCopilot() {
+        const container = document.getElementById('finCopilotContent');
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--subtext);"><i class="fas fa-spinner fa-spin"></i> Analysing your business data…</div>`;
+        let res;
+        try { res = await apiFetchJson('/admin-dashboard/api/finance-copilot/'); }
+        catch(e) { container.innerHTML = '<p style="color:#dc2626;">Failed.</p>'; return; }
+        if (!res.success) { container.innerHTML = '<p style="color:#dc2626;">Failed.</p>'; return; }
+
+        const score = res.health_score || 0;
+        const scoreColor = score >= 80 ? '#16a34a' : score >= 60 ? '#d97706' : '#dc2626';
+        const m = res.metrics || {};
+        const fmt = v => '₹' + (v||0).toLocaleString('en-IN', {maximumFractionDigits:0});
+
+        container.innerHTML = `
+            <div style="display:grid;grid-template-columns:280px 1fr;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+                <!-- Health Score -->
+                <div class="stat-card" style="padding:1.5rem;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <div style="font-size:.85rem;font-weight:700;color:var(--subtext);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;">Business Health Score</div>
+                    <div style="position:relative;width:120px;height:120px;margin:0 auto .75rem;">
+                        <svg viewBox="0 0 120 120" style="width:100%;transform:rotate(-90deg);">
+                            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12"/>
+                            <circle cx="60" cy="60" r="52" fill="none" stroke="${scoreColor}" stroke-width="12"
+                                stroke-dasharray="${2*Math.PI*52}" stroke-dashoffset="${2*Math.PI*52*(1-score/100)}"
+                                stroke-linecap="round" style="transition:stroke-dashoffset 1s ease;"/>
+                        </svg>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                            <div style="font-size:1.8rem;font-weight:800;color:${scoreColor};">${score}</div>
+                            <div style="font-size:.68rem;color:var(--subtext);">/ 100</div>
+                        </div>
+                    </div>
+                    <div style="font-size:.82rem;color:${scoreColor};font-weight:600;">${score>=80?'Excellent 🎉':score>=60?'Good 👍':score>=40?'Needs Attention ⚠️':'Critical ❗'}</div>
+                    <div style="margin-top:1rem;display:flex;flex-direction:column;gap:.4rem;font-size:.78rem;color:var(--subtext);width:100%;">
+                        <div style="display:flex;justify-content:space-between;"><span>Month Revenue</span><span style="font-weight:600;color:var(--text);">${fmt(m.cur_revenue)}</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>vs Last Month</span><span style="font-weight:600;color:${(m.rev_change_pct||0)>=0?'#16a34a':'#dc2626'};">${(m.rev_change_pct||0)>=0?'+':''}${m.rev_change_pct||0}%</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>Return Rate</span><span style="font-weight:600;color:${(m.return_rate||0)>10?'#dc2626':'#16a34a'};">${m.return_rate||0}%</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>Top Category</span><span style="font-weight:600;color:var(--text);">${escapeHtml(m.top_category||'N/A')}</span></div>
+                    </div>
+                </div>
+                <!-- Insights -->
+                <div style="display:flex;flex-direction:column;gap:.9rem;">
+                    <div style="font-weight:700;color:var(--text);font-size:.95rem;"><i class="fas fa-lightbulb" style="color:#d97706;margin-right:.4rem;"></i>AI Business Insights</div>
+                    ${(res.insights||[]).map(ins => `
+                    <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:1rem 1.1rem;display:flex;gap:.85rem;align-items:flex-start;">
+                        <div style="font-size:1.5rem;flex-shrink:0;">${escapeHtml(ins.icon||'💡')}</div>
+                        <div>
+                            <div style="font-weight:700;color:var(--text);font-size:.9rem;margin-bottom:.2rem;">${escapeHtml(ins.title||'')}</div>
+                            <div style="font-size:.8rem;color:var(--subtext);margin-bottom:.35rem;">${escapeHtml(ins.detail||'')}</div>
+                            <div style="font-size:.79rem;background:var(--primary-50);color:var(--primary);display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:20px;font-weight:600;">
+                                <i class="fas fa-arrow-right"></i> ${escapeHtml(ins.action||'')}
+                            </div>
+                        </div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  EXPORTS
+    // ══════════════════════════════════════════════════════
+    window.loadApiCredentials   = loadApiCredentials;
+    window.openApiCredModal     = openApiCredModal;
+    window.openApiCredModalFor  = openApiCredModalFor;
+    window.closeApiCredModal    = closeApiCredModal;
+    window.saveApiCred          = saveApiCred;
+    window.deleteApiCred        = deleteApiCred;
+
+    window.loadMktCampaigns     = loadMktCampaigns;
+    window.openCampaignModal    = openCampaignModal;
+    window.closeCampaignModal   = closeCampaignModal;
+    window.saveCampaign         = saveCampaign;
+    window.sendCampaignNow      = sendCampaignNow;
+    window.deleteCampaign       = deleteCampaign;
+    window.runAiGenerate        = runAiGenerate;
+
+    window.loadMktAutomations   = loadMktAutomations;
+    window.saveAutomations      = saveAutomations;
+    window.loadMktIntegrations  = loadMktIntegrations;
+    window.loadMktAnalytics     = loadMktAnalytics;
+
+    window.loadFinOverview      = loadFinOverview;
+    window.loadFinDashboard     = loadFinDashboard;
+    window.loadFinInventory     = loadFinInventory;
+    window.loadFinCopilot       = loadFinCopilot;
+
     })();
     </script>
 </body>

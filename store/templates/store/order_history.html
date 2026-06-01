@@ -312,32 +312,34 @@
    TRACK ORDER MODAL
 ═══════════════════════════════════════════ */
 #ohTrackModal {
-  display: none; position: fixed; inset: 0;
+  display: none;
+  position: fixed; inset: 0;
   background: rgba(147,51,234,.15);
   backdrop-filter: blur(6px);
   z-index: 10000;
-  align-items: flex-start;      /* start from top so tall content stays scrollable */
+  align-items: center;
   justify-content: center;
   padding: 1rem;
-  overflow-y: auto;             /* THE FIX: overlay itself scrolls on mobile */
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overflow: hidden;
 }
 #ohTrackModal.open { display: flex; }
 .ohtm-box {
   background: #fff;
   border: 1.5px solid #f3e8ff;
   border-radius: 24px;
-  width: min(600px, 100%);
-  margin: auto 0;               /* vertical centering when content fits; top-aligned when it doesn't */
+  width: min(560px, 100%);
+  max-height: min(92dvh, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 20px 60px rgba(236,72,153,.14), 0 8px 24px rgba(0,0,0,.07);
-  /* No max-height — the overlay scrolls instead */
 }
 .ohtm-head {
   padding: 1.2rem 1.6rem;
   border-bottom: 1px solid #fce7f3;
   background: linear-gradient(135deg, #fff5fb, #f9f5ff);
   display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
 }
 .ohtm-head h3  { font-size: 1.05rem; font-weight: 800; color: #1e293b; }
 .ohtm-conf     { font-size: .72rem; color: #7c3aed; font-family: monospace; margin-top: .15rem; }
@@ -346,9 +348,19 @@
   border-radius: 50%; width: 32px; height: 32px;
   color: #7c3aed; font-size: 1rem;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 .ohtm-close:hover { background: #ede9fe; }
-.ohtm-body { padding: 1.6rem; }
+.ohtm-body {
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+.ohtm-body .lux-modal-scroll-inner {
+  padding: 1.6rem;
+}
 
 /* Progress bar */
 .ohtm-prog-track {
@@ -468,10 +480,31 @@
 }
 .oh-rtn-strip-lnk:hover { color: #b45309; }
 
-/* Horizontal mini step row */
-.oh-rtn-tl { display: flex; align-items: flex-start; }
+/* Horizontal mini step row — swipe on mobile */
+.oh-rtn-tl-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem 4px;
+  scrollbar-width: thin;
+}
+.oh-rtn-tl-scroll::-webkit-scrollbar { height: 4px; }
+.oh-rtn-tl-scroll::-webkit-scrollbar-thumb { background: #fcd34d; border-radius: 4px; }
+.oh-rtn-tl {
+  display: flex;
+  align-items: flex-start;
+  min-width: max-content;
+  width: max-content;
+  gap: 0;
+  padding-bottom: 2px;
+}
 .oh-rtn-tl-step {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
+  flex: 0 0 auto;
+  width: 76px;
+  display: flex; flex-direction: column; align-items: center;
   position: relative;
 }
 /* Connector line from this step's center to the next step's center */
@@ -625,6 +658,7 @@
         <span class="oh-rtn-strip-title">↩ Return &amp; Refund Progress</span>
         <button class="oh-rtn-strip-lnk" onclick="ohOpenTrack({{ order.id }})">View Full Timeline →</button>
       </div>
+      <div class="oh-rtn-tl-scroll lux-modal-scroll lux-modal-scroll-x">
       <div class="oh-rtn-tl">
         {% with p=row.rtn_phase %}
 
@@ -659,6 +693,7 @@
         </div>
 
         {% endwith %}
+      </div>
       </div>
     </div>
     {% endif %}
@@ -711,7 +746,7 @@
 <!-- ════════════════════════════════════════
      TRACK ORDER MODAL
 ════════════════════════════════════════ -->
-<div id="ohTrackModal">
+<div id="ohTrackModal" data-lenis-prevent>
   <div class="ohtm-box">
     <div class="ohtm-head">
       <div>
@@ -720,7 +755,7 @@
       </div>
       <button class="ohtm-close" onclick="ohCloseTrack()">✕</button>
     </div>
-    <div class="ohtm-body" id="ohtm-body">
+    <div class="ohtm-body lux-modal-scroll" id="ohtm-body">
       <div style="text-align:center;padding:2rem;color:rgba(255,255,255,.3);">Loading…</div>
     </div>
   </div>
@@ -847,21 +882,26 @@ async function ohOpenTrack(orderId) {
   const modal = document.getElementById('ohTrackModal');
   const body  = document.getElementById('ohtm-body');
   const conf  = document.getElementById('ohtm-conf');
+  if (typeof luxStopModalLenis === 'function') luxStopModalLenis(body);
   body.innerHTML = '<div style="text-align:center;padding:2.5rem;color:#94a3b8;">Loading…</div>';
-  document.body.style.overflow = 'hidden'; // prevent body from scrolling behind modal
+  if (typeof luxLockBody === 'function') luxLockBody();
+  else {
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.paddingRight = sbw + 'px';
+    document.body.style.overflow = 'hidden';
+  }
   modal.classList.add('open');
   try {
     const r = await fetch(`/store/api/orders/${orderId}/timeline/`, {credentials:'same-origin'});
     const d = await r.json();
     if (!d.ok) { body.innerHTML='<p style="color:#f87171;text-align:center;padding:2rem;">Error loading data.</p>'; return; }
     conf.textContent = d.conf;
-    // Update modal title based on order type
     const titleEl = document.getElementById('ohtm-title');
     if (titleEl) {
       titleEl.textContent = d.has_return ? '↩ Return & Refund Journey' : '📦 Track Order';
     }
     body.innerHTML = buildTrackHTML(d);
-    // Animate progress bar after render
+    if (typeof luxStartModalLenis === 'function') luxStartModalLenis(body);
     requestAnimationFrame(() => {
       const fill = document.getElementById('ohtm-fill');
       if (fill) fill.style.width = d.progress_pct + '%';
@@ -871,8 +911,14 @@ async function ohOpenTrack(orderId) {
   }
 }
 function ohCloseTrack() {
+  const body = document.getElementById('ohtm-body');
+  if (typeof luxStopModalLenis === 'function') luxStopModalLenis(body);
   document.getElementById('ohTrackModal').classList.remove('open');
-  document.body.style.overflow = ''; // restore body scroll
+  if (typeof luxUnlockBody === 'function') luxUnlockBody();
+  else {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
 }
 document.getElementById('ohTrackModal').addEventListener('click', e => {
   if (e.target === document.getElementById('ohTrackModal')) ohCloseTrack();
